@@ -64,7 +64,11 @@ impl Localization {
         }
     }
 
-    pub fn get_str<'a>(&'a self, string: &'a str, replacements: HashMap<&str, &str>) -> String {
+    pub fn get_string<'a>(
+        &'a self,
+        string: &'a str,
+        replacements: Option<HashMap<&str, &str>>,
+    ) -> String {
         let mut text = match self.locale_data.get(string) {
             Some(s) => s.clone(),
             None => {
@@ -72,11 +76,16 @@ impl Localization {
             }
         };
 
-        for (key, replacement) in replacements.iter() {
-            let repl = "{".to_string() + key + "}";
-            if text.contains(repl.as_str()) {
-                text = text.replace(repl.as_str(), replacement);
+        match replacements {
+            Some(_) => {
+                for (key, replacement) in replacements.unwrap().iter() {
+                    let repl = "{".to_string() + key + "}";
+                    if text.contains(repl.as_str()) {
+                        text = text.replace(repl.as_str(), replacement);
+                    }
+                }
             }
+            None => {}
         }
         text
     }

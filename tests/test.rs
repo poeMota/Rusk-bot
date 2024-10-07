@@ -16,14 +16,17 @@ fn read_config_test() {
 fn locale_test() {
     let loc = LOCALIZATION.lock().unwrap();
 
-    assert_eq!(String::from("test"), loc.get_str("test", HashMap::new()));
+    assert_eq!(String::from("test"), loc.get_string("test", None));
     assert_ne!(
         String::from("test-string-1"),
-        loc.get_str("test-string-1", HashMap::new())
+        loc.get_string("test-string-1", None)
     );
     assert_eq!(
         String::from("test output - test test"),
-        loc.get_str("test-string-2", HashMap::from([("output", "test test")]))
+        loc.get_string(
+            "test-string-2",
+            Some(HashMap::from([("output", "test test")]))
+        )
     );
 }
 
