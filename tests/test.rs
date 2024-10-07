@@ -32,17 +32,15 @@ fn locale_test() {
 
 #[test]
 fn events_test() {
-    #[derive(Event)]
+    #[event]
     struct Event1 {
         name: String,
     }
-    register_event::<Event1>();
 
-    #[derive(Event)]
+    #[event]
     struct Event2 {
         id: u8,
     }
-    register_event::<Event1>();
 
     fn test_event_fn1(ev: &Event1) {
         println!("Raised test func 1 - {}", ev.name);
@@ -65,4 +63,6 @@ fn events_test() {
         name: String::from("test"),
     }
     .raise();
+
+    Event2 { id: 9 }.raise();
 }
