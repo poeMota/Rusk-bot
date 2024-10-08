@@ -1,10 +1,10 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemStruct};
+use syn::{parse_macro_input, DeriveInput};
 
-#[proc_macro_attribute]
-pub fn event(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as ItemStruct);
+#[proc_macro_derive(Event)]
+pub fn event(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
     let expanded = quote! {
@@ -18,10 +18,6 @@ pub fn event(_args: TokenStream, input: TokenStream) -> TokenStream {
                 self
             }
         }
-
-        #input
-
-        register_event::<#name>();
     };
 
     TokenStream::from(expanded)
