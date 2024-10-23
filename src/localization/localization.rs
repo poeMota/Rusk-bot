@@ -1,13 +1,14 @@
 use crate::config::{read_file, CONFIG, DATA_PATH};
+use dashmap::DashMap;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_yaml;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use walkdir::WalkDir;
 
-pub static LOCALIZATION: Lazy<Arc<Mutex<Localization>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(Localization::new(
+pub static LOCALIZATION: Lazy<Arc<RwLock<Localization>>> = Lazy::new(|| {
+    Arc::new(RwLock::new(Localization::new(
         CONFIG.lock().unwrap().localization.clone(),
     )))
 });
@@ -21,7 +22,7 @@ pub struct LocalizationData {
 pub struct Localization {
     locale_path: String,
     culture: String,
-    locale_data: HashMap<String, String>,
+    locale_data: DashMap<String, String>,
 }
 
 impl Localization {
@@ -29,14 +30,14 @@ impl Localization {
         let mut loc = Localization {
             locale_path: data.locale_path,
             culture: data.culture,
-            locale_data: HashMap::new(),
+            locale_data: DashMap::new(),
         };
         loc.collect_locale();
         loc
     }
 
     fn collect_locale(&mut self) {
-        self.locale_data = HashMap::new();
+        self.locale_data = DashMap::new();
 
         for entry in WalkDir::new(DATA_PATH.join(&self.locale_path).join(&self.culture)) {
             let entry = match entry {
@@ -89,4 +90,10 @@ impl Localization {
         }
         text
     }
+}
+
+pub fn get_string(key: &str, replacements: Option<HashMap<&str, &str>>) -> String {
+    let loc = LOCALIZATION.read().unwrap();
+    let result = loc.get_string(key, replacements);
+    result
 }

@@ -1,6 +1,13 @@
-use std::collections::HashMap;
+use command_macro::command;
+use serenity::model::{
+    channel::{Attachment, PartialChannel},
+    guild::Role,
+    user::User,
+};
 
 use event_macro::*;
+use std::collections::HashMap;
+use task_bot::command_manager::*;
 use task_bot::config::*;
 use task_bot::events::*;
 use task_bot::localization::*;
@@ -14,16 +21,14 @@ fn read_config_test() {
 
 #[test]
 fn locale_test() {
-    let loc = LOCALIZATION.lock().unwrap();
-
-    assert_eq!(String::from("test"), loc.get_string("test", None));
+    assert_eq!(String::from("test"), get_string("test", None));
     assert_ne!(
         String::from("test-string-1"),
-        loc.get_string("test-string-1", None)
+        get_string("test-string-1", None)
     );
     assert_eq!(
         String::from("test output - test test"),
-        loc.get_string(
+        get_string(
             "test-string-2",
             Some(HashMap::from([("output", "test test")]))
         )
@@ -67,4 +72,29 @@ fn events_test() {
     .raise();
 
     Event2 { id: 9 }.raise();
+}
+
+#[test]
+fn macro_test() {
+    #[command([param1 = "sdfafs", sss = 123u64, testtest = test_str])]
+    fn save(
+        _num: i64,
+        _string: String,
+        _param3: User,
+        _param4: Role,
+        _param5: PartialChannel,
+        _param6: Attachment,
+    ) {
+    }
+
+    #[command([param2 = "jnsxnvksj", sss = 123])]
+    fn save_plus(
+        _num: Option<i64>,
+        _string: Option<String>,
+        _param3: Option<User>,
+        _param4: Option<Role>,
+        _param5: Option<PartialChannel>,
+        _param6: Option<Attachment>,
+    ) {
+    }
 }
