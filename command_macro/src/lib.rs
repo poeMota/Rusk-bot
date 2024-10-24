@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use proc_macro2;
 use quote::{quote, ToTokens};
 use syn::{
-    parse_macro_input, Expr, FnArg, GenericArgument, Ident, ItemFn, Lit, Pat, PatType,
+    parse_macro_input, Expr, ExprArray, FnArg, GenericArgument, Ident, ItemFn, Lit, Pat, PatType,
     PathArguments, Type,
 };
 
@@ -20,20 +20,199 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_locale = fn_name_string.replace("_", "-").to_lowercase() + "-command";
 
     let mut param_num: usize = 0;
+    let mut command_choices = quote! {};
     let mut command_converter = quote! {};
     let mut converter_params = Vec::new();
 
-    let mut params = HashMap::new();
+    let mut param_options = HashMap::new();
+    let mut param_choices = HashMap::new();
+    let mut param_values = HashMap::new();
 
     // Get name and value of macro attributes
     for elem in attrs.elems {
         match elem {
             Expr::Assign(assign) => {
                 if let Expr::Path(path) = *assign.left {
-                    let ident = path.to_token_stream().to_string();
+                    let ident_token = path.to_token_stream();
+                    let ident = ident_token.to_string();
+
                     match *assign.right {
-                        Expr::Lit(lit) => {
-                            params.insert(ident, lit);
+                        Expr::Array(ExprArray { elems, .. }) => {
+                            let mut options = quote! {};
+
+                            for e in elems.iter() {
+                                match e {
+                                    Expr::Assign(assign) => {
+                                        let key = assign.left.to_token_stream().to_string();
+                                        let value = assign.right.to_token_stream();
+
+                                        match key.as_str() {
+                                            "base_value" => {
+                                                param_values.insert(
+                                                    ident.clone(),
+                                                    match *assign.right {
+                                                        Expr::Lit(ref lit) => match &lit.lit {
+                                                            Lit::Int(int) => {
+                                                                let value = int
+                                                                    .base10_parse::<i64>()
+                                                                    .unwrap();
+                                                                quote! { Some(#value) }
+                                                            }
+                                                            Lit::Float(float) => {
+                                                                let value = float
+                                                                    .base10_parse::<f64>()
+                                                                    .unwrap();
+                                                                quote! { Some(#value) }
+                                                            }
+                                                            _ => {
+                                                                quote! { Some(#value.to_string()) }
+                                                            }
+                                                        },
+                                                        _ => panic!("base_value must be literal"),
+                                                    },
+                                                );
+                                            }
+                                            "min_int_value" => match *assign.right {
+                                                Expr::Lit(ref lit) => match &lit.lit {
+                                                    Lit::Int(int) => {
+                                                        let value =
+                                                            int.base10_parse::<u64>().unwrap();
+                                                        options = quote! {
+                                                            #options
+                                                            .min_int_value(#value)
+                                                        };
+                                                    }
+                                                    _ => panic!("min_int_value must be int"),
+                                                },
+                                                _ => panic!("Value for macro must be literal"),
+                                            },
+                                            "max_int_value" => match *assign.right {
+                                                Expr::Lit(ref lit) => match &lit.lit {
+                                                    Lit::Int(int) => {
+                                                        let value =
+                                                            int.base10_parse::<u64>().unwrap();
+                                                        options = quote! {
+                                                            #options
+                                                            .max_int_value(#value)
+                                                        };
+                                                    }
+                                                    _ => panic!("max_int_value must be int"),
+                                                },
+                                                _ => panic!("Value for macro must be literal"),
+                                            },
+                                            "min_number_value" => match *assign.right {
+                                                Expr::Lit(ref lit) => match &lit.lit {
+                                                    Lit::Float(int) => {
+                                                        let value =
+                                                            int.base10_parse::<f64>().unwrap();
+                                                        options = quote! {
+                                                            #options
+                                                            .min_number_value(#value)
+                                                        };
+                                                    }
+                                                    _ => panic!("min_number_value must be float"),
+                                                },
+                                                _ => panic!("Value for macro must be literal"),
+                                            },
+                                            "max_number_value" => match *assign.right {
+                                                Expr::Lit(ref lit) => match &lit.lit {
+                                                    Lit::Float(int) => {
+                                                        let value =
+                                                            int.base10_parse::<f64>().unwrap();
+                                                        options = quote! {
+                                                            #options
+                                                            .max_number_value(#value)
+                                                        };
+                                                    }
+                                                    _ => panic!("max_number_value must be int"),
+                                                },
+                                                _ => panic!("Value for macro must be literal"),
+                                            },
+                                            "min_length" => match *assign.right {
+                                                Expr::Lit(ref lit) => match &lit.lit {
+                                                    Lit::Int(int) => {
+                                                        let value =
+                                                            int.base10_parse::<u16>().unwrap();
+                                                        options = quote! {
+                                                            #options
+                                                            .min_length(#value)
+                                                        };
+                                                    }
+                                                    _ => panic!("min_length must be int"),
+                                                },
+                                                _ => panic!("Value for macro must be literal"),
+                                            },
+                                            "max_length" => match *assign.right {
+                                                Expr::Lit(ref lit) => match &lit.lit {
+                                                    Lit::Int(int) => {
+                                                        let value =
+                                                            int.base10_parse::<u16>().unwrap();
+                                                        options = quote! {
+                                                            #options
+                                                            .max_length(#value)
+                                                        };
+                                                    }
+                                                    _ => panic!("max_length must be int"),
+                                                },
+                                                _ => panic!("Value for macro must be literal"),
+                                            },
+                                            "choice" => {
+                                                let choice_locale = fn_locale.clone()
+                                                    + format!(
+                                                        "-param-{}-choice",
+                                                        ident.to_lowercase().replace("_", "-")
+                                                    )
+                                                    .as_str();
+                                                let choice_name = syn::Ident::new(
+                                                    format!("{}_choice", ident).as_str(),
+                                                    proc_macro2::Span::call_site(),
+                                                );
+
+                                                command_choices = quote! {
+                                                    #command_choices
+                                                    let #choice_name: Vec<String> =
+                                                        get_string(#choice_locale, None)
+                                                        .split("\n").map(|e| {
+                                                            get_string(e, None)
+                                                        }).collect();
+                                                };
+
+                                                match value.to_string().as_str() {
+                                                    "int" => {
+                                                        param_choices.insert(
+                                                            ident.clone(),
+                                                            (
+                                                                choice_name.clone(),
+                                                                quote! {
+                                                                add_int_choice(choice, #choice_name
+                                                                    .iter().position(|x| x == choice.as_str()).unwrap() as i32
+                                                                    )},
+                                                            ),
+                                                        );
+                                                    }
+                                                    "string" => {
+                                                        param_choices.insert(
+                                                            ident.clone(),
+                                                            (
+                                                                choice_name.clone(),
+                                                                quote! {
+                                                                add_string_choice(choice, choice
+                                                                    )},
+                                                            ),
+                                                        );
+                                                    }
+                                                    _ => {
+                                                        panic!("Unsupported choice type")
+                                                    }
+                                                }
+                                            }
+                                            _ => {}
+                                        };
+                                    }
+                                    _ => (),
+                                };
+                            }
+                            param_options.insert(ident.clone(), options);
                         }
                         _ => {}
                     }
@@ -81,7 +260,12 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                         param_num,
                                         match required {
                                             true => None,
-                                            false => Some(quote! {None}),
+                                            false => match param_values
+                                                .get(&param_name.to_token_stream().to_string())
+                                            {
+                                                Some(value) => Some(value.clone()),
+                                                None => Some(quote! {None}),
+                                            },
                                         },
                                     );
                                 } else {
@@ -117,11 +301,14 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
                         };
                         converter_params.push(param_name);
 
+                        let name = param_name.to_token_stream().to_string();
                         fn_params.push(option_token_stream(
                             param_type,
                             &fn_locale,
                             &param_locale,
                             required,
+                            param_choices.get(&name).cloned(),
+                            param_options.get(&name).cloned(),
                         ));
                     }
                     _ => {
@@ -136,8 +323,9 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
     let command_declaration = quote! {
         Box::new(|guild: serenity::model::id::GuildId, ctx: &serenity::client::Context| {
             Box::pin(async move {
-                guild.create_command(&ctx.http, serenity::builder::CreateCommand::new("")
-                        .name(get_string(format!("{}-name", #fn_locale).as_str(), None).as_str())
+                #command_choices
+                guild.create_command(&ctx.http, serenity::builder::CreateCommand::new(
+                        get_string(format!("{}-name", #fn_locale).as_str(), None).as_str())
                         .description(get_string(format!("{}-description", #fn_locale).as_str(), None).as_str())
                         #(#fn_params)*
                 )
@@ -178,18 +366,53 @@ fn option_token_stream(
     command_name: &String,
     option_name: &String,
     required: bool,
+    choice: Option<(proc_macro2::Ident, proc_macro2::TokenStream)>,
+    options: Option<proc_macro2::TokenStream>,
 ) -> proc_macro2::TokenStream {
     let type_ident = syn::Ident::new(&option, proc_macro2::Span::call_site());
+    let mut out;
 
-    quote! {
-        .add_option(serenity::builder::CreateCommandOption::new(
-            serenity::model::application::CommandOptionType::#type_ident,
-            get_string(format!("{}-param-{}-name", #command_name, #option_name).as_str(), None).as_str(),
-            get_string(format!("{}-param-{}-description", #command_name, #option_name).as_str(), None).as_str(),
-        )
-            .required(#required)
-        )
+    match choice {
+        Some((ident, ch)) => {
+            out = quote! {
+                #ident.iter().fold(serenity::builder::CreateCommandOption::new(
+                    serenity::model::application::CommandOptionType::#type_ident,
+                    get_string(format!("{}-param-{}-name", #command_name, #option_name).as_str(), None).as_str(),
+                    get_string(format!("{}-param-{}-description", #command_name, #option_name).as_str(), None).as_str(),
+                ), |acc, choice| acc.#ch)
+                    .required(#required)
+            }
+        }
+        None => {
+            out = quote! {
+                serenity::builder::CreateCommandOption::new(
+                    serenity::model::application::CommandOptionType::#type_ident,
+                    get_string(format!("{}-param-{}-name", #command_name, #option_name).as_str(), None).as_str(),
+                    get_string(format!("{}-param-{}-description", #command_name, #option_name).as_str(), None).as_str(),
+                )
+                    .required(#required)
+            }
+        }
     }
+
+    match options {
+        Some(option) => {
+            out = quote! {
+                .add_option(
+                    #out
+                    #option
+                )
+            }
+        }
+        None => {
+            out = quote! {
+                .add_option(
+                    #out
+                )
+            }
+        }
+    }
+    out
 }
 
 fn get_option_converter(
@@ -226,12 +449,15 @@ fn get_option_converter(
                 c = quote! {
                     let #option_name = match #option_name {
                         Some(value) => {
-                            command
+                            match command
                                 .data
                                 .resolved
                                 .#suffix_indent
                                 .get(&value)
-                                .cloned()
+                                .cloned() {
+                                    Some(v) => Some(v),
+                                    None => #base_value,
+                                }
                         },
                         None => None,
                     };

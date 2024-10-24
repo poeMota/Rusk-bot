@@ -76,9 +76,10 @@ fn events_test() {
 
 #[test]
 fn macro_test() {
-    #[command([param1 = "sdfafs", sss = 123u64, testtest = test_str])]
+    #[command([])]
     fn save(
         _num: i64,
+        _float: f64,
         _string: String,
         _param3: User,
         _param4: Role,
@@ -87,9 +88,74 @@ fn macro_test() {
     ) {
     }
 
-    #[command([param2 = "jnsxnvksj", sss = 123])]
+    #[command([])]
     fn save_plus(
         _num: Option<i64>,
+        _float: Option<f64>,
+        _string: Option<String>,
+        _param3: Option<User>,
+        _param4: Option<Role>,
+        _param5: Option<PartialChannel>,
+        _param6: Option<Attachment>,
+    ) {
+    }
+
+    #[command([
+        _num = [
+            choice = int,
+            min_int_value = 10,
+            max_int_value = 100
+        ],
+        _float = [
+            choice = int,
+            min_number_value = 1.0,
+            max_number_value = 10.0
+        ],
+        _string = [
+            choice = int,
+            min_length = 5,
+            max_length = 50
+        ],
+        _param3 = [choice = int],
+        _param4 = [choice = int],
+        _param5 = [choice = int],
+        _param6 = [choice = int],
+    ])]
+    fn save_save(
+        _num: i64,
+        _float: f64,
+        _string: String,
+        _param3: User,
+        _param4: Role,
+        _param5: PartialChannel,
+        _param6: Attachment,
+    ) {
+    }
+
+    #[command([
+        _num = [
+            base_value = 15,
+            min_int_value = 10,
+            max_int_value = 100
+        ],
+        _float = [
+            base_value = 1.5,
+            min_number_value = 1.0,
+            max_number_value = 10.0
+        ],
+        _string = [
+            base_value = "test",
+            min_length = 5,
+            max_length = 50
+        ],
+        _param3 = [choice = int],
+        _param4 = [choice = int],
+        _param5 = [choice = int],
+        _param6 = [choice = int],
+    ])]
+    fn _command(
+        _num: Option<i64>,
+        _float: Option<f64>,
         _string: Option<String>,
         _param3: Option<User>,
         _param4: Option<Role>,
