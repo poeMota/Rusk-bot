@@ -5,6 +5,7 @@ use std::env::current_dir;
 use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::{collections::HashMap, path::PathBuf};
 
@@ -59,4 +60,9 @@ pub fn read_file(path: &PathBuf) -> String {
         },
     };
     content
+}
+
+pub fn write_file(path: &PathBuf, content: String) {
+    let mut file = File::create(path).expect("Cannot create or read file");
+    write!(file, "{}", content).expect("Cannot write in file");
 }

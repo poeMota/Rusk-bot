@@ -4,6 +4,8 @@ use serenity::model::{
     guild::Role,
     user::User,
 };
+use std::fs;
+use tokio;
 
 use event_macro::*;
 use std::collections::HashMap;
@@ -11,6 +13,7 @@ use task_bot::command_manager::*;
 use task_bot::config::*;
 use task_bot::events::*;
 use task_bot::localization::*;
+use task_bot::shop::*;
 
 #[test]
 fn read_config_test() {
@@ -163,4 +166,38 @@ fn macro_test() {
         _param6: Option<Attachment>,
     ) {
     }
+}
+
+#[tokio::test]
+async fn shop_test() {
+    write_file(
+        &DATA_PATH.join("shop/test_shop.yml"),
+        r#"
+        - type: page
+          name: test page name.
+          description: test page desc.
+          price: 2
+          onBuy:
+            - type: sendMessage
+              message: test test
+
+        - type: replacement
+          name: Test Str
+          value: test 1 2 3
+
+        - type: replacement
+          name: Test Num
+          value: 123
+
+        - type: replacement
+          name: Test Float
+          value: 1.23
+        "#
+        .to_string(),
+    );
+
+    let shop_man = SHOPMANAGER.read().await;
+    println!("{:#?}", shop_man);
+
+    fs::remove_file(DATA_PATH.join("shop/test_shop.yml")).expect("Cannot delete test shop file");
 }
