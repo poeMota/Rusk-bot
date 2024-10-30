@@ -24,6 +24,16 @@ fn read_config_test() {
 
 #[test]
 fn locale_test() {
+    write_file(
+        &DATA_PATH.join("locale/RU_ru/test.yml"),
+        r#"
+        test-string-1: test string output
+        test-string-2: test output - {output}
+        page-test-locale: locale test
+        "#
+        .to_string(),
+    );
+
     assert_eq!(String::from("test"), get_string("test", None));
     assert_ne!(
         String::from("test-string-1"),
@@ -36,6 +46,9 @@ fn locale_test() {
             Some(HashMap::from([("output", "test test")]))
         )
     );
+
+    fs::remove_file(DATA_PATH.join("locale/RU_ru/test.yml"))
+        .expect("Cannot delete test locale file");
 }
 
 #[test]
@@ -174,19 +187,28 @@ async fn shop_test() {
         &DATA_PATH.join("shop/test_shop.yml"),
         r#"
         - type: page
-          name: test page name.
+          name: page-test-locale
           description: test page desc.
           price: 2
           onBuy:
             - type: sendMessage
-              message: test test
+              message: <test str> test test
+            - type: giveRoles
+              roles: ["1", "2", "3"]
+              member: <test num>
+            - type: removeRoles
+              roles: ["1", "2", "3"]
+              member: <test num>
+            - type: mute
+              member: <test num>
+              duration: 60
 
         - type: replacement
-          name: Test Str
+          name: test str
           value: test 1 2 3
 
         - type: replacement
-          name: Test Num
+          name: test num
           value: 123
 
         - type: replacement

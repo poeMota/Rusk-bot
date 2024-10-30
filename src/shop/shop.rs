@@ -1,4 +1,5 @@
 use crate::config::{read_file, DATA_PATH};
+use crate::localization::get_string;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::{
@@ -75,17 +76,28 @@ impl ShopManager {
             for cont in content.iter() {
                 match cont {
                     ReplacementOrPage::Replacement(repl) => {
-                        self.replacements
-                            .insert(repl.name.clone(), repl.value.clone());
+                        self.replacements.insert(
+                            repl.name.clone(),
+                            match repl.value {
+                                Replacement::Str(ref string) => {
+                                    Replacement::Str(get_string(string.as_str(), None))
+                                }
+                                _ => repl.value.clone(),
+                            },
+                        );
                     }
-                    ReplacementOrPage::Page(page) => self.pages.push(page.clone()),
+                    ReplacementOrPage::Page(page) => {
+                        let mut page_clone = page.clone();
+                        page_clone.convert();
+                        self.pages.push(page_clone)
+                    }
                 }
             }
         }
     }
 
     fn convert_string(&self, string: String) -> Replacement {
-        let mut out = Replacement::Str(string.clone());
+        let mut out = Replacement::Str(get_string(string.as_str(), None));
 
         for (replacement, value) in self.replacements.iter() {
             if string.contains(replacement) {
@@ -135,6 +147,11 @@ pub struct Page {
 }
 
 impl Page {
+    fn convert(&mut self) {
+        self.name = get_string(self.name.as_str(), None);
+        self.description = get_string(self.description.as_str(), None);
+    }
+
     async fn buy(&self, ctx: Context, inter: ComponentInteraction) {
         for action in self.on_buy.iter() {
             match action {
