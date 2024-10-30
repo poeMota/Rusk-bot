@@ -13,6 +13,7 @@ use task_bot::command_manager::*;
 use task_bot::config::*;
 use task_bot::events::*;
 use task_bot::localization::*;
+use task_bot::logger::*;
 use task_bot::shop::*;
 
 #[test]
@@ -222,4 +223,10 @@ async fn shop_test() {
     println!("{:#?}", shop_man);
 
     fs::remove_file(DATA_PATH.join("shop/test_shop.yml")).expect("Cannot delete test shop file");
+}
+
+#[test]
+fn logger_test() {
+    Logger::file_logging("test log");
+    Logger::file_logging("test log 2");
 }

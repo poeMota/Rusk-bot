@@ -1,4 +1,5 @@
 use crate::localization::LocalizationData;
+use crate::logger::LoggingConfig;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::env::current_dir;
@@ -32,7 +33,7 @@ pub struct Config {
     #[serde(rename = "Commands")]
     pub commands: HashMap<String, bool>,
     #[serde(rename = "Logging")]
-    pub logging: HashMap<String, bool>,
+    pub logging: LoggingConfig,
 }
 
 impl Config {
@@ -45,6 +46,11 @@ impl Config {
 }
 
 pub fn read_file(path: &PathBuf) -> String {
+    if let Some(parent_dir) = path.parent() {
+        fs::create_dir_all(parent_dir)
+            .expect("Error while creating parent dirs while writing file");
+    }
+
     let content = match fs::read_to_string(path) {
         Ok(s) => s,
         Err(error) => match error.kind() {
@@ -63,6 +69,11 @@ pub fn read_file(path: &PathBuf) -> String {
 }
 
 pub fn write_file(path: &PathBuf, content: String) {
+    if let Some(parent_dir) = path.parent() {
+        fs::create_dir_all(parent_dir)
+            .expect("Error while creating parent dirs while writing file");
+    }
+
     let mut file = File::create(path).expect("Cannot create or read file");
     write!(file, "{}", content).expect("Cannot write in file");
 }
