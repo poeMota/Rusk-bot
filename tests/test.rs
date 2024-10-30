@@ -9,12 +9,9 @@ use tokio;
 
 use event_macro::*;
 use std::collections::HashMap;
-use task_bot::command_manager::*;
-use task_bot::config::*;
-use task_bot::events::*;
-use task_bot::localization::*;
-use task_bot::logger::*;
-use task_bot::shop::*;
+use task_bot::{
+    command_manager::*, config::*, connect::*, events::*, localization::*, logger::*, shop::*,
+};
 
 #[test]
 fn read_config_test() {
@@ -229,4 +226,17 @@ async fn shop_test() {
 fn logger_test() {
     Logger::file_logging("test log");
     Logger::file_logging("test log 2");
+}
+
+#[tokio::test]
+async fn connect_test() {
+    println!("{:#?}", file_dates("/".to_string()).await.unwrap());
+    assert_eq!(
+        get_user_id("dfhshfehwifhewhj2h1h2jbfnewbjehfjdhskjkhejhfdkjsh".to_string()).await,
+        "Not Found".to_string()
+    );
+    assert_ne!(
+        get_user_id("M0ta".to_string()).await,
+        "Not Found".to_string()
+    )
 }

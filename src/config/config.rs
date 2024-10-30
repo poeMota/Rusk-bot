@@ -1,5 +1,6 @@
 use crate::localization::LocalizationData;
 use crate::logger::LoggingConfig;
+use dotenv;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::env::current_dir;
@@ -15,8 +16,10 @@ pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
     current_dir.join("data/")
 });
 
-pub static CONFIG: Lazy<Arc<Mutex<Config>>> =
-    Lazy::new(|| Arc::new(Mutex::new(Config::new("config.toml"))));
+pub static CONFIG: Lazy<Arc<Mutex<Config>>> = Lazy::new(|| {
+    dotenv::from_path(DATA_PATH.join(".env")).expect("Cannot load .env");
+    Arc::new(Mutex::new(Config::new("config.toml")))
+});
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
