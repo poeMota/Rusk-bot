@@ -1,17 +1,21 @@
 use command_macro::command;
-use serenity::model::{
-    channel::{Attachment, PartialChannel},
-    guild::Role,
-    user::User,
-};
-use std::fs;
-use tokio;
-
 use event_macro::*;
+use serenity::{
+    client::Context,
+    model::{
+        channel::{Attachment, PartialChannel},
+        guild::Role,
+        id::GuildId,
+        user::User,
+    },
+};
 use std::collections::HashMap;
+use std::fs;
+use std::sync::Arc;
 use task_bot::{
     command_manager::*, config::*, connect::*, events::*, localization::*, logger::*, shop::*,
 };
+use tokio;
 
 #[test]
 fn read_config_test() {
@@ -88,94 +92,97 @@ fn events_test() {
     Event2 { id: 9 }.raise();
 }
 
-#[test]
-fn macro_test() {
-    #[command([])]
-    fn save(
-        _num: i64,
-        _float: f64,
-        _string: String,
-        _param3: User,
-        _param4: Role,
-        _param5: PartialChannel,
-        _param6: Attachment,
-    ) {
-    }
+#[allow(unused_must_use)]
+#[tokio::test]
+async fn macro_test() {
+    async fn _test_apply_command(ctx: Context, guild: GuildId) {
+        #[command([])]
+        async fn save(
+            _num: i64,
+            _float: f64,
+            _string: String,
+            _param3: User,
+            _param4: Role,
+            _param5: PartialChannel,
+            _param6: Attachment,
+        ) {
+        }
 
-    #[command([])]
-    fn save_plus(
-        _num: Option<i64>,
-        _float: Option<f64>,
-        _string: Option<String>,
-        _param3: Option<User>,
-        _param4: Option<Role>,
-        _param5: Option<PartialChannel>,
-        _param6: Option<Attachment>,
-    ) {
-    }
+        #[command([])]
+        async fn save_plus(
+            _num: Option<i64>,
+            _float: Option<f64>,
+            _string: Option<String>,
+            _param3: Option<User>,
+            _param4: Option<Role>,
+            _param5: Option<PartialChannel>,
+            _param6: Option<Attachment>,
+        ) {
+        }
 
-    #[command([
-        _num = [
-            choice = int,
-            min_int_value = 10,
-            max_int_value = 100
-        ],
-        _float = [
-            choice = int,
-            min_number_value = 1.0,
-            max_number_value = 10.0
-        ],
-        _string = [
-            choice = int,
-            min_length = 5,
-            max_length = 50
-        ],
-        _param3 = [choice = int],
-        _param4 = [choice = int],
-        _param5 = [choice = int],
-        _param6 = [choice = int],
-    ])]
-    fn save_save(
-        _num: i64,
-        _float: f64,
-        _string: String,
-        _param3: User,
-        _param4: Role,
-        _param5: PartialChannel,
-        _param6: Attachment,
-    ) {
-    }
+        #[command([
+            _num = [
+                choice = int,
+                min_int_value = 10,
+                max_int_value = 100
+            ],
+            _float = [
+                choice = int,
+                min_number_value = 1.0,
+                max_number_value = 10.0
+            ],
+            _string = [
+                choice = int,
+                min_length = 5,
+                max_length = 50
+            ],
+            _param3 = [choice = int],
+            _param4 = [choice = int],
+            _param5 = [choice = int],
+            _param6 = [choice = int],
+        ])]
+        async fn save_save(
+            _num: i64,
+            _float: f64,
+            _string: String,
+            _param3: User,
+            _param4: Role,
+            _param5: PartialChannel,
+            _param6: Attachment,
+        ) {
+        }
 
-    #[command([
-        _num = [
-            base_value = 15,
-            min_int_value = 10,
-            max_int_value = 100
-        ],
-        _float = [
-            base_value = 1.5,
-            min_number_value = 1.0,
-            max_number_value = 10.0
-        ],
-        _string = [
-            base_value = "test",
-            min_length = 5,
-            max_length = 50
-        ],
-        _param3 = [choice = int],
-        _param4 = [choice = int],
-        _param5 = [choice = int],
-        _param6 = [choice = int],
-    ])]
-    fn _command(
-        _num: Option<i64>,
-        _float: Option<f64>,
-        _string: Option<String>,
-        _param3: Option<User>,
-        _param4: Option<Role>,
-        _param5: Option<PartialChannel>,
-        _param6: Option<Attachment>,
-    ) {
+        #[command([
+            _num = [
+                base_value = 15,
+                min_int_value = 10,
+                max_int_value = 100
+            ],
+            _float = [
+                base_value = 1.5,
+                min_number_value = 1.0,
+                max_number_value = 10.0
+            ],
+            _string = [
+                base_value = "test",
+                min_length = 5,
+                max_length = 50
+            ],
+            _param3 = [choice = int],
+            _param4 = [choice = int],
+            _param5 = [choice = int],
+            _param6 = [choice = int],
+        ])]
+        async fn _command(
+            _num: Option<i64>,
+            _float: Option<f64>,
+            _string: Option<String>,
+            _param3: Option<User>,
+            _param4: Option<Role>,
+            _param5: Option<PartialChannel>,
+            _param6: Option<Attachment>,
+        ) {
+        }
     }
 }
 

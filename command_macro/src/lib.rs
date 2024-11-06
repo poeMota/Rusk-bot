@@ -258,23 +258,19 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate the command declaration
     let command_declaration = quote! {
-        Box::new(|guild: serenity::model::id::GuildId, ctx: &serenity::client::Context| {
-            Box::pin(async move {
-                #command_choices_code
-                guild.create_command(&ctx.http, serenity::builder::CreateCommand::new(
-                        get_string(format!("{}-name", #command_locale_key).as_str(), None).as_str())
-                        .description(get_string(format!("{}-description", #command_locale_key).as_str(), None).as_str())
-                        #(#command_parameters)*
-                )
-                .await
-                    .expect(format!("Failed to create command {}", #command_locale_key).as_str());
-            })
-        })
+        #command_choices_code
+        guild.create_command(&ctx.http, serenity::builder::CreateCommand::new(
+                get_string(format!("{}-name", #command_locale_key).as_str(), None).as_str())
+                .description(get_string(format!("{}-description", #command_locale_key).as_str(), None).as_str())
+                #(#command_parameters)*
+        )
+        .await
+            .expect(format!("Failed to create command {}", #command_locale_key).as_str());
     };
 
     // Generate the function call with converted parameters
     let function_call_code = quote! {
-        Box::new(|command: serenity::model::application::CommandInteraction, ctx: serenity::client::Context| {
+        Box::new(|command: serenity::model::application::CommandInteraction, ctx: Arc<serenity::client::Context>| {
             Box::pin(async move {
                 #parameter_conversion_code
                 #function_name(#(#parameter_names),*);
@@ -290,10 +286,11 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
         };
 
         if command_enabled {
-            let mut command_manager = COMMANDMANAGER.try_lock().expect("Failed to lock COMMANDMANAGER");
+            #command_declaration
+
+            let mut command_manager = COMMANDMANAGER.write().await;
             command_manager.add_command(
                 get_string(format!("{}-name", #command_locale_key).as_str(), None).as_str(),
-                #command_declaration,
                 #function_call_code
             );
 
