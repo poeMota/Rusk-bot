@@ -13,10 +13,7 @@ pub enum ConnectionError {
 }
 
 pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
-    let _config = match CONFIG.lock() {
-        Ok(cfg) => cfg,
-        Err(e) => return Err(ConnectionError::UnexpetedOtherError(e.to_string())),
-    };
+    let _config = CONFIG.lock().await;
 
     if url.contains("..") {
         return Err(ConnectionError::NotAllowedUrl(
@@ -77,7 +74,7 @@ pub async fn unload_to_file(url: String) -> Result<PathBuf, ConnectionError> {
 }
 
 pub async fn get_user_id(name: String) -> String {
-    let config = CONFIG.lock().unwrap();
+    let config = CONFIG.lock().await;
     let not_found = "Not Found".to_string();
 
     let url = format!("{}name={}", config.userid_api_url, name);

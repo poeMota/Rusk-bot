@@ -17,9 +17,9 @@ use task_bot::{
 };
 use tokio;
 
-#[test]
-fn read_config_test() {
-    let config = CONFIG.lock().unwrap();
+#[tokio::test]
+async fn read_config_test() {
+    let config = CONFIG.lock().await;
 
     println!("{:#?}", config);
 }

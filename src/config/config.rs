@@ -8,8 +8,9 @@ use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
+use tokio::sync::Mutex;
 
 pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let current_dir = current_dir().expect("Cannot find data folder");

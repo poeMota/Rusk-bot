@@ -280,7 +280,7 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Output the final macro result
     let output_code = quote! {
-        let command_enabled = match CONFIG.lock().unwrap().commands.get(#function_name_str) {
+        let command_enabled = match CONFIG.lock().await.commands.get(#function_name_str) {
             Some(is_enabled) => *is_enabled,
             None => true,
         };
