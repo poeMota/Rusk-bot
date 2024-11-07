@@ -13,7 +13,7 @@ use serenity::{
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::{runtime::Runtime, sync::Mutex};
+use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize, Hash, PartialEq, Eq, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -32,10 +32,14 @@ pub struct LoggingConfig {
 }
 
 static LOGGER: Lazy<Arc<Mutex<Logger>>> = Lazy::new(|| {
-    let config = Runtime::new()
-        .unwrap()
-        .block_on(async { CONFIG.lock().await });
-    Arc::new(Mutex::new(Logger::new(None, config.logging.clone())))
+    Arc::new(Mutex::new(Logger::new(
+        None,
+        CONFIG
+            .try_read()
+            .expect("Cannot lock CONFIG for LOGGER")
+            .logging
+            .clone(),
+    )))
 });
 
 pub struct Logger {
@@ -132,27 +136,29 @@ impl Logger {
     }
 
     pub async fn low(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.lock().await;
+        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for low log");
         log.log(&ctx, LoggingLevels::Low, author, content).await;
     }
 
     pub async fn medium(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.lock().await;
+        let log = LOGGER
+            .try_lock()
+            .expect("Cannot lock LOGGER for medium log");
         log.log(&ctx, LoggingLevels::Medium, author, content).await;
     }
 
     pub async fn high(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.lock().await;
+        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for high log");
         log.log(&ctx, LoggingLevels::High, author, content).await;
     }
 
     pub async fn debug(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.lock().await;
+        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for debug log");
         log.log(&ctx, LoggingLevels::Debug, author, content).await;
     }
 
     pub async fn error(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.lock().await;
+        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for error log");
         log.log(&ctx, LoggingLevels::Error, author, content).await;
     }
 }

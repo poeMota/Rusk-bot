@@ -5,14 +5,11 @@ use serde::Deserialize;
 use serde_yaml;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use tokio::runtime::Runtime;
 use walkdir::WalkDir;
 
 pub static LOCALIZATION: Lazy<Arc<RwLock<Localization>>> = Lazy::new(|| {
     Arc::new(RwLock::new(Localization::new(
-        Runtime::new()
-            .unwrap()
-            .block_on(async { CONFIG.lock().await.localization.clone() }),
+        CONFIG.try_read().unwrap().localization.clone(),
     )))
 });
 

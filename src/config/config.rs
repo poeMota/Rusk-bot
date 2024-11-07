@@ -10,17 +10,21 @@ use std::io::ErrorKind;
 use std::io::Write;
 use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let current_dir = current_dir().expect("Cannot find data folder");
     current_dir.join("data/")
 });
 
-pub static CONFIG: Lazy<Arc<Mutex<Config>>> = Lazy::new(|| {
-    dotenv::from_path(DATA_PATH.join(".env")).expect("Cannot load .env");
-    Arc::new(Mutex::new(Config::new("config.toml")))
+pub static CONFIG: Lazy<Arc<RwLock<Config>>> = Lazy::new(|| {
+    load_env();
+    Arc::new(RwLock::new(Config::new("config.toml")))
 });
+
+pub fn load_env() {
+    dotenv::from_path(DATA_PATH.join(".env")).expect("Cannot load .env");
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Config {

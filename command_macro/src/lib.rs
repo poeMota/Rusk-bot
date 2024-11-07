@@ -101,6 +101,34 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                                     }
                                                 }
                                             }
+                                            "min_length" => {
+                                                if let Expr::Lit(ref lit) = *assign.right {
+                                                    if let Lit::Int(int_val) = &lit.lit {
+                                                        let min_value =
+                                                            int_val.base10_parse::<u16>().unwrap();
+                                                        param_options_code = quote! {
+                                                            #param_options_code
+                                                            .min_length(#min_value)
+                                                        };
+                                                    } else {
+                                                        panic!("min_length must be an integer");
+                                                    }
+                                                }
+                                            }
+                                            "max_length" => {
+                                                if let Expr::Lit(ref lit) = *assign.right {
+                                                    if let Lit::Int(int_val) = &lit.lit {
+                                                        let min_value =
+                                                            int_val.base10_parse::<u16>().unwrap();
+                                                        param_options_code = quote! {
+                                                            #param_options_code
+                                                            .max_length(#min_value)
+                                                        };
+                                                    } else {
+                                                        panic!("max_length must be an integer");
+                                                    }
+                                                }
+                                            }
                                             "choice" => {
                                                 let choice_locale_key = format!(
                                                     "{}-param-{}-choice",
@@ -262,7 +290,7 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
     let command_declaration = quote! {
         #command_choices_code
         guild.create_command(&ctx.http, serenity::builder::CreateCommand::new(
-                get_string(format!("{}-name", #command_locale_key).as_str(), None).as_str())
+                get_string(format!("{}-name", #command_locale_key).as_str(), None).chars().take(32).collect::<String>().as_str())
                 .description(get_string(format!("{}-description", #command_locale_key).as_str(), None).as_str())
                 #(#command_parameters)*
         )
@@ -285,7 +313,7 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Output the final macro result
     let output_code = quote! {
-        let command_enabled = match CONFIG.lock().await.commands.get(#function_name_str) {
+        let command_enabled = match CONFIG.read().await.commands.get(#function_name_str) {
             Some(is_enabled) => *is_enabled,
             None => true,
         };
@@ -296,7 +324,7 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             let mut command_manager = COMMANDMANAGER.write().await;
             command_manager.add_command(
-                get_string(format!("{}-name", #command_locale_key).as_str(), None).as_str(),
+                get_string(format!("{}-name", #command_locale_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
                 #function_call_code
             );
 
@@ -329,7 +357,7 @@ fn generate_option_token_stream(
             token_stream = quote! {
                 #choice_ident.iter().fold(serenity::builder::CreateCommandOption::new(
                     serenity::model::application::CommandOptionType::#option_type_ident,
-                    get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).as_str(),
+                    get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
                     get_string(format!("{}-param-{}-description", #command_key, #option_key).as_str(), None).as_str(),
                 ), |acc, choice| acc.#choice_builder)
                     .required(#is_required)
@@ -340,7 +368,7 @@ fn generate_option_token_stream(
             token_stream = quote! {
                 serenity::builder::CreateCommandOption::new(
                     serenity::model::application::CommandOptionType::#option_type_ident,
-                    get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).as_str(),
+                    get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
                     get_string(format!("{}-param-{}-description", #command_key, #option_key).as_str(), None).as_str(),
                 )
                     .required(#is_required)
