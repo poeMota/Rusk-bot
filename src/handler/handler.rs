@@ -13,12 +13,12 @@ pub struct Handler;
 impl EventHandler for Handler {
     #[allow(unused_variables)]
     async fn ready(&self, ctx: Context, data_about_bot: Ready) {
-        let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
-        clear_guild_commands(&ctx.http, &guild_id).await;
-
         if let Some(num) = CONFIG.try_read().unwrap().log {
             Logger::set_log_channel(&ctx, num).await;
         }
+
+        let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
+        clear_guild_commands(&ctx.http, &guild_id).await;
 
         fun_commands(ctx.clone(), guild_id).await;
 
@@ -36,17 +36,31 @@ impl EventHandler for Handler {
 }
 
 async fn clear_guild_commands(http: &Http, guild_id: &GuildId) {
-    if let Ok(commands) = http.get_guild_commands(guild_id.clone()).await {
-        for command in commands {
-            if let Err(why) = http
-                .delete_guild_command(guild_id.clone(), command.id)
+    match http.get_guild_commands(guild_id.clone()).await {
+        Ok(commands) => {
+            for command in commands {
+                if Logger::if_ok(
+                    "handler.clear_guild_commands",
+                    &format!("error while clear guild command {}", command.name),
+                    http.delete_guild_command(guild_id.clone(), command.id)
+                        .await,
+                )
                 .await
-            {
-                println!(
-                    "Error while clear guild command {}: {:?}",
-                    command.name, why
-                );
+                {
+                    Logger::debug(
+                        "handler.clear_guild_commands",
+                        &format!("deleted interaction command: {}", command.name),
+                    )
+                    .await;
+                }
             }
+        }
+        Err(e) => {
+            Logger::error(
+                "handler.clear_guild_commands",
+                &format!("error while getting guild commands: {}", e.to_string()),
+            )
+            .await;
         }
     }
 }

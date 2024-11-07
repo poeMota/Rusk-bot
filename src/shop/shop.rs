@@ -1,5 +1,8 @@
-use crate::config::{read_file, DATA_PATH};
 use crate::localization::get_string;
+use crate::{
+    config::{read_file, DATA_PATH},
+    logger::Logger,
+};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::{
@@ -157,24 +160,60 @@ impl Page {
             match action {
                 ShopActions::GiveRoles(give_roles) => {
                     match give_roles.call(ctx.clone(), inter.clone()).await {
-                        Err(e) => println!("{}", e),
+                        Err(e) => {
+                            Logger::error(
+                                "shop.page.buy",
+                                &format!(
+                                    "error while call giveRoles shop action in page \"{}\": {}",
+                                    &self.name, e
+                                ),
+                            )
+                            .await
+                        }
                         _ => (),
                     }
                 }
                 ShopActions::RemoveRoles(remove_roles) => {
                     match remove_roles.call(ctx.clone(), inter.clone()).await {
-                        Err(e) => println!("{}", e),
+                        Err(e) => {
+                            Logger::error(
+                                "shop.page.buy",
+                                &format!(
+                                    "error while call removeRoles shop action in page \"{}\": {}",
+                                    &self.name, e
+                                ),
+                            )
+                            .await
+                        }
                         _ => (),
                     }
                 }
                 ShopActions::SendMessage(send_message) => {
                     match send_message.call(ctx.clone(), inter.clone()).await {
-                        Err(e) => println!("{}", e),
+                        Err(e) => {
+                            Logger::error(
+                                "shop.page.buy",
+                                &format!(
+                                    "error while call sendMessage shop action in page \"{}\": {}",
+                                    &self.name, e
+                                ),
+                            )
+                            .await
+                        }
                         _ => (),
                     }
                 }
                 ShopActions::Mute(mute) => match mute.call(ctx.clone(), inter.clone()).await {
-                    Err(e) => println!("{}", e),
+                    Err(e) => {
+                        Logger::error(
+                            "shop.page.buy",
+                            &format!(
+                                "error while call mute shop action in page \"{}\": {}",
+                                &self.name, e
+                            ),
+                        )
+                        .await
+                    }
                     _ => (),
                 },
             }
@@ -205,13 +244,21 @@ struct GiveRoles {
 impl Action for GiveRoles {
     async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
         if let Some(guild) = inter.guild_id {
-            let guild = guild.to_guild_cached(&ctx.cache).unwrap();
+            let guild = guild
+                .to_guild_cached(&ctx.cache)
+                .expect("cannot get cached guild from GuildId");
 
             match get_member(&inter, &ctx, &self.member).await {
                 Ok(member) => {
                     for role_name in self.roles.iter() {
                         if let Some(role) = guild.role_by_name(role_name) {
-                            member.add_role(&ctx.http, role.id).await.unwrap();
+                            if let Err(e) = member.add_role(&ctx.http, role.id).await {
+                                return Err(format!(
+                                    "cannot give role {} because - {}",
+                                    role_name,
+                                    e.to_string()
+                                ));
+                            }
                         }
                     }
                     Ok(())
@@ -219,7 +266,7 @@ impl Action for GiveRoles {
                 Err(e) => Err(e),
             }
         } else {
-            Err("Cannot get guild from shop interaction, wtf".to_string())
+            Err("cannot get guild from shop interaction, wtf".to_string())
         }
     }
 }
@@ -233,7 +280,9 @@ struct RemoveRoles {
 impl Action for RemoveRoles {
     async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
         if let Some(guild) = inter.guild_id {
-            let guild = guild.to_guild_cached(&ctx.cache).unwrap();
+            let guild = guild
+                .to_guild_cached(&ctx.cache)
+                .expect("cannot get cached guild from GuildId");
 
             match get_member(&inter, &ctx, &self.member).await {
                 Ok(member) => {
@@ -247,7 +296,7 @@ impl Action for RemoveRoles {
                 Err(e) => Err(e),
             }
         } else {
-            Err("Cannot get guild from shop interaction, wtf".to_string())
+            Err("cannot get guild from shop interaction, wtf".to_string())
         }
     }
 }
@@ -268,7 +317,7 @@ impl Action for SendMessage {
                     .await
                 {
                     Ok(_) => Ok(()),
-                    Err(_) => Err("Cannot send message in SendMessage action".to_string()),
+                    Err(_) => Err("cannot send message in SendMessage action".to_string()),
                 }
             }
             Err(e) => Err(e),
@@ -293,14 +342,14 @@ impl Action for Mute {
                 {
                     Ok(_) => Ok(()),
                     Err(e) => Err(format!(
-                        "Error while disabling member communication in mute action: {}",
+                        "error while disabling member communication in mute action: {}",
                         e.to_string()
                     )
                     .to_string()),
                 },
                 Err(e) => Err(e),
             },
-            Err(_) => Err("Invalid duration given in mute action".to_string()),
+            Err(_) => Err("invalid duration given in mute action".to_string()),
         }
     }
 }
@@ -325,7 +374,9 @@ async fn get_member(
     content: &StringOrNum,
 ) -> Result<Member, String> {
     if let Some(guild) = inter.guild_id {
-        let guild = guild.to_guild_cached(&ctx.cache).unwrap();
+        let guild = guild
+            .to_guild_cached(&ctx.cache)
+            .expect("cannot get cached guild from GuildId");
 
         match content {
             StringOrNum::Str(string) => {
@@ -338,7 +389,7 @@ async fn get_member(
                         }
                     }
                     Replacement::Member(member) => Ok(member),
-                    _ => Err("Member field in Mute action must be number or member".to_string()),
+                    _ => Err("member field in Mute action must be number or member".to_string()),
                 }
             }
             StringOrNum::Num(num) => match guild.member(&ctx.http, UserId::new(*num)).await {
@@ -347,12 +398,12 @@ async fn get_member(
             },
             StringOrNum::Nothing => {
                 panic!(
-                    "Member object can only be retrieved by number (id) or Member replacement tag"
+                    "member object can only be retrieved by number (id) or Member replacement tag"
                 )
             }
         }
     } else {
-        Err("Cannot get guild from shop interaction, wtf".to_string())
+        Err("cannot get guild from shop interaction, wtf".to_string())
     }
 }
 
@@ -362,7 +413,9 @@ async fn get_channel(
     content: &StringOrNum,
 ) -> Result<GuildChannel, String> {
     if let Some(guild) = inter.guild_id {
-        let guild = guild.to_guild_cached(&ctx.cache).unwrap();
+        let guild = guild
+            .to_guild_cached(&ctx.cache)
+            .expect("cannot get cached guild from GuildId");
 
         match content {
             StringOrNum::Num(num) => {
@@ -373,7 +426,7 @@ async fn get_channel(
                     .get(&ChannelId::new(*num))
                 {
                     Some(channel) => Ok(channel.clone()),
-                    None => Err(format!("Channel with {} id not found", num)),
+                    None => Err(format!("channel with {} id not found", num)),
                 }
             }
             StringOrNum::Str(string) => {
@@ -388,14 +441,14 @@ async fn get_channel(
                         {
                             Some(channel) => Ok(channel.clone()),
                             None => Err(format!(
-                                "Channel with {} id not found (id taken from replacement)",
+                                "channel with {} id not found (id taken from replacement)",
                                 num
                             )),
                         }
                     }
                     Replacement::Channel(channel) => Ok(channel),
                     _ => {
-                        Err("Uncompatible replacement type for channel in page pototype"
+                        Err("uncompatible replacement type for channel in page pototype"
                             .to_string())
                     }
                 }
@@ -403,12 +456,12 @@ async fn get_channel(
             StringOrNum::Nothing => match guild.channels(&ctx.http).await {
                 Ok(channels) => match channels.get(&inter.channel_id) {
                     Some(channel) => Ok(channel.clone()),
-                    None => Err("Cannot found channel from interaction".to_string()),
+                    None => Err("cannot found channel from interaction".to_string()),
                 },
-                Err(_) => Err("Cannot get guild channels, wtf".to_string()),
+                Err(_) => Err("cannot get guild channels, wtf".to_string()),
             },
         }
     } else {
-        Err("Cannot get guild from shop interaction, wtf".to_string())
+        Err("cannot get guild from shop interaction, wtf".to_string())
     }
 }

@@ -150,6 +150,20 @@ impl Logger {
         expected
     }
 
+    pub async fn if_ok<T, E: ToString>(
+        author: &str,
+        error_message: &str,
+        result: Result<T, E>,
+    ) -> bool {
+        match result {
+            Ok(_) => true,
+            Err(e) => {
+                Self::error(author, &format!("{} - {}", error_message, e.to_string())).await;
+                false
+            }
+        }
+    }
+
     pub async fn low(author: &str, content: &str) {
         let log = LOGGER.try_read().expect("Cannot lock LOGGER for low log");
         log.log(LoggingLevels::Low, author, content).await;

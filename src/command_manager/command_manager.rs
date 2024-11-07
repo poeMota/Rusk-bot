@@ -58,12 +58,34 @@ impl CommandManager {
         ctx: Arc<Context>,
     ) {
         if let Some(command_fn) = self.commands_calls.get(command_name) {
-            match command_fn(command, Arc::clone(&ctx)).await {
-                Ok(_) => (),
-                Err(e) => Logger::error(command_name, e.to_string().as_str()).await,
+            match command_fn(command.clone(), Arc::clone(&ctx)).await {
+                Ok(_) => {
+                    let member = command.member.clone();
+                    let mut display_name = "Unknown".to_string();
+                    let mut id = 0;
+
+                    if let Some(mem) = member {
+                        display_name = String::from(mem.display_name());
+                        id = mem.user.id.get();
+                    }
+
+                    Logger::debug(
+                        &format!("commands.{}", command_name),
+                        &format!("command triggered by {} ({})", display_name, id),
+                    )
+                    .await;
+                }
+                Err(e) => Logger::error(command_name, &e.to_string()).await,
             };
         } else {
-            println!("Cannot find command: {}", command_name);
+            Logger::error(
+                "com_man.call_command",
+                &format!(
+                    "command manager cannot find call for command: {}",
+                    command_name
+                ),
+            )
+            .await;
         }
     }
 }
