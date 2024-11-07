@@ -1,3 +1,4 @@
+use crate::logger::Logger;
 use once_cell::sync::Lazy;
 use serenity::{model::application::CommandInteraction, prelude::*};
 use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
@@ -57,7 +58,10 @@ impl CommandManager {
         ctx: Arc<Context>,
     ) {
         if let Some(command_fn) = self.commands_calls.get(command_name) {
-            command_fn(command, Arc::clone(&ctx)).await.unwrap();
+            match command_fn(command, Arc::clone(&ctx)).await {
+                Ok(_) => (),
+                Err(e) => Logger::error(&ctx, command_name, e.to_string().as_str()).await,
+            };
         } else {
             println!("Cannot find command: {}", command_name);
         }
