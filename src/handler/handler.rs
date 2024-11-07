@@ -13,18 +13,16 @@ pub struct Handler;
 impl EventHandler for Handler {
     #[allow(unused_variables)]
     async fn ready(&self, ctx: Context, data_about_bot: Ready) {
-        let guild_id = GuildId::new(CONFIG.read().await.guild);
+        let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
         clear_guild_commands(&ctx.http, &guild_id).await;
 
-        if let Some(num) = CONFIG.read().await.log {
+        if let Some(num) = CONFIG.try_read().unwrap().log {
             Logger::set_log_channel(&ctx, num).await;
-
-            Logger::debug(&ctx, "handler.ready", "the log channel is set").await;
         }
 
         fun_commands(ctx.clone(), guild_id).await;
 
-        Logger::debug(&ctx, "handler.ready", "bot is ready").await;
+        Logger::debug("handler.ready", "bot is ready").await;
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {

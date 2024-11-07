@@ -1,19 +1,19 @@
-use crate::config::{read_file, write_file, CONFIG, DATA_PATH};
+use crate::{
+    bot::{get_guild, get_http},
+    config::{read_file, write_file, CONFIG, DATA_PATH},
+};
 use chrono::prelude::*;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::{
     builder::CreateMessage,
     client::Context,
-    model::{
-        channel::GuildChannel,
-        id::{ChannelId, GuildId},
-    },
+    model::{channel::GuildChannel, id::ChannelId},
 };
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 #[derive(Debug, Deserialize, Hash, PartialEq, Eq, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -31,8 +31,8 @@ pub struct LoggingConfig {
     levels: HashMap<LoggingLevels, bool>,
 }
 
-static LOGGER: Lazy<Arc<Mutex<Logger>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(Logger::new(
+static LOGGER: Lazy<Arc<RwLock<Logger>>> = Lazy::new(|| {
+    Arc::new(RwLock::new(Logger::new(
         None,
         CONFIG
             .try_read()
@@ -56,14 +56,27 @@ impl Logger {
     }
 
     pub async fn set_log_channel(ctx: &Context, channel: u64) {
-        let mut log = LOGGER.lock().await;
+        match get_guild().channels(&ctx.http).await {
+            Ok(channels) => {
+                LOGGER.write().await.log_channel = channels.get(&ChannelId::new(channel)).cloned();
 
-        if let Ok(channels) = GuildId::new(channel).channels(&ctx.http).await {
-            log.log_channel = channels.get(&ChannelId::new(channel)).cloned();
+                Self::debug(
+                    "logger.set_log_channel",
+                    &format!("the log channel is set to {}", channel),
+                )
+                .await;
+            }
+            Err(e) => {
+                Self::error(
+                    "logger.set_log_channel",
+                    &format!("Error while setting log channel: {}", e.to_string()),
+                )
+                .await;
+            }
         }
     }
 
-    async fn log(&self, ctx: &Context, level: LoggingLevels, author: &str, content: &str) {
+    async fn log(&self, level: LoggingLevels, author: &str, content: &str) {
         let prefix = match level {
             LoggingLevels::Low => "[Low]",
             LoggingLevels::Medium => "**[Medium]**",
@@ -83,7 +96,10 @@ impl Logger {
             utc.second()
         );
 
-        let message = CreateMessage::new().content(format!("{} <{}>: {}", prefix, author, content));
+        let message = CreateMessage::new().content(format!(
+            "{} ({}) <{}>: {}",
+            prefix, time_prefix, author, content
+        ));
 
         let enabled = match self.settings.get(&level) {
             Some(enable) => *enable,
@@ -92,10 +108,10 @@ impl Logger {
 
         if enabled {
             if let Some(channel) = self.log_channel.clone() {
-                match channel.send_message(&ctx.http, message).await {
+                match channel.send_message(get_http(), message).await {
                     Ok(_) => (),
                     Err(e) => Self::file_logging(
-                        format!("{} | [Error] <logger.log>: {}", time_prefix, e.to_string())
+                        format!("[Error] ({}) <logger.log>: {}", time_prefix, e.to_string())
                             .as_str(),
                     ),
                 }
@@ -104,9 +120,9 @@ impl Logger {
 
         Self::file_logging(
             format!(
-                "{} | {} <{}>: {}",
-                time_prefix,
+                "{} ({}) <{}>: {}",
                 prefix.replace("**", ""),
+                time_prefix,
                 author,
                 content
             )
@@ -125,40 +141,39 @@ impl Logger {
     }
 
     pub async fn expect<T: Clone, E: Clone + ToString>(
-        ctx: &Context,
         author: &str,
         expected: Result<T, E>,
     ) -> Result<T, E> {
         if let Err(ref error) = expected {
-            Self::error(&ctx, author, error.to_string().as_str()).await
+            Self::error(author, error.to_string().as_str()).await
         }
         expected
     }
 
-    pub async fn low(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for low log");
-        log.log(&ctx, LoggingLevels::Low, author, content).await;
+    pub async fn low(author: &str, content: &str) {
+        let log = LOGGER.try_read().expect("Cannot lock LOGGER for low log");
+        log.log(LoggingLevels::Low, author, content).await;
     }
 
-    pub async fn medium(ctx: &Context, author: &str, content: &str) {
+    pub async fn medium(author: &str, content: &str) {
         let log = LOGGER
-            .try_lock()
+            .try_read()
             .expect("Cannot lock LOGGER for medium log");
-        log.log(&ctx, LoggingLevels::Medium, author, content).await;
+        log.log(LoggingLevels::Medium, author, content).await;
     }
 
-    pub async fn high(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for high log");
-        log.log(&ctx, LoggingLevels::High, author, content).await;
+    pub async fn high(author: &str, content: &str) {
+        let log = LOGGER.try_read().expect("Cannot lock LOGGER for high log");
+        log.log(LoggingLevels::High, author, content).await;
     }
 
-    pub async fn debug(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for debug log");
-        log.log(&ctx, LoggingLevels::Debug, author, content).await;
+    pub async fn debug(author: &str, content: &str) {
+        let log = LOGGER.try_read().expect("Cannot lock LOGGER for debug log");
+        log.log(LoggingLevels::Debug, author, content).await;
     }
 
-    pub async fn error(ctx: &Context, author: &str, content: &str) {
-        let log = LOGGER.try_lock().expect("Cannot lock LOGGER for error log");
-        log.log(&ctx, LoggingLevels::Error, author, content).await;
+    pub async fn error(author: &str, content: &str) {
+        let log = LOGGER.try_read().expect("Cannot lock LOGGER for error log");
+        log.log(LoggingLevels::Error, author, content).await;
     }
 }

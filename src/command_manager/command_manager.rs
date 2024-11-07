@@ -60,7 +60,7 @@ impl CommandManager {
         if let Some(command_fn) = self.commands_calls.get(command_name) {
             match command_fn(command, Arc::clone(&ctx)).await {
                 Ok(_) => (),
-                Err(e) => Logger::error(&ctx, command_name, e.to_string().as_str()).await,
+                Err(e) => Logger::error(command_name, e.to_string().as_str()).await,
             };
         } else {
             println!("Cannot find command: {}", command_name);
