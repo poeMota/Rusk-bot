@@ -300,8 +300,9 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #function_call_code
             );
 
-            #input_function
         }
+
+        #input_function
     };
 
     output_code.into()
