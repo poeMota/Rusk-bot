@@ -75,7 +75,13 @@ impl CommandManager {
                     )
                     .await;
                 }
-                Err(e) => Logger::error(command_name, &e.to_string()).await,
+                Err(e) => {
+                    Logger::error(
+                        &format!("commands.{}", command_name),
+                        &format!("command caused a panic with error: {}", e.to_string()),
+                    )
+                    .await
+                }
             };
         } else {
             Logger::error(
