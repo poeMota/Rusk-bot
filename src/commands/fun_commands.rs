@@ -13,7 +13,8 @@ pub async fn fun_commands(ctx: Context, guild: GuildId) {
             .create_response(
                 &ctx.http,
                 CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new().content("**Done**"),
+                    CreateInteractionResponseMessage::new()
+                        .content(get_string("commands-done-response", None)),
                 ),
             )
             .await

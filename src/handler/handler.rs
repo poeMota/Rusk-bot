@@ -21,6 +21,7 @@ impl EventHandler for Handler {
         clear_guild_commands(&ctx.http, &guild_id).await;
 
         fun_commands(ctx.clone(), guild_id).await;
+        debug_commands(ctx.clone(), guild_id).await;
 
         Logger::debug("handler.ready", "bot is ready").await;
     }
