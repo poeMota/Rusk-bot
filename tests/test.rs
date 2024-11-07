@@ -1,4 +1,4 @@
-use command_macro::command;
+use command_macro::slash_command;
 use event_macro::*;
 use serenity::{
     client::Context,
@@ -17,9 +17,9 @@ use task_bot::{
 };
 use tokio;
 
-#[tokio::test]
-async fn read_config_test() {
-    let config = CONFIG.lock().await;
+#[test]
+fn read_config_test() {
+    let config = CONFIG.try_read();
 
     println!("{:#?}", config);
 }
@@ -96,7 +96,7 @@ fn events_test() {
 #[tokio::test]
 async fn macro_test() {
     async fn _test_apply_command(ctx: Context, guild: GuildId) {
-        #[command([])]
+        #[slash_command([])]
         async fn save(
             _ctx: Context,
             _inter: CommandInteraction,
@@ -110,7 +110,7 @@ async fn macro_test() {
         ) {
         }
 
-        #[command([])]
+        #[slash_command([])]
         async fn save_plus(
             _ctx: Context,
             _inter: CommandInteraction,
@@ -124,7 +124,7 @@ async fn macro_test() {
         ) {
         }
 
-        #[command([
+        #[slash_command([
             _num = [
                 choice = int,
                 min_int_value = 10,
@@ -158,7 +158,7 @@ async fn macro_test() {
         ) {
         }
 
-        #[command([
+        #[slash_command([
             _num = [
                 base_value = 15,
                 min_int_value = 10,

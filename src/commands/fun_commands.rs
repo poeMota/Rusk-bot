@@ -1,5 +1,5 @@
 use crate::{command_manager::COMMANDMANAGER, config::CONFIG, localization::get_string};
-use command_macro::command;
+use command_macro::slash_command;
 use serenity::{
     builder::{CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage},
     client::Context,
@@ -7,7 +7,7 @@ use serenity::{
 };
 
 pub async fn fun_commands(ctx: Context, guild: GuildId) {
-    #[command([])]
+    #[slash_command([])]
     async fn bot_send(ctx: Context, inter: CommandInteraction, message: String) {
         inter
             .create_response(
@@ -34,7 +34,7 @@ pub async fn fun_commands(ctx: Context, guild: GuildId) {
             .unwrap();
     }
 
-    #[command([])]
+    #[slash_command([])]
     async fn when(ctx: Context, inter: CommandInteraction) {
         bot_send(ctx, inter, get_string("when-command-responce", None)).await;
     }
