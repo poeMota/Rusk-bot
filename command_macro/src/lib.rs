@@ -171,7 +171,9 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Parse function parameters and generate conversion logic
     let mut command_parameters = Vec::new();
-    for input in function_inputs.iter() {
+    for input in function_inputs.iter().skip(2) {
+        // Skip ctx: Context and inter:
+        // CommandInteraction params
         match input {
             FnArg::Typed(PatType { pat, ty, .. }) => {
                 let param_name = match **pat {
@@ -270,10 +272,13 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate the function call with converted parameters
     let function_call_code = quote! {
-        Box::new(|command: serenity::model::application::CommandInteraction, ctx: Arc<serenity::client::Context>| {
+        std::sync::Arc::new(|command: serenity::model::application::CommandInteraction, ctx: std::sync::Arc<serenity::client::Context>| {
             Box::pin(async move {
-                #parameter_conversion_code
-                #function_name(#(#parameter_names),*);
+                tokio::task::spawn(async move {
+                    #parameter_conversion_code
+                    #function_name((*std::sync::Arc::clone(&ctx)).clone(), command, #(#parameter_names),*).await;
+                    Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+                }).await?
             })
         })
     };
@@ -286,6 +291,7 @@ pub fn command(attr: TokenStream, item: TokenStream) -> TokenStream {
         };
 
         if command_enabled {
+            use std::sync::Arc;
             #command_declaration
 
             let mut command_manager = COMMANDMANAGER.write().await;

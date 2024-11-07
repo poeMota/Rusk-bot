@@ -3,6 +3,7 @@ use event_macro::*;
 use serenity::{
     client::Context,
     model::{
+        application::CommandInteraction,
         channel::{Attachment, PartialChannel},
         guild::Role,
         id::GuildId,
@@ -11,7 +12,6 @@ use serenity::{
 };
 use std::collections::HashMap;
 use std::fs;
-use std::sync::Arc;
 use task_bot::{
     command_manager::*, config::*, connect::*, events::*, localization::*, logger::*, shop::*,
 };
@@ -98,6 +98,8 @@ async fn macro_test() {
     async fn _test_apply_command(ctx: Context, guild: GuildId) {
         #[command([])]
         async fn save(
+            _ctx: Context,
+            _inter: CommandInteraction,
             _num: i64,
             _float: f64,
             _string: String,
@@ -110,6 +112,8 @@ async fn macro_test() {
 
         #[command([])]
         async fn save_plus(
+            _ctx: Context,
+            _inter: CommandInteraction,
             _num: Option<i64>,
             _float: Option<f64>,
             _string: Option<String>,
@@ -142,6 +146,8 @@ async fn macro_test() {
             _param6 = [choice = int],
         ])]
         async fn save_save(
+            _ctx: Context,
+            _inter: CommandInteraction,
             _num: i64,
             _float: f64,
             _string: String,
@@ -174,6 +180,8 @@ async fn macro_test() {
             _param6 = [choice = int],
         ])]
         async fn _command(
+            _ctx: Context,
+            _inter: CommandInteraction,
             _num: Option<i64>,
             _float: Option<f64>,
             _string: Option<String>,

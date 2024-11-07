@@ -9,12 +9,16 @@ pub static COMMANDMANAGER: Lazy<Arc<RwLock<CommandManager>>> =
 pub struct CommandManager {
     commands_calls: HashMap<
         String,
-        Box<
+        Arc<
             dyn Fn(
                     CommandInteraction,
                     Arc<Context>,
-                ) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>
-                + Send
+                ) -> Pin<
+                    Box<
+                        dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>
+                            + Send,
+                    >,
+                > + Send
                 + Sync,
         >,
     >,
@@ -30,12 +34,16 @@ impl CommandManager {
     pub fn add_command(
         &mut self,
         name: &str,
-        command_call: Box<
+        command_call: Arc<
             dyn Fn(
                     CommandInteraction,
                     Arc<Context>,
-                ) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>
-                + Send
+                ) -> Pin<
+                    Box<
+                        dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>
+                            + Send,
+                    >,
+                > + Send
                 + Sync,
         >,
     ) {
@@ -49,7 +57,7 @@ impl CommandManager {
         ctx: Arc<Context>,
     ) {
         if let Some(command_fn) = self.commands_calls.get(command_name) {
-            command_fn(command, Arc::clone(&ctx)).await;
+            command_fn(command, Arc::clone(&ctx)).await.unwrap();
         } else {
             println!("Cannot find command: {}", command_name);
         }
