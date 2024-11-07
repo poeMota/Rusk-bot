@@ -1,3 +1,4 @@
+use crate::config::CONFIG;
 use crate::localization::get_string;
 use crate::{
     config::{read_file, DATA_PATH},
@@ -7,8 +8,13 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::{
     all::{GuildChannel, Timestamp, UserId},
-    builder::CreateMessage,
-    model::{application::ComponentInteraction, guild::Member, id::ChannelId},
+    builder::{CreateButton, CreateEmbed, CreateMessage},
+    model::{
+        application::{ButtonStyle, ComponentInteraction},
+        colour::Colour,
+        guild::Member,
+        id::ChannelId,
+    },
     prelude::*,
 };
 use std::collections::HashMap;
@@ -218,6 +224,65 @@ impl Page {
                 },
             }
         }
+    }
+
+    pub fn to_message_bulder(&self, current_page: i32, max_pages: i32) -> CreateMessage {
+        CreateMessage::new()
+            .embed(
+                CreateEmbed::new()
+                    .title(get_string("shop-embed-title", None))
+                    .description(get_string("shop-embed-description", None))
+                    .color(match CONFIG.try_read().unwrap().shop_embed_color {
+                        Some(color) => color,
+                        None => Colour::ORANGE.0,
+                    })
+                    .field(
+                        get_string(
+                            "shop-embed-item",
+                            Some(HashMap::from([(
+                                "num",
+                                format!("{}", current_page).as_str(),
+                            )])),
+                        ),
+                        &self.name,
+                        false,
+                    )
+                    .field(
+                        get_string("shop-embed-description-field", None),
+                        &self.description,
+                        false,
+                    )
+                    .field(
+                        get_string("shop-embed-price", None),
+                        format!("```{}```", self.price),
+                        true,
+                    )
+                    .field(
+                        get_string("shop-embed-page", None),
+                        format!("```{}/{}```", current_page, max_pages),
+                        true,
+                    )
+                    .field(
+                        get_string("shop-embed-balance", None),
+                        format!("```{}```", "TODO member score"),
+                        true,
+                    ),
+            )
+            .button(
+                CreateButton::new("previous")
+                    .emoji('◀')
+                    .style(ButtonStyle::Secondary),
+            )
+            .button(
+                CreateButton::new("buy")
+                    .emoji('🛒')
+                    .style(ButtonStyle::Success),
+            )
+            .button(
+                CreateButton::new("next")
+                    .emoji('▶')
+                    .style(ButtonStyle::Secondary),
+            )
     }
 }
 
