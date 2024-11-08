@@ -13,7 +13,8 @@ use serenity::{
 use std::collections::HashMap;
 use std::fs;
 use task_bot::{
-    command_manager::*, config::*, connect::*, events::*, localization::*, logger::*, shop::*,
+    bot::fetch_member, command_manager::*, config::*, connect::*, events::*, localization::*,
+    logger::*, model::*, shop::*,
 };
 use tokio;
 
@@ -254,4 +255,53 @@ async fn connect_test() {
         get_user_id("M0ta".to_string()).await,
         "Not Found".to_string()
     )
+}
+
+#[tokio::test]
+async fn members_manager_test() {
+    write_file(
+        &DATA_PATH.join("databases/test_members.json"),
+        r#"
+        [{
+            "id": 1046425922200420505,
+            "done_tasks": [
+                "1",
+                "2",
+                "3"
+            ],
+            "curation_tasks": [
+                "11",
+                "12",
+                "13"
+            ],
+            "own_folder": "SomeFolder",
+            "score": 12,
+            "all_time_score": 123,
+            "warns": [
+                "warn1",
+                "warn2"
+            ],
+            "notes": [
+                "note1",
+                "note2"
+            ]
+        }]"#
+        .to_string(),
+    );
+
+    MEMBERSMANAGER
+        .try_write()
+        .unwrap()
+        .init("test_members.json")
+        .await;
+    OnMemberUpdateEvent {
+        member: fetch_member(1046425922200420505).await.unwrap(),
+    }
+    .raise();
+
+    println!("{:#?}", MEMBERSMANAGER.try_read().unwrap());
+    println!("{}", read_file(&DATA_PATH.join("databases/members.json")));
+
+    fs::remove_file(&DATA_PATH.join("databases/members.json"))
+        .expect("Cannot delete test members database");
 }

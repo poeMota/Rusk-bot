@@ -7,4 +7,5 @@ pub mod events;
 pub mod handler;
 pub mod localization;
 pub mod logger;
+pub mod model;
 pub mod shop;

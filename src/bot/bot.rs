@@ -1,4 +1,10 @@
-use serenity::{http::Http, model::id::GuildId};
+use serenity::{
+    http::Http,
+    model::{
+        guild::Member,
+        id::{GuildId, UserId},
+    },
+};
 
 use crate::config::{load_env, CONFIG};
 use once_cell::sync::Lazy;
@@ -17,4 +23,12 @@ static GUILD: Lazy<GuildId> = Lazy::new(|| GuildId::new(CONFIG.try_read().unwrap
 
 pub fn get_guild() -> GuildId {
     GUILD.clone()
+}
+
+pub async fn fetch_member(id: u64) -> Result<Member, serenity::Error> {
+    let user_id = UserId::new(id);
+    let http = get_http();
+    let guild = get_guild();
+
+    guild.member(http, user_id).await
 }
