@@ -1,5 +1,6 @@
 use crate::config::CONFIG;
 use crate::localization::get_string;
+use crate::model::{ProjectMember, MEMBERSMANAGER};
 use crate::{
     config::{read_file, DATA_PATH},
     logger::Logger,
@@ -162,6 +163,42 @@ impl Page {
     }
 
     async fn buy(&self, ctx: Context, inter: ComponentInteraction) {
+        let mut mem_man = match MEMBERSMANAGER.try_write() {
+            Ok(man) => man,
+            Err(e) => {
+                Logger::error(
+                    "shop.page.buy",
+                    &format!("error while try_read MEMBERSMANAGER - {}", e.to_string()),
+                )
+                .await;
+                return ();
+            }
+        };
+
+        let member = mem_man.get_mut(match inter.member.clone() {
+            Some(mem) => mem,
+            None => {
+                Logger::error(
+                    "shop.page.buy",
+                    "failed in an attempt to get command interaction user",
+                )
+                .await;
+                return ();
+            }
+        });
+
+        member.change_score(-self.price);
+        Logger::low(
+            "shop.page.buy",
+            &format!(
+                "user {} score has been changed to {} and is now {}",
+                member.dis_member.display_name(),
+                -self.price,
+                member.score
+            ),
+        )
+        .await;
+
         for action in self.on_buy.iter() {
             match action {
                 ShopActions::GiveRoles(give_roles) => {
@@ -224,9 +261,19 @@ impl Page {
                 },
             }
         }
+
+        Logger::medium(
+            "shop.page.buy",
+            &format!(
+                "user {} has made a purchase \"{}\"",
+                member.dis_member.display_name(),
+                self.name
+            ),
+        )
+        .await;
     }
 
-    pub fn to_message_bulder(&self, current_page: i32, max_pages: i32) -> CreateMessage {
+    pub fn to_message_bulder(&self, member: &ProjectMember, max_pages: i32) -> CreateMessage {
         CreateMessage::new()
             .embed(
                 CreateEmbed::new()
@@ -241,7 +288,7 @@ impl Page {
                             "shop-embed-item",
                             Some(HashMap::from([(
                                 "num",
-                                format!("{}", current_page).as_str(),
+                                format!("{}", member.curent_shop_page).as_str(),
                             )])),
                         ),
                         &self.name,
@@ -259,12 +306,12 @@ impl Page {
                     )
                     .field(
                         get_string("shop-embed-page", None),
-                        format!("```{}/{}```", current_page, max_pages),
+                        format!("```{}/{}```", member.curent_shop_page, max_pages),
                         true,
                     )
                     .field(
                         get_string("shop-embed-balance", None),
-                        format!("```{}```", "TODO member score"),
+                        format!("```{}```", member.score),
                         true,
                     ),
             )

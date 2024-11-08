@@ -1,14 +1,19 @@
 use crate::{
-    bot::fetch_member,
+    bot::{fetch_member, get_guild},
     config::{read_file, write_file, DATA_PATH},
     events::*,
+    localization::get_string,
     logger::Logger,
 };
 use event_macro::Event;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use serenity::model::{guild::Member, id::UserId};
+use serenity::{
+    builder::CreateEmbed,
+    client::Context,
+    model::{colour::Colour, guild::Member, id::UserId},
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -32,7 +37,6 @@ impl MembersManager {
         let content = read_file(&DATA_PATH.join(format!("databases/{}", database_name)));
         let members: Vec<ProjectMember> = serde_json::from_str(&content).unwrap();
 
-        self.members = HashMap::new();
         for member in members.iter() {
             let mut mem = member.clone();
 
@@ -55,6 +59,12 @@ impl MembersManager {
         subscribe_event::<OnMemberUpdateEvent>(Box::new(move |ev: &OnMemberUpdateEvent| {
             MEMBERSMANAGER.try_read().unwrap().update(ev)
         }));
+
+        Logger::debug(
+            "mem_man.init",
+            &format!("initialized from database \"databases/{}\"", database_name),
+        )
+        .await;
     }
 
     fn serialize(&self) {
@@ -68,15 +78,28 @@ impl MembersManager {
     fn update(&self, ev: &OnMemberUpdateEvent) {
         self.serialize();
     }
+
+    // No need update after add empty member
+    pub fn get(&mut self, member: Member) -> &ProjectMember {
+        self.members
+            .entry(member.user.id.clone())
+            .or_insert_with(|| ProjectMember::new(member))
+    }
+
+    pub fn get_mut(&mut self, member: Member) -> &mut ProjectMember {
+        self.members
+            .entry(member.user.id.clone())
+            .or_insert_with(|| ProjectMember::new(member))
+    }
 }
 
 #[derive(Event)]
 pub struct OnMemberUpdateEvent {
-    pub member: Member,
+    pub member: ProjectMember,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-struct ProjectMember {
+pub struct ProjectMember {
     pub id: UserId,
     #[serde(default, skip_serializing)]
     pub dis_member: Member,
@@ -100,8 +123,73 @@ struct ProjectMember {
 }
 
 impl ProjectMember {
+    fn new(member: Member) -> Self {
+        Self {
+            id: member.user.id.clone(),
+            dis_member: member,
+            in_tasks: Vec::new(),
+            done_tasks: Vec::new(),
+            curation_tasks: Vec::new(),
+            own_folder: None,
+            score: 0,
+            all_time_score: 0,
+            warns: Vec::new(),
+            notes: Vec::new(),
+            curent_shop_page: 0,
+        }
+    }
+
+    async fn new_from_id(id: UserId) -> Result<Self, serenity::Error> {
+        Ok(Self {
+            id: id.clone(),
+            dis_member: fetch_member(id.get()).await?,
+            in_tasks: Vec::new(),
+            done_tasks: Vec::new(),
+            curation_tasks: Vec::new(),
+            own_folder: None,
+            score: 0,
+            all_time_score: 0,
+            warns: Vec::new(),
+            notes: Vec::new(),
+            curent_shop_page: 0,
+        })
+    }
+
     async fn fetch_member(&mut self) -> Result<(), serenity::Error> {
         self.dis_member = fetch_member(self.id.clone().get()).await?;
         Ok(())
+    }
+
+    fn update(&self) {
+        OnMemberUpdateEvent {
+            member: self.clone(),
+        }
+        .raise();
+    }
+
+    pub fn change_score(&mut self, score: i64) {
+        self.score += score;
+        self.update();
+    }
+
+    pub fn change_folder(&mut self, folder: Option<String>) {
+        self.own_folder = folder;
+    }
+
+    pub fn to_embed(&self, ctx: &Context) -> CreateEmbed {
+        let mut embed = CreateEmbed::new()
+            .title(get_string(
+                "member-stat-embed-title",
+                Some(HashMap::from([("member", self.dis_member.display_name())])),
+            ))
+            .color(match get_guild().to_guild_cached(&ctx.cache) {
+                Some(guild) => match guild.member_highest_role(&self.dis_member) {
+                    Some(color) => color.colour,
+                    None => Colour::LIGHT_GREY,
+                },
+                None => Colour::LIGHT_GREY,
+            });
+        // TODO
+        embed
     }
 }
