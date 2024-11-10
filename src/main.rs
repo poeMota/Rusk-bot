@@ -11,7 +11,7 @@ use tokio;
 async fn main() {
     LOCALIZATION.read().unwrap();
     SHOPMANAGER.read().await;
-    MEMBERSMANAGER.write().await.init("members.json").await;
+    MEMBERSMANAGER.write().await.init().await;
     load_env();
 
     let token = env::var("TOKEN").unwrap();

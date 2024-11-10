@@ -46,7 +46,7 @@ impl EventHandler for Handler {
             Interaction::Component(ref component) => {
                 if let ComponentInteractionDataKind::Button = component.data.kind {
                     let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
-                    let member = mem_man.get_mut(component.member.clone().unwrap());
+                    let member = mem_man.get_mut(component.user.id.clone()).await.unwrap();
 
                     let shop_man = SHOPMANAGER.try_read().unwrap();
                     member.shop_data.pages = shop_man.get_pages(&ctx, member).await;

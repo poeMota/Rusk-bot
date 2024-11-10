@@ -16,6 +16,7 @@ use serenity::{
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use walkdir::WalkDir;
 
 pub static MEMBERSMANAGER: Lazy<Arc<RwLock<MembersManager>>> =
     Lazy::new(|| Arc::new(RwLock::new(MembersManager::new())));
@@ -27,46 +28,49 @@ pub struct MembersManager {
 
 impl MembersManager {
     fn new() -> Self {
-        /*subscribe_event::<OnMemberUpdateEvent>({
-            Box::new(move |ev: &OnMemberUpdateEvent| MEMBERSMANAGER.try_read().unwrap().update(ev))
-        });*/
-
         Self {
             members: HashMap::new(),
         }
     }
 
-    pub async fn init(&mut self, database_name: &str) {
-        let content = read_file(&DATA_PATH.join(format!("databases/{}", database_name)));
-        let members: Vec<ProjectMember> = match content.as_str() {
-            "" => Vec::new(),
-            _ => serde_json::from_str(&content).unwrap(),
-        };
+    pub async fn init(&mut self) {
+        for entry in WalkDir::new(DATA_PATH.join("databases/members")) {
+            let entry = match entry {
+                Ok(s) => s,
+                Err(error) => {
+                    Logger::error(
+                        "mem_man.init",
+                        &format!("Error with member data file: {}", error),
+                    )
+                    .await;
+                    continue;
+                }
+            };
 
-        for member in members.iter() {
-            let mut mem = member.clone();
-
-            if let Err(e) = mem.fetch_member().await {
-                Logger::error(
-                    "mem_man.init",
-                    &format!(
-                        "error while fetching member with id {} - {}",
-                        mem.id.get(),
-                        e.to_string()
-                    ),
-                )
-                .await;
+            if !entry.path().is_file() {
                 continue;
             }
 
-            self.members.insert(mem.dis_member.user.id, mem);
+            let member: ProjectMember =
+                match serde_yaml::from_str(read_file(&entry.path().to_path_buf()).as_str()) {
+                    Ok(c) => c,
+                    Err(_) => {
+                        Logger::error(
+                            "mem_man.init",
+                            &format!(
+                                "Error while parsing member data file: {}",
+                                entry.file_name().to_str().unwrap()
+                            ),
+                        )
+                        .await;
+                        continue;
+                    }
+                };
+
+            self.members.insert(member.id.clone(), member);
         }
 
-        Logger::debug(
-            "mem_man.init",
-            &format!("initialized from database \"databases/{}\"", database_name),
-        )
-        .await;
+        Logger::debug("mem_man.init", "initialized from databases/members/*").await;
     }
 
     fn serialize(&self) {
@@ -76,28 +80,24 @@ impl MembersManager {
         );
     }
 
-    #[allow(unused_variables)]
-    pub fn update(&self, ev: &OnMemberUpdateEvent) {
+    pub fn update(&self) {
         self.serialize();
     }
 
     // No need update after add empty member
-    pub fn get(&mut self, member: Member) -> &ProjectMember {
-        self.members
-            .entry(member.user.id.clone())
-            .or_insert_with(|| ProjectMember::new(member))
+    pub async fn get(&mut self, id: UserId) -> Result<&ProjectMember, serenity::Error> {
+        Ok(self.members.entry(id.clone()).or_insert_with({
+            let member = ProjectMember::new(id).await?;
+            || member
+        }))
     }
 
-    pub fn get_mut(&mut self, member: Member) -> &mut ProjectMember {
-        self.members
-            .entry(member.user.id.clone())
-            .or_insert_with(|| ProjectMember::new(member))
+    pub async fn get_mut(&mut self, id: UserId) -> Result<&mut ProjectMember, serenity::Error> {
+        Ok(self.members.entry(id.clone()).or_insert_with({
+            let member = ProjectMember::new(id).await?;
+            || member
+        }))
     }
-}
-
-#[derive(Event)]
-pub struct OnMemberUpdateEvent {
-    pub member: ProjectMember,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -106,11 +106,11 @@ pub struct ProjectMember {
     #[serde(default, skip_serializing)]
     pub dis_member: Member,
     #[serde(default)]
-    pub in_tasks: Vec<u32>,
+    pub in_tasks: HashMap<String, u32>,
     #[serde(default)]
-    pub done_tasks: Vec<String>,
+    pub done_tasks: HashMap<String, String>,
     #[serde(default)]
-    pub curation_tasks: Vec<String>,
+    pub curation_tasks: HashMap<String, String>,
     pub own_folder: Option<String>,
     #[serde(default)]
     pub score: i64,
@@ -125,20 +125,28 @@ pub struct ProjectMember {
 }
 
 impl ProjectMember {
-    fn new(member: Member) -> Self {
-        Self {
-            id: member.user.id.clone(),
-            dis_member: member,
-            in_tasks: Vec::new(),
-            done_tasks: Vec::new(),
-            curation_tasks: Vec::new(),
-            own_folder: None,
-            score: 0,
-            all_time_score: 0,
-            warns: Vec::new(),
-            notes: Vec::new(),
-            shop_data: ShopData::default(),
-        }
+    async fn new(id: UserId) -> Result<Self, serenity::Error> {
+        let content = read_file(&DATA_PATH.join(format!("databases/members/{}", id.get())));
+
+        let mut instance: ProjectMember = match content.as_str() {
+            "" => Self {
+                id: id.clone(),
+                dis_member: fetch_member(id.get()).await?,
+                in_tasks: HashMap::new(),
+                done_tasks: HashMap::new(),
+                curation_tasks: HashMap::new(),
+                own_folder: None,
+                score: 0,
+                all_time_score: 0,
+                warns: Vec::new(),
+                notes: Vec::new(),
+                shop_data: ShopData::default(),
+            },
+            _ => serde_json::from_str(&content).unwrap(),
+        };
+
+        instance.fetch_member().await?;
+        Ok(instance)
     }
 
     async fn fetch_member(&mut self) -> Result<(), serenity::Error> {
@@ -146,11 +154,15 @@ impl ProjectMember {
         Ok(())
     }
 
+    fn serialize(&self) {
+        write_file(
+            &DATA_PATH.join(format!("databases/members/{}", self.id.get())),
+            serde_json::to_string(&self).unwrap(),
+        );
+    }
+
     fn update(&self) {
-        OnMemberUpdateEvent {
-            member: self.clone(),
-        }
-        .raise();
+        self.serialize();
     }
 
     pub fn change_score(&mut self, score: i64) {

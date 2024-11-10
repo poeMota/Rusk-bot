@@ -255,10 +255,10 @@ async fn connect_test() {
     )
 }
 
-#[test]
-fn members_manager_test() {
+#[tokio::test]
+async fn members_manager_test() {
     write_file(
-        &DATA_PATH.join("databases/members.json"),
+        &DATA_PATH.join("databases/members/test.json"),
         r#"
         {
             "id": 1234324,
@@ -287,8 +287,10 @@ fn members_manager_test() {
         .to_string(),
     );
 
-    println!("{:#?}", MEMBERSMANAGER.try_read().unwrap());
+    let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+    mem_man.init().await;
+    println!("{:#?}", mem_man);
 
-    fs::remove_file(DATA_PATH.join("databases/members.json"))
+    fs::remove_file(DATA_PATH.join("databases/members/test.json"))
         .expect("Cannot delete test members database");
 }
