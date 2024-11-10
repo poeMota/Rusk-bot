@@ -1,21 +1,14 @@
-use crate::config::CONFIG;
-use crate::localization::get_string;
-use crate::model::{ProjectMember, MEMBERSMANAGER};
+use crate::model::ProjectMember;
 use crate::{
     config::{read_file, DATA_PATH},
-    logger::Logger,
+    prelude::*,
 };
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::{
     all::{GuildChannel, Timestamp, UserId},
-    builder::{CreateButton, CreateEmbed, CreateMessage},
-    model::{
-        application::{ButtonStyle, ComponentInteraction},
-        colour::Colour,
-        guild::Member,
-        id::ChannelId,
-    },
+    builder::{CreateEmbed, CreateMessage},
+    model::{application::ComponentInteraction, colour::Colour, guild::Member, id::ChannelId},
     prelude::*,
 };
 use std::collections::HashMap;
@@ -37,6 +30,23 @@ enum ReplacementOrPage {
 struct ReplacementData {
     name: String,
     value: Replacement,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ShopData {
+    pub current_page: i32,
+    pub pages: Vec<Page>,
+    pub inter: Option<CommandInteraction>,
+}
+
+impl Default for ShopData {
+    fn default() -> Self {
+        Self {
+            current_page: 0,
+            pages: Vec::new(),
+            inter: None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -126,6 +136,60 @@ impl ShopManager {
 
         out
     }
+
+    pub async fn get_pages(&self, ctx: &Context, member: &ProjectMember) -> Vec<Page> {
+        let guild = match get_guild().to_guild_cached(&ctx) {
+            Some(g) => g,
+            None => {
+                return Vec::new();
+            }
+        };
+
+        let mut out_pages: Vec<Page> = Vec::new();
+
+        for page in self.pages.iter() {
+            for name in page.not_access.iter() {
+                if let Some(role) = guild.role_by_name(&name) {
+                    if member.dis_member.roles.contains(&role.id) {
+                        continue;
+                    }
+                } else {
+                    /*
+                    Logger::error(
+                        "shop_man.get_pages",
+                        &format!(
+                            "cannot find role with name {} in \"{}\".notAccess",
+                            name, page.name
+                        ),
+                    )
+                    .await;
+                    */
+                }
+            }
+
+            for name in page.access.iter() {
+                if let Some(role) = guild.role_by_name(&name) {
+                    if !member.dis_member.roles.contains(&role.id) {
+                        continue;
+                    }
+                } else {
+                    /*
+                    Logger::error(
+                        "shop_man.get_pages",
+                        &format!(
+                            "cannot find role with name {} in \"{}\".access",
+                            name, page.name
+                        ),
+                    )
+                    .await;
+                    */
+                }
+            }
+
+            out_pages.push(page.clone());
+        }
+        out_pages
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -150,8 +214,8 @@ pub struct Page {
     price: i64,
     #[serde(default)]
     access: Vec<String>,
-    #[serde(rename = "notAcces", default)]
-    not_acces: Vec<String>,
+    #[serde(rename = "notAccess", default)]
+    not_access: Vec<String>,
     #[serde(rename = "onBuy")]
     on_buy: Vec<ShopActions>,
 }
@@ -162,43 +226,12 @@ impl Page {
         self.description = get_string(self.description.as_str(), None);
     }
 
-    async fn buy(&self, ctx: Context, inter: ComponentInteraction) {
-        let mut mem_man = match MEMBERSMANAGER.try_write() {
-            Ok(man) => man,
-            Err(e) => {
-                Logger::error(
-                    "shop.page.buy",
-                    &format!("error while try_read MEMBERSMANAGER - {}", e.to_string()),
-                )
-                .await;
-                return ();
-            }
-        };
-
-        let member = mem_man.get_mut(match inter.member.clone() {
-            Some(mem) => mem,
-            None => {
-                Logger::error(
-                    "shop.page.buy",
-                    "failed in an attempt to get command interaction user",
-                )
-                .await;
-                return ();
-            }
-        });
-
-        member.change_score(-self.price);
-        Logger::low(
-            "shop.page.buy",
-            &format!(
-                "user {} score has been changed to {} and is now {}",
-                member.dis_member.display_name(),
-                -self.price,
-                member.score
-            ),
-        )
-        .await;
-
+    pub async fn buy(
+        &self,
+        ctx: &Context,
+        inter: &ComponentInteraction,
+        member: &mut ProjectMember,
+    ) {
         for action in self.on_buy.iter() {
             match action {
                 ShopActions::GiveRoles(give_roles) => {
@@ -211,7 +244,7 @@ impl Page {
                                     &self.name, e
                                 ),
                             )
-                            .await
+                            .await;
                         }
                         _ => (),
                     }
@@ -226,7 +259,7 @@ impl Page {
                                     &self.name, e
                                 ),
                             )
-                            .await
+                            .await;
                         }
                         _ => (),
                     }
@@ -255,12 +288,24 @@ impl Page {
                                 &self.name, e
                             ),
                         )
-                        .await
+                        .await;
                     }
                     _ => (),
                 },
             }
         }
+
+        member.change_score(-self.price);
+        Logger::low(
+            "shop.page.buy",
+            &format!(
+                "user {} score has been changed to {} and is now {}",
+                member.dis_member.display_name(),
+                -self.price,
+                member.score
+            ),
+        )
+        .await;
 
         Logger::medium(
             "shop.page.buy",
@@ -273,62 +318,44 @@ impl Page {
         .await;
     }
 
-    pub fn to_message_bulder(&self, member: &ProjectMember, max_pages: i32) -> CreateMessage {
-        CreateMessage::new()
-            .embed(
-                CreateEmbed::new()
-                    .title(get_string("shop-embed-title", None))
-                    .description(get_string("shop-embed-description", None))
-                    .color(match CONFIG.try_read().unwrap().shop_embed_color {
-                        Some(color) => color,
-                        None => Colour::ORANGE.0,
-                    })
-                    .field(
-                        get_string(
-                            "shop-embed-item",
-                            Some(HashMap::from([(
-                                "num",
-                                format!("{}", member.curent_shop_page).as_str(),
-                            )])),
-                        ),
-                        &self.name,
-                        false,
-                    )
-                    .field(
-                        get_string("shop-embed-description-field", None),
-                        &self.description,
-                        false,
-                    )
-                    .field(
-                        get_string("shop-embed-price", None),
-                        format!("```{}```", self.price),
-                        true,
-                    )
-                    .field(
-                        get_string("shop-embed-page", None),
-                        format!("```{}/{}```", member.curent_shop_page, max_pages),
-                        true,
-                    )
-                    .field(
-                        get_string("shop-embed-balance", None),
-                        format!("```{}```", member.score),
-                        true,
-                    ),
+    pub fn to_embed(&self, member: &ProjectMember, max_pages: i32) -> CreateEmbed {
+        CreateEmbed::new()
+            .title(get_string("shop-embed-title", None))
+            .description(get_string("shop-embed-description", None))
+            .color(match CONFIG.try_read().unwrap().shop_embed_color {
+                Some(color) => color,
+                None => Colour::ORANGE.0,
+            })
+            .field(
+                get_string(
+                    "shop-embed-item",
+                    Some(HashMap::from([(
+                        "num",
+                        format!("{}", member.shop_data.current_page + 1).as_str(),
+                    )])),
+                ),
+                &self.name,
+                false,
             )
-            .button(
-                CreateButton::new("previous")
-                    .emoji('◀')
-                    .style(ButtonStyle::Secondary),
+            .field(
+                get_string("shop-embed-description-field", None),
+                &self.description,
+                false,
             )
-            .button(
-                CreateButton::new("buy")
-                    .emoji('🛒')
-                    .style(ButtonStyle::Success),
+            .field(
+                get_string("shop-embed-price", None),
+                format!("```{}```", self.price),
+                true,
             )
-            .button(
-                CreateButton::new("next")
-                    .emoji('▶')
-                    .style(ButtonStyle::Secondary),
+            .field(
+                get_string("shop-embed-page", None),
+                format!("```{}/{}```", member.shop_data.current_page + 1, max_pages),
+                true,
+            )
+            .field(
+                get_string("shop-embed-balance", None),
+                format!("```{}```", member.score),
+                true,
             )
     }
 }
@@ -355,10 +382,11 @@ struct GiveRoles {
 
 impl Action for GiveRoles {
     async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
-        if let Some(guild) = inter.guild_id {
-            let guild = guild
-                .to_guild_cached(&ctx.cache)
-                .expect("cannot get cached guild from GuildId");
+        if let Some(guild_id) = inter.guild_id {
+            let guild = match guild_id.to_partial_guild(&ctx.http).await {
+                Ok(g) => g,
+                Err(_) => return Err("Failed to fetch guild from API".to_string()),
+            };
 
             match get_member(&inter, &ctx, &self.member).await {
                 Ok(member) => {
@@ -385,16 +413,18 @@ impl Action for GiveRoles {
 
 #[derive(Debug, Deserialize, Clone)]
 struct RemoveRoles {
+    #[serde(default)]
     member: StringOrNum,
     roles: Vec<String>,
 }
 
 impl Action for RemoveRoles {
     async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
-        if let Some(guild) = inter.guild_id {
-            let guild = guild
-                .to_guild_cached(&ctx.cache)
-                .expect("cannot get cached guild from GuildId");
+        if let Some(guild_id) = inter.guild_id {
+            let guild = match guild_id.to_partial_guild(&ctx.http).await {
+                Ok(g) => g,
+                Err(_) => return Err("Failed to fetch guild from API".to_string()),
+            };
 
             match get_member(&inter, &ctx, &self.member).await {
                 Ok(member) => {
@@ -485,10 +515,11 @@ async fn get_member(
     ctx: &Context,
     content: &StringOrNum,
 ) -> Result<Member, String> {
-    if let Some(guild) = inter.guild_id {
-        let guild = guild
-            .to_guild_cached(&ctx.cache)
-            .expect("cannot get cached guild from GuildId");
+    if let Some(guild_id) = inter.guild_id {
+        let guild = match guild_id.to_partial_guild(&ctx.http).await {
+            Ok(g) => g,
+            Err(_) => return Err("Failed to fetch guild from API".to_string()),
+        };
 
         match content {
             StringOrNum::Str(string) => {
@@ -496,7 +527,7 @@ async fn get_member(
                 match shop_man.convert_string(string.clone()) {
                     Replacement::Num(num) => {
                         match guild.member(&ctx.http, UserId::new(num as u64)).await {
-                            Ok(member) => Ok(member.as_ref().clone()),
+                            Ok(member) => Ok(member.clone()),
                             Err(e) => Err(e.to_string()),
                         }
                     }
@@ -505,13 +536,18 @@ async fn get_member(
                 }
             }
             StringOrNum::Num(num) => match guild.member(&ctx.http, UserId::new(*num)).await {
-                Ok(member) => Ok(member.as_ref().clone()),
+                Ok(member) => Ok(member.clone()),
                 Err(e) => Err(e.to_string()),
             },
             StringOrNum::Nothing => {
-                panic!(
-                    "member object can only be retrieved by number (id) or Member replacement tag"
-                )
+                if let Some(ref member) = inter.member {
+                    Ok(member.clone())
+                } else {
+                    Err(
+                        "cannot take member from shop interaction and member field is empty"
+                            .to_string(),
+                    )
+                }
             }
         }
     } else {
@@ -524,10 +560,11 @@ async fn get_channel(
     ctx: &Context,
     content: &StringOrNum,
 ) -> Result<GuildChannel, String> {
-    if let Some(guild) = inter.guild_id {
-        let guild = guild
-            .to_guild_cached(&ctx.cache)
-            .expect("cannot get cached guild from GuildId");
+    if let Some(guild_id) = inter.guild_id {
+        let guild = match guild_id.to_partial_guild(&ctx.http).await {
+            Ok(g) => g,
+            Err(_) => return Err("Failed to fetch guild from API".to_string()),
+        };
 
         match content {
             StringOrNum::Num(num) => {

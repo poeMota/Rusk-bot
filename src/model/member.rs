@@ -1,9 +1,8 @@
 use crate::{
-    bot::{fetch_member, get_guild},
     config::{read_file, write_file, DATA_PATH},
     events::*,
-    localization::get_string,
-    logger::Logger,
+    prelude::*,
+    shop::ShopData,
 };
 use event_macro::Event;
 use once_cell::sync::Lazy;
@@ -28,6 +27,10 @@ pub struct MembersManager {
 
 impl MembersManager {
     fn new() -> Self {
+        /*subscribe_event::<OnMemberUpdateEvent>({
+            Box::new(move |ev: &OnMemberUpdateEvent| MEMBERSMANAGER.try_read().unwrap().update(ev))
+        });*/
+
         Self {
             members: HashMap::new(),
         }
@@ -35,7 +38,10 @@ impl MembersManager {
 
     pub async fn init(&mut self, database_name: &str) {
         let content = read_file(&DATA_PATH.join(format!("databases/{}", database_name)));
-        let members: Vec<ProjectMember> = serde_json::from_str(&content).unwrap();
+        let members: Vec<ProjectMember> = match content.as_str() {
+            "" => Vec::new(),
+            _ => serde_json::from_str(&content).unwrap(),
+        };
 
         for member in members.iter() {
             let mut mem = member.clone();
@@ -56,10 +62,6 @@ impl MembersManager {
             self.members.insert(mem.dis_member.user.id, mem);
         }
 
-        subscribe_event::<OnMemberUpdateEvent>(Box::new(move |ev: &OnMemberUpdateEvent| {
-            MEMBERSMANAGER.try_read().unwrap().update(ev)
-        }));
-
         Logger::debug(
             "mem_man.init",
             &format!("initialized from database \"databases/{}\"", database_name),
@@ -75,7 +77,7 @@ impl MembersManager {
     }
 
     #[allow(unused_variables)]
-    fn update(&self, ev: &OnMemberUpdateEvent) {
+    pub fn update(&self, ev: &OnMemberUpdateEvent) {
         self.serialize();
     }
 
@@ -119,7 +121,7 @@ pub struct ProjectMember {
     #[serde(default)]
     pub notes: Vec<String>,
     #[serde(default, skip_serializing)]
-    pub curent_shop_page: i32,
+    pub shop_data: ShopData,
 }
 
 impl ProjectMember {
@@ -135,24 +137,8 @@ impl ProjectMember {
             all_time_score: 0,
             warns: Vec::new(),
             notes: Vec::new(),
-            curent_shop_page: 0,
+            shop_data: ShopData::default(),
         }
-    }
-
-    async fn new_from_id(id: UserId) -> Result<Self, serenity::Error> {
-        Ok(Self {
-            id: id.clone(),
-            dis_member: fetch_member(id.get()).await?,
-            in_tasks: Vec::new(),
-            done_tasks: Vec::new(),
-            curation_tasks: Vec::new(),
-            own_folder: None,
-            score: 0,
-            all_time_score: 0,
-            warns: Vec::new(),
-            notes: Vec::new(),
-            curent_shop_page: 0,
-        })
     }
 
     async fn fetch_member(&mut self) -> Result<(), serenity::Error> {
@@ -174,6 +160,7 @@ impl ProjectMember {
 
     pub fn change_folder(&mut self, folder: Option<String>) {
         self.own_folder = folder;
+        self.update();
     }
 
     pub fn to_embed(&self, ctx: &Context) -> CreateEmbed {

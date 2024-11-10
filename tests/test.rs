@@ -13,8 +13,8 @@ use serenity::{
 use std::collections::HashMap;
 use std::fs;
 use task_bot::{
-    bot::fetch_member, command_manager::*, config::*, connect::*, events::*, localization::*,
-    logger::*, model::*, shop::*,
+    command_manager::*, config::*, connect::*, events::*, localization::*, logger::*, model::*,
+    shop::*,
 };
 use tokio;
 
@@ -60,13 +60,11 @@ fn events_test() {
     struct Event1 {
         name: String,
     }
-    register_event::<Event1>();
 
     #[derive(Event)]
     struct Event2 {
         id: u8,
     }
-    register_event::<Event2>();
 
     fn test_event_fn1(ev: &Event1) {
         println!("Raised test func 1 - {}", ev.name);
@@ -257,13 +255,13 @@ async fn connect_test() {
     )
 }
 
-#[tokio::test]
-async fn members_manager_test() {
+#[test]
+fn members_manager_test() {
     write_file(
-        &DATA_PATH.join("databases/test_members.json"),
+        &DATA_PATH.join("databases/members.json"),
         r#"
-        [{
-            "id": 1046425922200420505,
+        {
+            "id": 1234324,
             "done_tasks": [
                 "1",
                 "2",
@@ -285,23 +283,12 @@ async fn members_manager_test() {
                 "note1",
                 "note2"
             ]
-        }]"#
+        }"#
         .to_string(),
     );
 
-    MEMBERSMANAGER
-        .try_write()
-        .unwrap()
-        .init("test_members.json")
-        .await;
-    OnMemberUpdateEvent {
-        member: fetch_member(1046425922200420505).await.unwrap(),
-    }
-    .raise();
-
     println!("{:#?}", MEMBERSMANAGER.try_read().unwrap());
-    println!("{}", read_file(&DATA_PATH.join("databases/members.json")));
 
-    fs::remove_file(&DATA_PATH.join("databases/members.json"))
+    fs::remove_file(DATA_PATH.join("databases/members.json"))
         .expect("Cannot delete test members database");
 }

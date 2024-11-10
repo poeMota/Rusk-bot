@@ -1,10 +1,4 @@
-use crate::{command_manager::COMMANDMANAGER, config::CONFIG, localization::get_string};
-use command_macro::slash_command;
-use serenity::{
-    builder::{CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage},
-    client::Context,
-    model::{application::CommandInteraction, id::GuildId},
-};
+use crate::prelude::*;
 
 pub async fn fun_commands(ctx: Context, guild: GuildId) {
     #[slash_command([])]

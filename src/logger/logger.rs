@@ -44,21 +44,22 @@ static LOGGER: Lazy<Arc<RwLock<Logger>>> = Lazy::new(|| {
 
 pub struct Logger {
     settings: HashMap<LoggingLevels, bool>,
-    log_channel: Option<GuildChannel>,
+    log_channel: Arc<RwLock<Option<GuildChannel>>>,
 }
 
 impl Logger {
     fn new(log: Option<GuildChannel>, settings: LoggingConfig) -> Self {
         Self {
             settings: settings.levels,
-            log_channel: log,
+            log_channel: Arc::new(RwLock::new(log)),
         }
     }
 
     pub async fn set_log_channel(ctx: &Context, channel: u64) {
         match get_guild().channels(&ctx.http).await {
             Ok(channels) => {
-                LOGGER.write().await.log_channel = channels.get(&ChannelId::new(channel)).cloned();
+                LOGGER.write().await.log_channel =
+                    Arc::new(RwLock::new(channels.get(&ChannelId::new(channel)).cloned()));
 
                 Self::debug(
                     "logger.set_log_channel",
@@ -106,8 +107,10 @@ impl Logger {
             None => true,
         };
 
+        let log_channel = self.log_channel.try_read().unwrap();
+
         if enabled {
-            if let Some(channel) = self.log_channel.clone() {
+            if let Some(channel) = &*log_channel {
                 match channel.send_message(get_http(), message).await {
                     Ok(_) => (),
                     Err(e) => Self::file_logging(

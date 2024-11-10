@@ -1,6 +1,9 @@
 use serenity::prelude::*;
 use std::env;
-use task_bot::{config::load_env, handler::Handler, localization::LOCALIZATION, shop::SHOPMANAGER};
+use task_bot::{
+    config::load_env, handler::Handler, localization::LOCALIZATION, model::MEMBERSMANAGER,
+    shop::SHOPMANAGER,
+};
 use tokio;
 
 #[allow(unused_must_use)]
@@ -8,6 +11,7 @@ use tokio;
 async fn main() {
     LOCALIZATION.read().unwrap();
     SHOPMANAGER.read().await;
+    MEMBERSMANAGER.write().await.init("members.json").await;
     load_env();
 
     let token = env::var("TOKEN").unwrap();

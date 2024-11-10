@@ -8,4 +8,5 @@ pub mod handler;
 pub mod localization;
 pub mod logger;
 pub mod model;
+pub mod prelude;
 pub mod shop;

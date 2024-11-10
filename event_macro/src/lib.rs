@@ -10,8 +10,7 @@ pub fn event(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl Event for #name {
             fn raise(self) {
-                let ev_man = EVENTMANAGER.lock().unwrap();
-                ev_man.raise_event::<#name>(self);
+                EVENTMANAGER.try_read().unwrap().raise_event::<#name>(self);
             }
 
             fn as_any(&self) -> &dyn Any {
