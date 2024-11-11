@@ -4,7 +4,7 @@ use crate::{
 };
 use serenity::{
     all::async_trait,
-    builder::{CreateButton, CreateInteractionResponse, EditInteractionResponse},
+    builder::{CreateButton, EditInteractionResponse},
     client::{Context, EventHandler},
     http::Http,
     model::{
@@ -49,7 +49,9 @@ impl EventHandler for Handler {
                     let member = mem_man.get_mut(component.user.id.clone()).await.unwrap();
 
                     let shop_man = SHOPMANAGER.try_read().unwrap();
-                    member.shop_data.pages = shop_man.get_pages(&ctx, member).await;
+                    member.shop_data.pages = shop_man
+                        .get_pages(&ctx, &member.member().await.unwrap())
+                        .await;
 
                     component.defer_ephemeral(&ctx.http).await.unwrap();
 
@@ -76,7 +78,7 @@ impl EventHandler for Handler {
                                 .get(member.shop_data.current_page as usize)
                                 .cloned()
                             {
-                                page.buy(&ctx, component, member).await;
+                                page.buy(component, member).await;
                             }
                         }
                         _ => (),

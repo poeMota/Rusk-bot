@@ -1,10 +1,8 @@
 use crate::{
     config::{read_file, write_file, DATA_PATH},
-    events::*,
     prelude::*,
     shop::ShopData,
 };
-use event_macro::Event;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -103,8 +101,6 @@ impl MembersManager {
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ProjectMember {
     pub id: UserId,
-    #[serde(default, skip_serializing)]
-    pub dis_member: Member,
     #[serde(default)]
     pub in_tasks: HashMap<String, u32>,
     #[serde(default)]
@@ -128,10 +124,9 @@ impl ProjectMember {
     async fn new(id: UserId) -> Result<Self, serenity::Error> {
         let content = read_file(&DATA_PATH.join(format!("databases/members/{}", id.get())));
 
-        let mut instance: ProjectMember = match content.as_str() {
+        Ok(match content.as_str() {
             "" => Self {
                 id: id.clone(),
-                dis_member: fetch_member(id.get()).await?,
                 in_tasks: HashMap::new(),
                 done_tasks: HashMap::new(),
                 curation_tasks: HashMap::new(),
@@ -142,16 +137,12 @@ impl ProjectMember {
                 notes: Vec::new(),
                 shop_data: ShopData::default(),
             },
-            _ => serde_json::from_str(&content).unwrap(),
-        };
-
-        instance.fetch_member().await?;
-        Ok(instance)
+            _ => serde_json::from_str(&content)?,
+        })
     }
 
-    async fn fetch_member(&mut self) -> Result<(), serenity::Error> {
-        self.dis_member = fetch_member(self.id.clone().get()).await?;
-        Ok(())
+    pub async fn member(&self) -> Result<Member, serenity::Error> {
+        Ok(fetch_member(self.id.get()).await?)
     }
 
     fn serialize(&self) {
@@ -175,14 +166,16 @@ impl ProjectMember {
         self.update();
     }
 
-    pub fn to_embed(&self, ctx: &Context) -> CreateEmbed {
+    pub async fn to_embed(&self, ctx: &Context) -> CreateEmbed {
+        let dis_member = self.member().await.unwrap();
+
         let mut embed = CreateEmbed::new()
             .title(get_string(
                 "member-stat-embed-title",
-                Some(HashMap::from([("member", self.dis_member.display_name())])),
+                Some(HashMap::from([("member", dis_member.display_name())])),
             ))
             .color(match get_guild().to_guild_cached(&ctx.cache) {
-                Some(guild) => match guild.member_highest_role(&self.dis_member) {
+                Some(guild) => match guild.member_highest_role(&dis_member) {
                     Some(color) => color.colour,
                     None => Colour::LIGHT_GREY,
                 },

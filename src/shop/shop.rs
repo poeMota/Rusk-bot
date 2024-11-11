@@ -58,17 +58,15 @@ pub struct ShopManager {
 
 impl ShopManager {
     fn new(shop_path: String) -> Self {
-        let mut shop = ShopManager {
+        ShopManager {
             pages: Vec::new(),
             replacements: HashMap::new(),
             shop_path,
-        };
-        shop.collect_data();
-        shop
+        }
     }
 
-    fn collect_data(&mut self) {
-        self.pages = Vec::new();
+    pub async fn init(&mut self) {
+        let mut pages = Vec::new();
         self.replacements = HashMap::new();
 
         for entry in WalkDir::new(DATA_PATH.join(&self.shop_path)) {
@@ -106,25 +104,38 @@ impl ShopManager {
                             },
                         );
                     }
-                    ReplacementOrPage::Page(page) => {
-                        let mut page_clone = page.clone();
-                        page_clone.convert();
-                        self.pages.push(page_clone)
-                    }
+                    ReplacementOrPage::Page(page) => pages.push(page.clone()),
                 }
             }
         }
+
+        for page in pages.iter_mut() {
+            page.convert(&self).await.expect(&format!(
+                "error with page \"{}\", full struct:\n{:#?}",
+                page.name, page
+            ));
+        }
+
+        self.pages = pages;
+
+        Logger::debug(
+            "shop_man.init",
+            &format!("initialized from shop/* with {} pages", self.pages.len()),
+        )
+        .await;
     }
 
     fn convert_string(&self, string: String) -> Replacement {
         let mut out = Replacement::Str(get_string(string.as_str(), None));
 
         for (replacement, value) in self.replacements.iter() {
-            if string.contains(replacement) {
+            if string.contains(&format!("<{}>", replacement)) {
                 match value {
                     Replacement::Str(repl_string) => {
                         if let Replacement::Str(s) = out {
-                            out = Replacement::Str(s.replace(replacement, &repl_string));
+                            out = Replacement::Str(
+                                s.replace(&format!("<{}>", replacement), &repl_string),
+                            );
                         }
                     }
                     _ => {
@@ -137,7 +148,7 @@ impl ShopManager {
         out
     }
 
-    pub async fn get_pages(&self, ctx: &Context, member: &ProjectMember) -> Vec<Page> {
+    pub async fn get_pages(&self, ctx: &Context, dis_member: &Member) -> Vec<Page> {
         let guild = match get_guild().to_guild_cached(&ctx) {
             Some(g) => g,
             None => {
@@ -147,13 +158,17 @@ impl ShopManager {
 
         let mut out_pages: Vec<Page> = Vec::new();
 
-        for page in self.pages.iter() {
+        'page_loop: for page in self.pages.iter() {
             for name in page.not_access.iter() {
                 if let Some(role) = guild.role_by_name(&name) {
-                    if member.dis_member.roles.contains(&role.id) {
-                        continue;
+                    if dis_member.roles.contains(&role.id) {
+                        continue 'page_loop;
                     }
                 } else {
+                    println!(
+                        "cannot find role with name {} in \"{}\".notAccess",
+                        name, page.name
+                    )
                     /*
                     Logger::error(
                         "shop_man.get_pages",
@@ -167,12 +182,22 @@ impl ShopManager {
                 }
             }
 
+            if page.access.len() == 0 {
+                out_pages.push(page.clone());
+                continue 'page_loop;
+            }
+
             for name in page.access.iter() {
                 if let Some(role) = guild.role_by_name(&name) {
-                    if !member.dis_member.roles.contains(&role.id) {
-                        continue;
+                    if dis_member.roles.contains(&role.id) {
+                        out_pages.push(page.clone());
+                        continue 'page_loop;
                     }
                 } else {
+                    println!(
+                        "cannot find role with name {} in \"{}\".access",
+                        name, page.name
+                    )
                     /*
                     Logger::error(
                         "shop_man.get_pages",
@@ -185,8 +210,6 @@ impl ShopManager {
                     */
                 }
             }
-
-            out_pages.push(page.clone());
         }
         out_pages
     }
@@ -200,6 +223,13 @@ enum Replacement {
     Float(f64),
     Channel(GuildChannel),
     Member(Member),
+    Nothing,
+}
+
+impl Default for Replacement {
+    fn default() -> Self {
+        Replacement::Nothing
+    }
 }
 
 pub struct Shop {
@@ -221,36 +251,46 @@ pub struct Page {
 }
 
 impl Page {
-    fn convert(&mut self) {
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
         self.name = get_string(self.name.as_str(), None);
         self.description = get_string(self.description.as_str(), None);
+
+        for action in self.on_buy.iter_mut() {
+            match action {
+                ShopActions::GiveRoles(act) => act.convert(&shop_man).await?,
+                ShopActions::RemoveRoles(act) => act.convert(&shop_man).await?,
+                ShopActions::SendMessage(act) => act.convert(&shop_man).await?,
+                ShopActions::Mute(act) => act.convert(&shop_man).await?,
+            }
+        }
+
+        Ok(())
     }
 
-    pub async fn buy(
-        &self,
-        ctx: &Context,
-        inter: &ComponentInteraction,
-        member: &mut ProjectMember,
-    ) {
+    pub async fn buy(&self, inter: &ComponentInteraction, member: &mut ProjectMember) {
+        if member.score < self.price {
+            return;
+        }
+
+        let dis_member = member.member().await.unwrap();
+
         for action in self.on_buy.iter() {
             match action {
-                ShopActions::GiveRoles(give_roles) => {
-                    match give_roles.call(ctx.clone(), inter.clone()).await {
-                        Err(e) => {
-                            Logger::error(
-                                "shop.page.buy",
-                                &format!(
-                                    "error while call giveRoles shop action in page \"{}\": {}",
-                                    &self.name, e
-                                ),
-                            )
-                            .await;
-                        }
-                        _ => (),
+                ShopActions::GiveRoles(give_roles) => match give_roles.call(inter.clone()).await {
+                    Err(e) => {
+                        Logger::error(
+                            "shop.page.buy",
+                            &format!(
+                                "error while call giveRoles shop action in page \"{}\": {}",
+                                &self.name, e
+                            ),
+                        )
+                        .await;
                     }
-                }
+                    _ => (),
+                },
                 ShopActions::RemoveRoles(remove_roles) => {
-                    match remove_roles.call(ctx.clone(), inter.clone()).await {
+                    match remove_roles.call(inter.clone()).await {
                         Err(e) => {
                             Logger::error(
                                 "shop.page.buy",
@@ -265,7 +305,7 @@ impl Page {
                     }
                 }
                 ShopActions::SendMessage(send_message) => {
-                    match send_message.call(ctx.clone(), inter.clone()).await {
+                    match send_message.call(inter.clone()).await {
                         Err(e) => {
                             Logger::error(
                                 "shop.page.buy",
@@ -279,7 +319,7 @@ impl Page {
                         _ => (),
                     }
                 }
-                ShopActions::Mute(mute) => match mute.call(ctx.clone(), inter.clone()).await {
+                ShopActions::Mute(mute) => match mute.call(inter.clone()).await {
                     Err(e) => {
                         Logger::error(
                             "shop.page.buy",
@@ -300,7 +340,7 @@ impl Page {
             "shop.page.buy",
             &format!(
                 "user {} score has been changed to {} and is now {}",
-                member.dis_member.display_name(),
+                dis_member.display_name(),
                 -self.price,
                 member.score
             ),
@@ -311,7 +351,7 @@ impl Page {
             "shop.page.buy",
             &format!(
                 "user {} has made a purchase \"{}\"",
-                member.dis_member.display_name(),
+                dis_member.display_name(),
                 self.name
             ),
         )
@@ -370,116 +410,206 @@ enum ShopActions {
 }
 
 trait Action {
-    async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String>;
+    async fn call(&self, inter: ComponentInteraction) -> Result<(), String>;
+
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String>;
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct GiveRoles {
     #[serde(default)]
-    member: StringOrNum,
+    member: Replacement,
     roles: Vec<String>,
 }
 
 impl Action for GiveRoles {
-    async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
-        if let Some(guild_id) = inter.guild_id {
-            let guild = match guild_id.to_partial_guild(&ctx.http).await {
-                Ok(g) => g,
-                Err(_) => return Err("Failed to fetch guild from API".to_string()),
-            };
+    async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
+        let guild = match get_guild().to_partial_guild(get_http()).await {
+            Ok(g) => g,
+            Err(_) => return Err("failed to fetch guild from API".to_string()),
+        };
 
-            match get_member(&inter, &ctx, &self.member).await {
-                Ok(member) => {
-                    for role_name in self.roles.iter() {
-                        if let Some(role) = guild.role_by_name(role_name) {
-                            if let Err(e) = member.add_role(&ctx.http, role.id).await {
-                                return Err(format!(
-                                    "cannot give role {} because - {}",
-                                    role_name,
-                                    e.to_string()
-                                ));
-                            }
-                        }
-                    }
-                    Ok(())
-                }
-                Err(e) => Err(e),
+        let member = match self.member.clone() {
+            Replacement::Member(member) => member,
+            Replacement::Nothing => inter.member.ok_or_else(|| "")?,
+            _ => {
+                return Err("kys".to_string());
             }
-        } else {
-            Err("cannot get guild from shop interaction, wtf".to_string())
+        };
+
+        for role_name in self.roles.iter() {
+            if let Some(role) = guild.role_by_name(role_name) {
+                if let Err(e) = member.add_role(get_http(), role.id).await {
+                    return Err(format!(
+                        "cannot give role {} because - {}",
+                        role_name,
+                        e.to_string()
+                    ));
+                }
+            }
         }
+        Ok(())
+    }
+
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
+        if let Replacement::Str(ref string) = self.member {
+            self.member = shop_man.convert_string(string.clone());
+        }
+
+        if let Replacement::Nothing = self.member {
+        } else {
+            self.member = Replacement::Member(get_member(&self.member).await?);
+        }
+
+        // TODO: roles convert
+        Ok(())
     }
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct RemoveRoles {
     #[serde(default)]
-    member: StringOrNum,
+    member: Replacement,
     roles: Vec<String>,
 }
 
 impl Action for RemoveRoles {
-    async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
-        if let Some(guild_id) = inter.guild_id {
-            let guild = match guild_id.to_partial_guild(&ctx.http).await {
-                Ok(g) => g,
-                Err(_) => return Err("Failed to fetch guild from API".to_string()),
-            };
+    async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
+        let guild = match get_guild().to_partial_guild(get_http()).await {
+            Ok(g) => g,
+            Err(_) => return Err("failed to fetch guild from API".to_string()),
+        };
 
-            match get_member(&inter, &ctx, &self.member).await {
-                Ok(member) => {
-                    for role_name in self.roles.iter() {
-                        if let Some(role) = guild.role_by_name(role_name) {
-                            member.remove_role(&ctx.http, role.id).await.unwrap();
-                        }
-                    }
-                    Ok(())
-                }
-                Err(e) => Err(e),
+        let member = match self.member.clone() {
+            Replacement::Member(member) => member,
+            Replacement::Nothing => inter.member.ok_or_else(|| "")?,
+            _ => {
+                return Err("kys".to_string());
             }
-        } else {
-            Err("cannot get guild from shop interaction, wtf".to_string())
+        };
+
+        for role_name in self.roles.iter() {
+            if let Some(role) = guild.role_by_name(role_name) {
+                if let Err(e) = member.remove_role(get_http(), role.id).await {
+                    return Err(format!(
+                        "cannot remove role {} because - {}",
+                        role_name,
+                        e.to_string()
+                    ));
+                }
+            }
         }
+        Ok(())
+    }
+
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
+        if let Replacement::Str(ref string) = self.member {
+            self.member = shop_man.convert_string(string.clone());
+        }
+
+        if let Replacement::Nothing = self.member {
+        } else {
+            self.member = Replacement::Member(get_member(&self.member).await?);
+        }
+
+        // TODO: roles convert
+        Ok(())
     }
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct SendMessage {
     #[serde(default)]
-    channel: StringOrNum,
+    channel: Replacement,
     message: String,
 }
 
 impl Action for SendMessage {
-    async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
-        match get_channel(&inter, &ctx, &self.channel).await {
-            Ok(channel) => {
-                match channel
-                    .send_message(&ctx.http, CreateMessage::new().content(&self.message))
-                    .await
-                {
-                    Ok(_) => Ok(()),
-                    Err(_) => Err("cannot send message in SendMessage action".to_string()),
-                }
+    async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
+        let replacements = HashMap::from([("AuthorPing", format!("<@{}>", inter.user.id))]);
+        let mut message = self.message.clone();
+
+        for (replacement, value) in replacements.iter() {
+            if message.contains(&format!("<{}>", replacement)) {
+                message = message.replace(&format!("<{}>", replacement), &value);
             }
-            Err(e) => Err(e),
         }
+
+        let channel = match self.channel.clone() {
+            Replacement::Channel(channel) => channel,
+            Replacement::Nothing => match get_guild().channels(get_http()).await {
+                Ok(channels) => match channels.get(&inter.channel_id) {
+                    Some(channel) => channel.clone(),
+                    None => {
+                        return Err("cannot found channel from interaction".to_string());
+                    }
+                },
+                Err(_) => {
+                    return Err("cannot get guild channels, wtf".to_string());
+                }
+            },
+            _ => {
+                return Err("kys".to_string());
+            }
+        };
+
+        match channel
+            .send_message(get_http(), CreateMessage::new().content(message))
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!(
+                "cannot send message in SendMessage action: {}",
+                e.to_string()
+            )),
+        }
+    }
+
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
+        self.message = match shop_man.convert_string(self.message.clone()) {
+            Replacement::Str(string) => string,
+            _ => {
+                return Err(
+                    "message field in sendMessage must be string or string replacement".to_string(),
+                )
+            }
+        };
+        if let Replacement::Str(ref string) = self.channel {
+            self.channel = shop_man.convert_string(string.clone());
+        }
+
+        if let Replacement::Nothing = self.channel {
+        } else {
+            self.channel = Replacement::Channel(get_channel(&self.channel).await?);
+        }
+
+        Ok(())
     }
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct Mute {
     #[serde(default)]
-    member: StringOrNum,
+    member: Replacement,
     duration: i64,
 }
 
 impl Action for Mute {
-    async fn call(&self, ctx: Context, inter: ComponentInteraction) -> Result<(), String> {
+    async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
         match Timestamp::from_unix_timestamp(Timestamp::now().unix_timestamp() + self.duration) {
-            Ok(time) => match get_member(&inter, &ctx, &self.member).await {
-                Ok(mut member) => match member
-                    .disable_communication_until_datetime(&ctx, time)
+            Ok(time) => {
+                let mut member = match self.member.clone() {
+                    Replacement::Member(mem) => mem,
+                    Replacement::Nothing => {
+                        inter.member.ok_or_else(|| "member field if not specified if mute action and cannot take member from interaction".to_string())?
+                    },
+                    _ => {
+                        return Err("kys".to_string());
+                    }
+                };
+
+                match member
+                    .disable_communication_until_datetime(get_http(), time)
                     .await
                 {
                     Ok(_) => Ok(()),
@@ -488,129 +618,63 @@ impl Action for Mute {
                         e.to_string()
                     )
                     .to_string()),
-                },
-                Err(e) => Err(e),
-            },
+                }
+            }
             Err(_) => Err("invalid duration given in mute action".to_string()),
         }
     }
-}
 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
-enum StringOrNum {
-    Str(String),
-    Num(u64),
-    Nothing,
-}
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
+        if let Replacement::Str(ref string) = self.member {
+            self.member = shop_man.convert_string(string.clone());
+        }
 
-impl Default for StringOrNum {
-    fn default() -> Self {
-        StringOrNum::Nothing
+        if let Replacement::Nothing = self.member {
+        } else {
+            self.member = Replacement::Member(get_member(&self.member).await?);
+        }
+
+        Ok(())
     }
 }
 
-async fn get_member(
-    inter: &ComponentInteraction,
-    ctx: &Context,
-    content: &StringOrNum,
-) -> Result<Member, String> {
-    if let Some(guild_id) = inter.guild_id {
-        let guild = match guild_id.to_partial_guild(&ctx.http).await {
-            Ok(g) => g,
-            Err(_) => return Err("Failed to fetch guild from API".to_string()),
-        };
+async fn get_member(content: &Replacement) -> Result<Member, String> {
+    let http = get_http();
+    let guild = match get_guild().to_partial_guild(&http).await {
+        Ok(g) => g,
+        Err(_) => return Err("Failed to fetch guild from API".to_string()),
+    };
 
-        match content {
-            StringOrNum::Str(string) => {
-                let shop_man = SHOPMANAGER.read().await;
-                match shop_man.convert_string(string.clone()) {
-                    Replacement::Num(num) => {
-                        match guild.member(&ctx.http, UserId::new(num as u64)).await {
-                            Ok(member) => Ok(member.clone()),
-                            Err(e) => Err(e.to_string()),
-                        }
-                    }
-                    Replacement::Member(member) => Ok(member),
-                    _ => Err("member field in Mute action must be number or member".to_string()),
-                }
-            }
-            StringOrNum::Num(num) => match guild.member(&ctx.http, UserId::new(*num)).await {
-                Ok(member) => Ok(member.clone()),
-                Err(e) => Err(e.to_string()),
-            },
-            StringOrNum::Nothing => {
-                if let Some(ref member) = inter.member {
-                    Ok(member.clone())
-                } else {
-                    Err(
-                        "cannot take member from shop interaction and member field is empty"
-                            .to_string(),
-                    )
-                }
-            }
-        }
-    } else {
-        Err("cannot get guild from shop interaction, wtf".to_string())
+    match content {
+        Replacement::Num(num) => match guild.member(&http, UserId::new(*num as u64)).await {
+            Ok(member) => Ok(member.clone()),
+            Err(e) => Err(e.to_string()),
+        },
+        Replacement::Member(member) => Ok(member.clone()),
+        _ => Err("uncompatible type to convert into member".to_string()),
     }
 }
 
-async fn get_channel(
-    inter: &ComponentInteraction,
-    ctx: &Context,
-    content: &StringOrNum,
-) -> Result<GuildChannel, String> {
-    if let Some(guild_id) = inter.guild_id {
-        let guild = match guild_id.to_partial_guild(&ctx.http).await {
-            Ok(g) => g,
-            Err(_) => return Err("Failed to fetch guild from API".to_string()),
-        };
+async fn get_channel(content: &Replacement) -> Result<GuildChannel, String> {
+    let http = get_http();
+    let guild = match get_guild().to_partial_guild(&http).await {
+        Ok(g) => g,
+        Err(_) => return Err("Failed to fetch guild from API".to_string()),
+    };
 
-        match content {
-            StringOrNum::Num(num) => {
-                match guild
-                    .channels(&ctx.http)
-                    .await
-                    .unwrap()
-                    .get(&ChannelId::new(*num))
-                {
-                    Some(channel) => Ok(channel.clone()),
-                    None => Err(format!("channel with {} id not found", num)),
-                }
+    match content {
+        Replacement::Num(num) => {
+            match guild
+                .channels(&http)
+                .await
+                .map_err(|e| e.to_string())?
+                .get(&ChannelId::new(*num as u64))
+            {
+                Some(channel) => Ok(channel.clone()),
+                None => Err(format!("channel with {} id not found", num)),
             }
-            StringOrNum::Str(string) => {
-                let shop_man = SHOPMANAGER.read().await;
-                match shop_man.convert_string(string.clone()) {
-                    Replacement::Num(num) => {
-                        match guild
-                            .channels(&ctx.http)
-                            .await
-                            .unwrap()
-                            .get(&ChannelId::new(num as u64))
-                        {
-                            Some(channel) => Ok(channel.clone()),
-                            None => Err(format!(
-                                "channel with {} id not found (id taken from replacement)",
-                                num
-                            )),
-                        }
-                    }
-                    Replacement::Channel(channel) => Ok(channel),
-                    _ => {
-                        Err("uncompatible replacement type for channel in page pototype"
-                            .to_string())
-                    }
-                }
-            }
-            StringOrNum::Nothing => match guild.channels(&ctx.http).await {
-                Ok(channels) => match channels.get(&inter.channel_id) {
-                    Some(channel) => Ok(channel.clone()),
-                    None => Err("cannot found channel from interaction".to_string()),
-                },
-                Err(_) => Err("cannot get guild channels, wtf".to_string()),
-            },
         }
-    } else {
-        Err("cannot get guild from shop interaction, wtf".to_string())
+        Replacement::Channel(channel) => Ok(channel.clone()),
+        _ => Err("uncompatible type to convert into channel".to_string()),
     }
 }

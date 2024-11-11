@@ -207,12 +207,9 @@ async fn shop_test() {
               message: <test str> test test
             - type: giveRoles
               roles: ["1", "2", "3"]
-              member: <test num>
             - type: removeRoles
               roles: ["1", "2", "3"]
-              member: <test num>
             - type: mute
-              member: <test num>
               duration: 60
 
         - type: replacement
@@ -230,7 +227,9 @@ async fn shop_test() {
         .to_string(),
     );
 
-    let shop_man = SHOPMANAGER.read().await;
+    let shop_man = SHOPMANAGER.try_write().unwrap();
+    //TODO: shop_man.init().await;
+
     println!("{:#?}", shop_man);
 
     fs::remove_file(DATA_PATH.join("shop/test_shop.yml")).expect("Cannot delete test shop file");
@@ -262,16 +261,16 @@ async fn members_manager_test() {
         r#"
         {
             "id": 1234324,
-            "done_tasks": [
-                "1",
-                "2",
-                "3"
-            ],
-            "curation_tasks": [
-                "11",
-                "12",
-                "13"
-            ],
+            "done_tasks": {
+                "11": "111",
+                "12": "122",
+                "13": "133"
+            },
+            "curation_tasks": {
+                "11": "111",
+                "12": "122",
+                "13": "133"
+             },
             "own_folder": "SomeFolder",
             "score": 12,
             "all_time_score": 123,

@@ -10,7 +10,7 @@ use tokio;
 #[tokio::main]
 async fn main() {
     LOCALIZATION.read().unwrap();
-    SHOPMANAGER.read().await;
+    SHOPMANAGER.write().await.init().await;
     MEMBERSMANAGER.write().await.init().await;
     load_env();
 

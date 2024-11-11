@@ -13,7 +13,9 @@ pub async fn shop_commands(ctx: Context, guild: GuildId) {
         let member = mem_man.get_mut(inter.user.id.clone()).await.unwrap();
         member.shop_data = ShopData {
             current_page: 0,
-            pages: shop_man.get_pages(&ctx, &member).await,
+            pages: shop_man
+                .get_pages(&ctx, &member.member().await.unwrap())
+                .await,
             inter: Some(inter.clone()),
         };
 
