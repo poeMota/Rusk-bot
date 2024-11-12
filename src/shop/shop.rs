@@ -37,7 +37,6 @@ struct ReplacementData {
 pub struct ShopData {
     pub current_page: i32,
     pub pages: Vec<Page>,
-    pub inter: Option<CommandInteraction>,
 }
 
 impl Default for ShopData {
@@ -45,7 +44,6 @@ impl Default for ShopData {
         Self {
             current_page: 0,
             pages: Vec::new(),
-            inter: None,
         }
     }
 }

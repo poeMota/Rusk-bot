@@ -16,7 +16,6 @@ pub async fn shop_commands(ctx: Context, guild: GuildId) {
             pages: shop_man
                 .get_pages(&ctx, &member.member().await.unwrap())
                 .await,
-            inter: Some(inter.clone()),
         };
 
         if let Some(page) = member.shop_data.pages.first() {

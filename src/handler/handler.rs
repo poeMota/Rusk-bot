@@ -4,7 +4,7 @@ use crate::{
 };
 use serenity::{
     all::async_trait,
-    builder::{CreateButton, EditInteractionResponse},
+    builder::{CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage},
     client::{Context, EventHandler},
     http::Http,
     model::{
@@ -26,6 +26,8 @@ impl EventHandler for Handler {
         }
 
         let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
+
+        // TODO: better commands sync
         //clear_guild_commands(&ctx.http, &guild_id).await;
 
         fun_commands(ctx.clone(), guild_id).await;
@@ -52,8 +54,6 @@ impl EventHandler for Handler {
                     member.shop_data.pages = shop_man
                         .get_pages(&ctx, &member.member().await.unwrap())
                         .await;
-
-                    component.defer_ephemeral(&ctx.http).await.unwrap();
 
                     match component.data.custom_id.as_str() {
                         "previous" => {
@@ -85,32 +85,34 @@ impl EventHandler for Handler {
                     }
 
                     component
-                        .edit_response(
+                        .create_response(
                             &ctx.http,
-                            EditInteractionResponse::new()
-                                .embed(
-                                    member
-                                        .shop_data
-                                        .pages
-                                        .get(member.shop_data.current_page as usize)
-                                        .unwrap()
-                                        .to_embed(&member, member.shop_data.pages.len() as i32),
-                                )
-                                .button(
-                                    CreateButton::new("previous")
-                                        .emoji('◀')
-                                        .style(ButtonStyle::Secondary),
-                                )
-                                .button(
-                                    CreateButton::new("buy")
-                                        .emoji('🛒')
-                                        .style(ButtonStyle::Success),
-                                )
-                                .button(
-                                    CreateButton::new("next")
-                                        .emoji('▶')
-                                        .style(ButtonStyle::Secondary),
-                                ),
+                            CreateInteractionResponse::UpdateMessage(
+                                CreateInteractionResponseMessage::new()
+                                    .embed(
+                                        member
+                                            .shop_data
+                                            .pages
+                                            .get(member.shop_data.current_page as usize)
+                                            .unwrap()
+                                            .to_embed(&member, member.shop_data.pages.len() as i32),
+                                    )
+                                    .button(
+                                        CreateButton::new("previous")
+                                            .emoji('◀')
+                                            .style(ButtonStyle::Secondary),
+                                    )
+                                    .button(
+                                        CreateButton::new("buy")
+                                            .emoji('🛒')
+                                            .style(ButtonStyle::Success),
+                                    )
+                                    .button(
+                                        CreateButton::new("next")
+                                            .emoji('▶')
+                                            .style(ButtonStyle::Secondary),
+                                    ),
+                            ),
                         )
                         .await
                         .unwrap();
@@ -121,7 +123,7 @@ impl EventHandler for Handler {
     }
 }
 
-async fn clear_guild_commands(http: &Http, guild_id: &GuildId) {
+async fn _clear_guild_commands(http: &Http, guild_id: &GuildId) {
     match http.get_guild_commands(guild_id.clone()).await {
         Ok(commands) => {
             for command in commands {
