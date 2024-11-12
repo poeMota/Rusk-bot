@@ -9,7 +9,11 @@ use serde::Deserialize;
 use serenity::{
     all::GuildChannel,
     builder::CreateEmbed,
-    model::{application::ComponentInteraction, colour::Colour, guild::Member},
+    model::{
+        application::ComponentInteraction,
+        colour::Colour,
+        guild::{Member, Role},
+    },
     prelude::*,
 };
 use std::collections::HashMap;
@@ -222,6 +226,7 @@ pub enum Replacement {
     Float(f64),
     Channel(GuildChannel),
     Member(Member),
+    Role(Role),
     Nothing,
 }
 

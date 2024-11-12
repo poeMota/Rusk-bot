@@ -6,7 +6,11 @@ use serde::Deserialize;
 use serenity::{
     all::{GuildChannel, Timestamp, UserId},
     builder::CreateMessage,
-    model::{application::ComponentInteraction, guild::Member, id::ChannelId},
+    model::{
+        application::ComponentInteraction,
+        guild::{Member, Role},
+        id::{ChannelId, RoleId},
+    },
 };
 use std::{collections::HashMap, future::Future};
 
@@ -29,16 +33,11 @@ pub trait Action {
 pub struct GiveRoles {
     #[serde(default)]
     member: Replacement,
-    roles: Vec<String>,
+    roles: Vec<Replacement>,
 }
 
 impl Action for GiveRoles {
     async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
-        let guild = match get_guild().to_partial_guild(get_http()).await {
-            Ok(g) => g,
-            Err(_) => return Err("failed to fetch guild from API".to_string()),
-        };
-
         let member = match self.member.clone() {
             Replacement::Member(member) => member,
             Replacement::Nothing => inter.member.ok_or_else(|| "")?,
@@ -47,14 +46,16 @@ impl Action for GiveRoles {
             }
         };
 
-        for role_name in self.roles.iter() {
-            if let Some(role) = guild.role_by_name(role_name) {
+        for role_repl in self.roles.iter() {
+            if let Replacement::Role(role) = role_repl {
                 if let Err(e) = member.add_role(get_http(), role.id).await {
                     return Err(format!(
                         "cannot give role {} because - {}",
-                        role_name,
+                        role.name,
                         e.to_string()
                     ));
+                } else {
+                    return Err("kys".to_string());
                 }
             }
         }
@@ -71,7 +72,13 @@ impl Action for GiveRoles {
             self.member = Replacement::Member(get_member(&self.member).await?);
         }
 
-        // TODO: roles convert
+        let mut new_roles = Vec::new();
+        for role in self.roles.iter_mut() {
+            new_roles.push(Replacement::Role(get_role(&role).await?));
+        }
+
+        self.roles = new_roles;
+
         Ok(())
     }
 }
@@ -286,5 +293,30 @@ async fn get_channel(content: &Replacement) -> Result<GuildChannel, String> {
         }
         Replacement::Channel(channel) => Ok(channel.clone()),
         _ => Err("uncompatible type to convert into channel".to_string()),
+    }
+}
+
+async fn get_role(content: &Replacement) -> Result<Role, String> {
+    let http = get_http();
+    let guild = match get_guild().to_partial_guild(&http).await {
+        Ok(g) => g,
+        Err(_) => return Err("Failed to fetch guild from API".to_string()),
+    };
+
+    match content {
+        Replacement::Str(string) => {
+            for (_, role) in guild.roles {
+                if string.to_lowercase() == role.name.to_lowercase() {
+                    return Ok(role);
+                }
+            }
+            Err(format!("cannot find role with name {} in guild", string))
+        }
+        Replacement::Num(num) => match guild.roles.get(&RoleId::new(*num as u64)) {
+            Some(role) => Ok(role.clone()),
+            None => Err(format!("cannot find role with id {} in guild", num)),
+        },
+        Replacement::Role(role) => Ok(role.clone()),
+        _ => Err("uncompatible type to convert into guild role".to_string()),
     }
 }
