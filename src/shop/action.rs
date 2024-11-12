@@ -40,7 +40,7 @@ impl Action for GiveRoles {
     async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
         let member = match self.member.clone() {
             Replacement::Member(member) => member,
-            Replacement::Nothing => inter.member.ok_or_else(|| "")?,
+            Replacement::Nothing => inter.member.ok_or_else(|| "interaction have not member")?,
             _ => {
                 return Err("kys".to_string());
             }

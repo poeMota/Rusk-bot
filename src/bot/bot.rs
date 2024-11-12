@@ -1,8 +1,10 @@
 use serenity::{
+    client::Context,
     http::Http,
     model::{
+        channel::GuildChannel,
         guild::Member,
-        id::{GuildId, UserId},
+        id::{ChannelId, GuildId, UserId},
     },
 };
 
@@ -31,4 +33,20 @@ pub async fn fetch_member(id: u64) -> Result<Member, serenity::Error> {
     let guild = get_guild();
 
     guild.member(http, user_id).await
+}
+
+pub fn fetch_channel(ctx: &Context, id: ChannelId) -> Result<GuildChannel, String> {
+    let guild = match get_guild().to_guild_cached(&ctx.cache) {
+        Some(g) => g,
+        None => {
+            return Err("cannot get guild from id".to_string());
+        }
+    };
+
+    match guild.channels.get(&id) {
+        Some(channel) => Ok(channel.clone()),
+        None => {
+            return Err("cannot get channel by id".to_string());
+        }
+    }
 }

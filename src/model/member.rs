@@ -38,7 +38,7 @@ impl MembersManager {
                 Err(error) => {
                     Logger::error(
                         "mem_man.init",
-                        &format!("Error with member data file: {}", error),
+                        &format!("error with member data file: {}", error),
                     )
                     .await;
                     continue;
@@ -52,12 +52,13 @@ impl MembersManager {
             let member: ProjectMember =
                 match serde_yaml::from_str(read_file(&entry.path().to_path_buf()).as_str()) {
                     Ok(c) => c,
-                    Err(_) => {
+                    Err(e) => {
                         Logger::error(
                             "mem_man.init",
                             &format!(
-                                "Error while parsing member data file: {}",
-                                entry.file_name().to_str().unwrap()
+                                "error while parsing member data file \"{}\": {}",
+                                entry.file_name().to_str().unwrap(),
+                                e.to_string()
                             ),
                         )
                         .await;
@@ -71,18 +72,6 @@ impl MembersManager {
         Logger::debug("mem_man.init", "initialized from databases/members/*").await;
     }
 
-    fn serialize(&self) {
-        write_file(
-            &DATA_PATH.join("databases/members.json"),
-            serde_json::to_string(&self.members).unwrap(),
-        );
-    }
-
-    pub fn update(&self) {
-        self.serialize();
-    }
-
-    // No need update after add empty member
     pub async fn get(&mut self, id: UserId) -> Result<&ProjectMember, serenity::Error> {
         Ok(self.members.entry(id.clone()).or_insert_with({
             let member = ProjectMember::new(id).await?;
@@ -102,7 +91,7 @@ impl MembersManager {
 pub struct ProjectMember {
     pub id: UserId,
     #[serde(default)]
-    pub in_tasks: HashMap<String, u32>,
+    pub in_tasks: Vec<u32>,
     #[serde(default)]
     pub done_tasks: HashMap<String, String>,
     #[serde(default)]
@@ -127,7 +116,7 @@ impl ProjectMember {
         Ok(match content.as_str() {
             "" => Self {
                 id: id.clone(),
-                in_tasks: HashMap::new(),
+                in_tasks: Vec::new(),
                 done_tasks: HashMap::new(),
                 curation_tasks: HashMap::new(),
                 own_folder: None,

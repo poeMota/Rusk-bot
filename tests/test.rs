@@ -243,7 +243,14 @@ fn logger_test() {
 
 #[tokio::test]
 async fn connect_test() {
-    println!("{:#?}", file_dates("/".to_string()).await.unwrap());
+    println!(
+        "{:#?}",
+        file_dates("/".to_string())
+            .await
+            .unwrap()
+            .get("../")
+            .unwrap()
+    );
     assert_eq!(
         get_user_id("dfhshfehwifhewhj2h1h2jbfnewbjehfjdhskjkhejhfdkjsh".to_string()).await,
         "Not Found".to_string()
@@ -292,4 +299,36 @@ async fn members_manager_test() {
 
     fs::remove_file(DATA_PATH.join("databases/members/test.json"))
         .expect("Cannot delete test members database");
+}
+
+#[tokio::test]
+async fn tasks_manager_test() {
+    write_file(
+        &DATA_PATH.join("databases/tasks/test.json"),
+        r#"
+        {
+            "id": 1,
+            "thread_id": 12321321,
+            finished: false,
+            name: "test task",
+            score: 123,
+            max_members: 3,
+            mentor_id: null,
+            members: [
+                23456323456,
+                12345435342,
+                21453465765,
+            ],
+            start_date: null,
+            last_save: "dfbfdh/dfgdfd.yml"
+        }"#
+        .to_string(),
+    );
+
+    let mut task_man = TASKMANAGER.try_write().unwrap();
+    task_man.init().await;
+    println!("{:#?}", task_man);
+
+    fs::remove_file(DATA_PATH.join("databases/tasks/test.json"))
+        .expect("Cannot delete test task file");
 }
