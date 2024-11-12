@@ -11,6 +11,7 @@ use tokio;
 async fn main() {
     LOCALIZATION.read().unwrap();
     SHOPMANAGER.write().await.init().await;
+    println!("{:#?}", SHOPMANAGER.read().await);
     MEMBERSMANAGER.write().await.init().await;
     load_env();
 

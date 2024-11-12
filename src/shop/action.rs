@@ -87,16 +87,11 @@ impl Action for GiveRoles {
 pub struct RemoveRoles {
     #[serde(default)]
     member: Replacement,
-    roles: Vec<String>,
+    roles: Vec<Replacement>,
 }
 
 impl Action for RemoveRoles {
     async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
-        let guild = match get_guild().to_partial_guild(get_http()).await {
-            Ok(g) => g,
-            Err(_) => return Err("failed to fetch guild from API".to_string()),
-        };
-
         let member = match self.member.clone() {
             Replacement::Member(member) => member,
             Replacement::Nothing => inter.member.ok_or_else(|| "")?,
@@ -105,14 +100,16 @@ impl Action for RemoveRoles {
             }
         };
 
-        for role_name in self.roles.iter() {
-            if let Some(role) = guild.role_by_name(role_name) {
+        for role_repl in self.roles.iter() {
+            if let Replacement::Role(role) = role_repl {
                 if let Err(e) = member.remove_role(get_http(), role.id).await {
                     return Err(format!(
                         "cannot remove role {} because - {}",
-                        role_name,
+                        role.name,
                         e.to_string()
                     ));
+                } else {
+                    return Err("kys".to_string());
                 }
             }
         }
@@ -129,7 +126,13 @@ impl Action for RemoveRoles {
             self.member = Replacement::Member(get_member(&self.member).await?);
         }
 
-        // TODO: roles convert
+        let mut new_roles = Vec::new();
+        for role in self.roles.iter_mut() {
+            new_roles.push(Replacement::Role(get_role(&role).await?));
+        }
+
+        self.roles = new_roles;
+
         Ok(())
     }
 }
