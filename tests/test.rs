@@ -336,3 +336,34 @@ async fn tags_manager_test() {
     fs::remove_file(DATA_PATH.join("databases/tags/test.json"))
         .expect("Cannot delete test tag file");
 }
+
+#[tokio::test]
+async fn projects_manager_test() {
+    write_file(
+        &DATA_PATH.join("databases/projects/test_project.yml"),
+        r#"
+        {
+            "name": "test project",
+            "max_tasks_per_user": 2,
+            "tasks_forum": 4321324324,
+            "waiter_role": 3424323231,
+            "stat_posts": {},
+            "stat_channel": 4323421897,
+            "associated_roles": [
+                847395357483,
+                354375984739,
+                352759375498
+            ]
+        }
+        "#
+        .to_string(),
+    );
+
+    let mut proj_man = PROJECTMANAGER.try_write().unwrap();
+    proj_man.init().await;
+
+    println!("{:#?}", proj_man);
+
+    fs::remove_file(DATA_PATH.join("databases/projects/test_project.yml"))
+        .expect("Cannot delete test project file");
+}
