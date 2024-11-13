@@ -79,9 +79,9 @@ impl TaskManager {
         Logger::debug("tasks_man.init", "initialized from databases/tasks/*").await;
     }
 
-    pub fn new_task(&mut self, ctx: &Context, thread_id: ChannelId) -> Result<u32, String> {
+    pub async fn new_task(&mut self, ctx: &Context, thread_id: ChannelId) -> Result<u32, String> {
         self.last_task_id += 1;
-        let task = Task::new(&ctx, self.last_task_id, thread_id)?;
+        let task = Task::new(&ctx, self.last_task_id, thread_id).await?;
 
         self.tasks_by_thread
             .insert(task.thread_id.clone(), self.last_task_id);
@@ -123,16 +123,16 @@ pub struct Task {
 }
 
 impl Task {
-    fn new(ctx: &Context, id: u32, thread_id: ChannelId) -> Result<Self, String> {
+    async fn new(ctx: &Context, id: u32, thread_id: ChannelId) -> Result<Self, String> {
         let thread = fetch_channel(&ctx, thread_id)?;
 
-        Ok(Self {
+        let mut instance = Self {
             id,
             thread_id,
             finished: false,
             name: thread.name.clone(),
-            score: 0,          // TODO tags
-            max_members: 9999, // TODO: tags
+            score: 0,
+            max_members: 10000,
             mentor_id: None,
             members: Vec::new(),
             start_date: match thread.thread_metadata {
@@ -142,7 +142,10 @@ impl Task {
                 }
             },
             last_save: None,
-        })
+        };
+
+        instance.fetch_tags(&ctx).await;
+        Ok(instance)
     }
 
     fn serialize(&self) {
@@ -150,6 +153,51 @@ impl Task {
             &DATA_PATH.join(format!("databases/tasks/{}", self.id)),
             serde_json::to_string(&self).unwrap(),
         );
+    }
+
+    async fn fetch_tags(&mut self, ctx: &Context) {
+        match fetch_channel(&ctx, self.thread_id) {
+            Ok(thread) => {
+                let tags_man = match TAGSMANAGER.try_read() {
+                    Ok(man) => man,
+                    Err(e) => {
+                        Logger::error(
+                            "task.fetch_tags",
+                            &format!(
+                                "cannot lock TAGSMANAGER for read because: {}",
+                                e.to_string()
+                            ),
+                        )
+                        .await;
+                        return;
+                    }
+                };
+
+                for dis_tag in thread.applied_tags.iter() {
+                    if let Some(tag) = tags_man.get(dis_tag) {
+                        if let Some(max_members) = tag.max_members {
+                            self.max_members = max_members;
+                        }
+
+                        if let Some(score_modifier) = tag.score_modifier {
+                            self.score = score_modifier;
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                Logger::error(
+                    "task.fetch_tags",
+                    &format!(
+                        "cannot fetch task thread \"{}\", because: {}",
+                        self.name,
+                        e.to_string()
+                    ),
+                )
+                .await;
+                return;
+            }
+        }
     }
 
     fn update(&self) {

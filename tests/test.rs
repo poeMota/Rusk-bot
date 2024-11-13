@@ -332,3 +332,25 @@ async fn tasks_manager_test() {
     fs::remove_file(DATA_PATH.join("databases/tasks/test.json"))
         .expect("Cannot delete test task file");
 }
+
+#[tokio::test]
+async fn tags_manager_test() {
+    write_file(
+        &DATA_PATH.join("databases/tags/test.json"),
+        r#"
+        {
+            "id": 12331424,
+            "forum_id": 212467316,
+            "max_members": 3,
+            "score_modifier": 4
+        }"#
+        .to_string(),
+    );
+
+    let mut tags_man = TAGSMANAGER.try_write().unwrap();
+    tags_man.init().await;
+    println!("{:#?}", tags_man);
+
+    fs::remove_file(DATA_PATH.join("databases/tags/test.json"))
+        .expect("Cannot delete test tag file");
+}
