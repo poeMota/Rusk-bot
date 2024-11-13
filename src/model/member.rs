@@ -4,7 +4,7 @@ use crate::{
     shop::ShopData,
 };
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
+use serde::{de::value, Deserialize, Serialize};
 use serde_json;
 use serenity::{
     builder::CreateEmbed,
@@ -87,7 +87,7 @@ impl MembersManager {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub enum TaskHistory {
     Current(HashMap<Timestamp, u32>),
     OldFormat(String),
@@ -99,9 +99,9 @@ pub struct ProjectMember {
     #[serde(default)]
     pub in_tasks: Vec<u32>,
     #[serde(default)]
-    pub done_tasks: Vec<TaskHistory>,
+    pub done_tasks: HashMap<String, Vec<TaskHistory>>,
     #[serde(default)]
-    pub mentor_tasks: Vec<TaskHistory>,
+    pub mentor_tasks: HashMap<String, Vec<TaskHistory>>,
     pub own_folder: Option<String>,
     #[serde(default)]
     pub score: i64,
@@ -123,8 +123,8 @@ impl ProjectMember {
             "" => Self {
                 id: id.clone(),
                 in_tasks: Vec::new(),
-                done_tasks: Vec::new(),
-                mentor_tasks: Vec::new(),
+                done_tasks: HashMap::new(),
+                mentor_tasks: HashMap::new(),
                 own_folder: None,
                 score: 0,
                 all_time_score: 0,
@@ -181,19 +181,33 @@ impl ProjectMember {
         }
     }
 
-    pub fn add_done_task(&mut self, task: u32) {
-        self.done_tasks.push(TaskHistory::Current(HashMap::from([(
-            Timestamp::now(),
-            task,
-        )])));
+    pub fn add_done_task(&mut self, project_name: &String, task: u32) {
+        if !self.done_tasks.contains_key(project_name) {
+            self.done_tasks.insert(project_name.clone(), Vec::new());
+        }
+
+        self.done_tasks
+            .get_mut(project_name)
+            .unwrap()
+            .push(TaskHistory::Current(HashMap::from([(
+                Timestamp::now(),
+                task,
+            )])));
         self.update();
     }
 
-    pub fn add_mentor_task(&mut self, task: u32) {
-        self.mentor_tasks.push(TaskHistory::Current(HashMap::from([(
-            Timestamp::now(),
-            task,
-        )])));
+    pub fn add_mentor_task(&mut self, project_name: &String, task: u32) {
+        if !self.mentor_tasks.contains_key(project_name) {
+            self.mentor_tasks.insert(project_name.clone(), Vec::new());
+        }
+
+        self.mentor_tasks
+            .get_mut(project_name)
+            .unwrap()
+            .push(TaskHistory::Current(HashMap::from([(
+                Timestamp::now(),
+                task,
+            )])));
         self.update();
     }
 
@@ -212,7 +226,152 @@ impl ProjectMember {
                 },
                 None => Colour::LIGHT_GREY,
             });
-        // TODO
+
+        let task_man = TASKMANAGER.try_read().unwrap();
+        if !self.in_tasks.is_empty() {
+            embed = embed.field(
+                get_string(
+                    "member-stat-embed-in-tasks-name",
+                    Some(HashMap::from([(
+                        "num",
+                        self.in_tasks.len().to_string().as_str(),
+                    )])),
+                ),
+                {
+                    let mut value = String::new();
+                    for id in self.in_tasks.iter() {
+                        if let Some(task) = task_man.get(*id) {
+                            value = format!(
+                                "{}{} <#{}>\n",
+                                value,
+                                match id == self.in_tasks.last().unwrap() {
+                                    true => "╠︎",
+                                    false => "╚",
+                                },
+                                task.thread_id.get()
+                            );
+                        }
+                    }
+                    value
+                },
+                false,
+            );
+        }
+
+        if !self.done_tasks.is_empty() {
+            embed = embed.field(
+                get_string(
+                    "member-stat-embed-done-tasks-name",
+                    Some(HashMap::from([(
+                        "num",
+                        self.done_tasks.len().to_string().as_str(),
+                    )])),
+                ),
+                {
+                    let mut value = String::new();
+                    for (proj, tasks) in self.done_tasks.iter() {
+                        if !tasks.is_empty() {
+                            value = format!("{}{} ({})\n", value, proj, tasks.len());
+
+                            for task in tasks.iter() {
+                                value = format!(
+                                    "{}{} {}\n",
+                                    value,
+                                    match task == tasks.last().unwrap() {
+                                        true => "╠︎",
+                                        false => "╚",
+                                    },
+                                    match task {
+                                        TaskHistory::Current(map) => {
+                                            let mut value_2 = String::new();
+                                            for (time, id) in map.iter() {
+                                                value_2 = format!(
+                                                    "{}<t:{}:D> <#{}>\n",
+                                                    value_2,
+                                                    time.timestamp(),
+                                                    task_man.get(*id).unwrap().thread_id.get()
+                                                );
+                                            }
+                                            value_2
+                                        }
+                                        TaskHistory::OldFormat(string) => string.clone(),
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    value
+                },
+                false,
+            );
+        }
+
+        if !self.mentor_tasks.is_empty() {
+            embed = embed.field(
+                get_string(
+                    "member-stat-embed-mentor-tasks-name",
+                    Some(HashMap::from([(
+                        "num",
+                        self.mentor_tasks.len().to_string().as_str(),
+                    )])),
+                ),
+                {
+                    let mut value = String::new();
+                    for (proj, tasks) in self.mentor_tasks.iter() {
+                        if !tasks.is_empty() {
+                            value = format!("{}{} ({})\n", value, proj, tasks.len());
+
+                            for task in tasks.iter() {
+                                value = format!(
+                                    "{}{} {}\n",
+                                    value,
+                                    match task == tasks.last().unwrap() {
+                                        true => "╠︎",
+                                        false => "╚",
+                                    },
+                                    match task {
+                                        TaskHistory::Current(map) => {
+                                            let mut value_2 = String::new();
+                                            for (time, id) in map.iter() {
+                                                value_2 = format!(
+                                                    "{}<t:{}:D> <#{}>\n",
+                                                    value_2,
+                                                    time.timestamp(),
+                                                    task_man.get(*id).unwrap().thread_id.get()
+                                                );
+                                            }
+                                            value_2
+                                        }
+                                        TaskHistory::OldFormat(string) => string.clone(),
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    value
+                },
+                false,
+            );
+        }
+
+        if let Some(ref folder) = self.own_folder {
+            embed = embed.field(
+                get_string("member-stat-embed-folder-name", None),
+                folder,
+                false,
+            );
+        }
+
         embed
+            .field(
+                get_string("member-stat-embed-score-name", None),
+                self.score.to_string(),
+                false,
+            )
+            .field(
+                get_string("member-stat-embed-all-time-score-name", None),
+                self.all_time_score.to_string(),
+                false,
+            )
     }
 }

@@ -118,8 +118,13 @@ impl TaskManager {
         Logger::debug("tasks_man.init", "initialized from databases/tasks/*").await;
     }
 
-    pub async fn new_task(&mut self, ctx: &Context, thread_id: ChannelId) -> Result<u32, String> {
-        let task = Task::new(&ctx, self.last_task_id + 1, thread_id).await?;
+    pub async fn new_task(
+        &mut self,
+        ctx: &Context,
+        thread_id: ChannelId,
+        project: String,
+    ) -> Result<u32, String> {
+        let task = Task::new(&ctx, self.last_task_id + 1, project, thread_id).await?;
         self.last_task_id += 1;
 
         Logger::low(
@@ -156,6 +161,7 @@ impl TaskManager {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Task {
     pub id: u32,
+    pub project: String,
     pub thread_id: ChannelId,
     pub finished: bool,
     pub name: TaskOption<String>,
@@ -171,11 +177,17 @@ pub struct Task {
 }
 
 impl Task {
-    async fn new(ctx: &Context, id: u32, thread_id: ChannelId) -> Result<Self, String> {
+    async fn new(
+        ctx: &Context,
+        id: u32,
+        project: String,
+        thread_id: ChannelId,
+    ) -> Result<Self, String> {
         let mut thread = fetch_channel(&ctx, thread_id)?;
 
         let mut instance = Self {
             id,
+            project,
             thread_id,
             finished: false,
             name: TaskOption::new(thread.name.clone()),
@@ -303,9 +315,9 @@ impl Task {
                 member.change_score(*self.score.get());
 
                 if &Some(member_id.clone()) != self.mentor_id.get() {
-                    member.add_done_task(self.id);
+                    member.add_done_task(&self.project, self.id);
                 } else {
-                    member.add_mentor_task(self.id);
+                    member.add_mentor_task(&self.project, self.id);
                 }
             }
         }
