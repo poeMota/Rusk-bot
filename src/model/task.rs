@@ -11,12 +11,50 @@ use serenity::{
         timestamp::Timestamp,
     },
 };
-use std::{collections::HashMap, fmt::format, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
 
 pub static TASKMANAGER: Lazy<Arc<RwLock<TaskManager>>> =
     Lazy::new(|| Arc::new(RwLock::new(TaskManager::new())));
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct TaskOption<T: Clone> {
+    base_value: T,
+    modified_value: Option<T>,
+    value_history: HashMap<Timestamp, T>,
+}
+
+impl<T: Clone> TaskOption<T> {
+    pub fn new(value: T) -> Self {
+        Self {
+            base_value: value.clone(),
+            modified_value: None,
+            value_history: HashMap::from([(Timestamp::now(), value)]),
+        }
+    }
+
+    pub fn get(&self) -> &T {
+        if let Some(ref value) = self.modified_value {
+            return value;
+        }
+
+        &self.base_value
+    }
+
+    pub fn get_mut(&mut self) -> &mut T {
+        if let Some(ref mut value) = self.modified_value {
+            return value;
+        }
+
+        &mut self.base_value
+    }
+
+    pub fn set(&mut self, value: T) {
+        self.value_history.insert(Timestamp::now(), value.clone());
+        self.modified_value = Some(value);
+    }
+}
 
 #[derive(Deserialize, Debug)]
 pub struct TaskManager {
@@ -86,7 +124,7 @@ impl TaskManager {
 
         Logger::low(
             "tasks_man.new_task",
-            &format!("created new task {}", task.name),
+            &format!("created new task {}", task.name.get()),
         )
         .await;
 
@@ -120,14 +158,14 @@ pub struct Task {
     pub id: u32,
     pub thread_id: ChannelId,
     pub finished: bool,
-    pub name: String,
-    pub score: i64,
-    pub max_members: u32,
-    pub mentor_id: Option<UserId>,
-    pub members: Vec<UserId>,
+    pub name: TaskOption<String>,
+    pub score: TaskOption<i64>,
+    pub max_members: TaskOption<u32>,
+    pub mentor_id: TaskOption<Option<UserId>>,
+    pub members: TaskOption<Vec<UserId>>,
     pub start_date: Option<Timestamp>,
     pub end_date: Option<Timestamp>,
-    pub last_save: Option<String>,
+    pub last_save: TaskOption<Option<String>>,
 }
 
 impl Task {
@@ -138,11 +176,11 @@ impl Task {
             id,
             thread_id,
             finished: false,
-            name: thread.name.clone(),
-            score: 0,
-            max_members: 10000,
-            mentor_id: None,
-            members: Vec::new(),
+            name: TaskOption::new(thread.name.clone()),
+            score: TaskOption::new(0),
+            max_members: TaskOption::new(10000),
+            mentor_id: TaskOption::new(None),
+            members: TaskOption::new(Vec::new()),
             start_date: match thread.thread_metadata {
                 Some(meta) => meta.create_timestamp,
                 None => {
@@ -150,7 +188,7 @@ impl Task {
                 }
             },
             end_date: None,
-            last_save: None,
+            last_save: TaskOption::new(None),
         };
 
         if let Some(tags) = TAGSMANAGER
@@ -174,7 +212,7 @@ impl Task {
                 .map_err(|e| {
                     format!(
                         "cannot send ping message in task \"{}\", {}",
-                        instance.name,
+                        instance.name.get(),
                         e.to_string()
                     )
                 })?;
@@ -212,11 +250,11 @@ impl Task {
                 for dis_tag in thread.applied_tags.iter() {
                     if let Some(tag) = tags_man.get(dis_tag) {
                         if let Some(max_members) = tag.max_members {
-                            self.max_members = max_members;
+                            self.max_members.set(max_members);
                         }
 
                         if let Some(score_modifier) = tag.score_modifier {
-                            self.score = score_modifier;
+                            self.score.set(score_modifier);
                         }
                     }
                 }
@@ -226,7 +264,7 @@ impl Task {
                     "task.fetch_tags",
                     &format!(
                         "cannot fetch task thread \"{}\", because: {}",
-                        self.name,
+                        self.name.get(),
                         e.to_string()
                     ),
                 )
@@ -249,18 +287,18 @@ impl Task {
             }
         };
 
-        for member_id in self.members.iter() {
+        for member_id in self.members.get().iter() {
             let member = mem_man.get_mut(member_id.clone()).await.unwrap();
 
             member.leave_task(self.id);
-            member.change_score(self.score);
+            member.change_score(*self.score.get());
             // TODO
         }
         drop(mem_man);
 
         self.finished = true;
-        self.members.clear();
-        self.mentor_id = None;
+        self.members.get_mut().clear();
+        self.mentor_id.set(None);
         self.end_date = Some(Timestamp::now());
         self.update();
 
@@ -271,7 +309,7 @@ impl Task {
                     "task.close",
                     &format!(
                         "cannot fetch thread of task \"{}\", because: {}",
-                        self.name,
+                        self.name.get(),
                         e.to_string()
                     ),
                 )
@@ -293,7 +331,7 @@ impl Task {
                     "task.close",
                     &format!(
                         "cannot send message about closing task \"{}\": {}",
-                        self.name,
+                        self.name.get(),
                         e.to_string()
                     ),
                 )
@@ -326,12 +364,12 @@ impl Task {
     }
 
     pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) {
-        self.mentor_id = mentor_id;
+        self.mentor_id.set(mentor_id);
         self.update();
 
-        if let Some(id) = self.mentor_id {
-            if !self.members.contains(&id) {
-                self.add_member(&ctx, id).await;
+        if let Some(id) = self.mentor_id.get() {
+            if !self.members.get().contains(&id) {
+                self.add_member(&ctx, id.clone()).await;
             }
         }
 
@@ -342,7 +380,7 @@ impl Task {
                     "task.set_mentor",
                     &format!(
                         "cannot fetch thread of task \"{}\", because: {}",
-                        self.name,
+                        self.name.get(),
                         e.to_string()
                     ),
                 )
@@ -354,7 +392,7 @@ impl Task {
         match thread
             .send_message(
                 &ctx.http,
-                CreateMessage::new().content(match self.mentor_id {
+                CreateMessage::new().content(match self.mentor_id.get() {
                     Some(id) => get_string(
                         "task-mentor-changed",
                         Some(HashMap::from([(
@@ -373,7 +411,7 @@ impl Task {
                     "task.set_mentor",
                     &format!(
                         "cannot send message about changing mentor of task \"{}\": {}",
-                        self.name,
+                        self.name.get(),
                         e.to_string()
                     ),
                 )
@@ -383,10 +421,10 @@ impl Task {
     }
 
     pub async fn set_last_save(&mut self, ctx: &Context, last_save: Option<String>) {
-        self.last_save = last_save;
+        self.last_save.set(last_save);
         self.update();
 
-        if self.members.len() >= self.max_members as usize {
+        if self.members.get().len() >= *self.max_members.get() as usize {
             let thread = match fetch_channel(&ctx, self.thread_id) {
                 Ok(thread) => thread,
                 Err(e) => {
@@ -394,7 +432,7 @@ impl Task {
                         "task.set_last_save",
                         &format!(
                             "cannot fetch thread of task \"{}\", because: {}",
-                            self.name,
+                            self.name.get(),
                             e.to_string()
                         ),
                     )
@@ -406,7 +444,7 @@ impl Task {
             match thread
                 .send_message(
                     &ctx.http,
-                    CreateMessage::new().content(match self.last_save {
+                    CreateMessage::new().content(match self.last_save.get() {
                         Some(ref save) => get_string(
                             "task-last-save",
                             Some(HashMap::from([("save", save.as_str())])),
@@ -428,7 +466,7 @@ impl Task {
                         "task.set_last_save",
                         &format!(
                             "cannot send message about changing last save of task \"{}\": {}",
-                            self.name,
+                            self.name.get(),
                             e.to_string()
                         ),
                     )
@@ -439,12 +477,12 @@ impl Task {
     }
 
     pub async fn set_max_members(&mut self, ctx: &Context, max_members: u32) {
-        let old_max_members = self.max_members;
+        let old_max_members = *self.max_members.get();
 
-        self.max_members = max_members;
+        self.max_members.set(max_members);
         self.update();
 
-        if self.members.len() >= self.max_members as usize {
+        if self.members.get().len() >= *self.max_members.get() as usize {
             let thread = match fetch_channel(&ctx, self.thread_id) {
                 Ok(thread) => thread,
                 Err(e) => {
@@ -452,7 +490,7 @@ impl Task {
                         "task.set_max_members",
                         &format!(
                             "cannot fetch thread of task \"{}\", because: {}",
-                            self.name,
+                            self.name.get(),
                             e.to_string()
                         ),
                     )
@@ -477,8 +515,8 @@ impl Task {
                     .await;
                 }
             }
-        } else if self.members.len() < self.max_members as usize
-            && self.members.len() >= old_max_members as usize
+        } else if self.members.get().len() < *self.max_members.get() as usize
+            && self.members.get().len() >= old_max_members as usize
         {
             let thread = match fetch_channel(&ctx, self.thread_id) {
                 Ok(thread) => thread,
@@ -487,7 +525,7 @@ impl Task {
                         "task.set_max_members",
                         &format!(
                             "cannot fetch thread of task \"{}\", because: {}",
-                            self.name,
+                            self.name.get(),
                             e.to_string()
                         ),
                     )
@@ -519,7 +557,7 @@ impl Task {
     }
 
     pub fn set_score(&mut self, score: i64) {
-        self.score = score;
+        self.score.set(score);
         self.update();
     }
 
@@ -551,7 +589,7 @@ impl Task {
 
     pub fn get_members_ping(&self) -> String {
         let mut ping = String::new();
-        for member in self.members.iter() {
+        for member in self.members.get().iter() {
             ping = format!("{} <@{}>", ping, member.get());
         }
 
@@ -559,15 +597,18 @@ impl Task {
     }
 
     pub async fn remove_member(&mut self, ctx: &Context, member: UserId) {
+        let members = self.members.get().clone();
+
         self.members
-            .remove(match self.members.iter().position(|x| x == &member) {
+            .get_mut()
+            .remove(match members.iter().position(|x| x == &member) {
                 Some(index) => index,
                 None => {
                     return ();
                 }
             });
 
-        if Some(member) == self.mentor_id {
+        if &Some(member) == self.mentor_id.get() {
             self.set_mentor(&ctx, None).await;
         }
 
@@ -585,7 +626,7 @@ impl Task {
 
         self.update();
 
-        if self.members.len() + 1 == self.max_members as usize {
+        if self.members.get().len() + 1 == *self.max_members.get() as usize {
             let thread = match fetch_channel(&ctx, self.thread_id) {
                 Ok(thread) => thread,
                 Err(e) => {
@@ -593,7 +634,7 @@ impl Task {
                         "task.remove_member",
                         &format!(
                             "cannot fetch thread of task \"{}\", because: {}",
-                            self.name,
+                            self.name.get(),
                             e.to_string()
                         ),
                     )
@@ -625,8 +666,10 @@ impl Task {
     }
 
     pub async fn add_member(&mut self, ctx: &Context, member: UserId) {
-        if self.members.len() < self.max_members as usize && !self.members.contains(&member) {
-            self.members.push(member);
+        if self.members.get().len() < *self.max_members.get() as usize
+            && !self.members.get().contains(&member)
+        {
+            self.members.get_mut().push(member);
 
             match MEMBERSMANAGER.try_write().as_mut() {
                 Ok(man) => {
@@ -642,7 +685,7 @@ impl Task {
 
             self.update();
 
-            if self.members.len() == self.max_members as usize {
+            if self.members.get().len() == *self.max_members.get() as usize {
                 let thread = match fetch_channel(&ctx, self.thread_id) {
                     Ok(thread) => thread,
                     Err(e) => {
@@ -650,7 +693,7 @@ impl Task {
                             "task.add_member",
                             &format!(
                                 "cannot fetch thread of task \"{}\", because: {}",
-                                self.name,
+                                self.name.get(),
                                 e.to_string()
                             ),
                         )
