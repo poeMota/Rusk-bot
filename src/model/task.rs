@@ -241,10 +241,22 @@ impl Task {
     }
 
     pub async fn close(&mut self, ctx: &Context) {
-        for member in self.members.iter() {
+        let mut mem_man = match MEMBERSMANAGER.try_write() {
+            Ok(man) => man,
+            Err(_) => {
+                Logger::error("task.close", "cannot lock MEMBERSMANAGER for write").await;
+                return;
+            }
+        };
+
+        for member_id in self.members.iter() {
+            let member = mem_man.get_mut(member_id.clone()).await.unwrap();
+
+            member.leave_task(self.id);
+            member.change_score(self.score);
             // TODO
-            //member.finish_task(self.id);
         }
+        drop(mem_man);
 
         self.finished = true;
         self.members.clear();
@@ -316,6 +328,12 @@ impl Task {
     pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) {
         self.mentor_id = mentor_id;
         self.update();
+
+        if let Some(id) = self.mentor_id {
+            if !self.members.contains(&id) {
+                self.add_member(&ctx, id).await;
+            }
+        }
 
         let thread = match fetch_channel(&ctx, self.thread_id) {
             Ok(thread) => thread,
@@ -553,6 +571,18 @@ impl Task {
             self.set_mentor(&ctx, None).await;
         }
 
+        match MEMBERSMANAGER.try_write().as_mut() {
+            Ok(man) => {
+                if let Ok(mem) = man.get_mut(member.clone()).await {
+                    mem.leave_task(self.id);
+                }
+            }
+            Err(_) => {
+                Logger::error("task.remove_member", "cannot lock MEMBERSMANAGER for write").await;
+                return;
+            }
+        };
+
         self.update();
 
         if self.members.len() + 1 == self.max_members as usize {
@@ -597,6 +627,19 @@ impl Task {
     pub async fn add_member(&mut self, ctx: &Context, member: UserId) {
         if self.members.len() < self.max_members as usize && !self.members.contains(&member) {
             self.members.push(member);
+
+            match MEMBERSMANAGER.try_write().as_mut() {
+                Ok(man) => {
+                    if let Ok(mem) = man.get_mut(member.clone()).await {
+                        mem.join_task(self.id);
+                    }
+                }
+                Err(_) => {
+                    Logger::error("task.add_member", "cannot lock MEMBERSMANAGER for write").await;
+                    return;
+                }
+            };
+
             self.update();
 
             if self.members.len() == self.max_members as usize {

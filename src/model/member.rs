@@ -155,6 +155,26 @@ impl ProjectMember {
         self.update();
     }
 
+    pub fn leave_task(&mut self, id: u32) {
+        if self.in_tasks.contains(&id) {
+            self.in_tasks
+                .remove(match self.in_tasks.iter().position(|x| x == &id) {
+                    Some(index) => index,
+                    None => {
+                        return ();
+                    }
+                });
+            self.update();
+        }
+    }
+
+    pub fn join_task(&mut self, id: u32) {
+        if !self.in_tasks.contains(&id) {
+            self.in_tasks.push(id);
+            self.update();
+        }
+    }
+
     pub async fn to_embed(&self, ctx: &Context) -> CreateEmbed {
         let dis_member = self.member().await.unwrap();
 
