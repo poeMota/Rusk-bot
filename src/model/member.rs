@@ -9,7 +9,7 @@ use serde_json;
 use serenity::{
     builder::CreateEmbed,
     client::Context,
-    model::{colour::Colour, guild::Member, id::UserId},
+    model::{colour::Colour, guild::Member, id::UserId, timestamp::Timestamp},
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -88,14 +88,20 @@ impl MembersManager {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum TaskHistory {
+    Current(HashMap<Timestamp, u32>),
+    OldFormat(String),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ProjectMember {
     pub id: UserId,
     #[serde(default)]
     pub in_tasks: Vec<u32>,
     #[serde(default)]
-    pub done_tasks: HashMap<String, String>,
+    pub done_tasks: Vec<TaskHistory>,
     #[serde(default)]
-    pub curation_tasks: HashMap<String, String>,
+    pub mentor_tasks: Vec<TaskHistory>,
     pub own_folder: Option<String>,
     #[serde(default)]
     pub score: i64,
@@ -117,8 +123,8 @@ impl ProjectMember {
             "" => Self {
                 id: id.clone(),
                 in_tasks: Vec::new(),
-                done_tasks: HashMap::new(),
-                curation_tasks: HashMap::new(),
+                done_tasks: Vec::new(),
+                mentor_tasks: Vec::new(),
                 own_folder: None,
                 score: 0,
                 all_time_score: 0,
@@ -173,6 +179,22 @@ impl ProjectMember {
             self.in_tasks.push(id);
             self.update();
         }
+    }
+
+    pub fn add_done_task(&mut self, task: u32) {
+        self.done_tasks.push(TaskHistory::Current(HashMap::from([(
+            Timestamp::now(),
+            task,
+        )])));
+        self.update();
+    }
+
+    pub fn add_mentor_task(&mut self, task: u32) {
+        self.mentor_tasks.push(TaskHistory::Current(HashMap::from([(
+            Timestamp::now(),
+            task,
+        )])));
+        self.update();
     }
 
     pub async fn to_embed(&self, ctx: &Context) -> CreateEmbed {

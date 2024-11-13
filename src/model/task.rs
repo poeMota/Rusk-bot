@@ -166,6 +166,8 @@ pub struct Task {
     pub start_date: Option<Timestamp>,
     pub end_date: Option<Timestamp>,
     pub last_save: TaskOption<Option<String>>,
+    #[serde(skip_serializing)]
+    pub ending_results: HashMap<UserId, f64>,
 }
 
 impl Task {
@@ -189,6 +191,7 @@ impl Task {
             },
             end_date: None,
             last_save: TaskOption::new(None),
+            ending_results: HashMap::new(),
         };
 
         if let Some(tags) = TAGSMANAGER
@@ -291,8 +294,20 @@ impl Task {
             let member = mem_man.get_mut(member_id.clone()).await.unwrap();
 
             member.leave_task(self.id);
-            member.change_score(*self.score.get());
-            // TODO
+
+            let end_score = (*self.score.get() as f64
+                * self.ending_results.get(member_id).unwrap_or(&1.0))
+            .round() as i64;
+
+            if end_score > 0 {
+                member.change_score(*self.score.get());
+
+                if &Some(member_id.clone()) != self.mentor_id.get() {
+                    member.add_done_task(self.id);
+                } else {
+                    member.add_mentor_task(self.id);
+                }
+            }
         }
         drop(mem_man);
 
