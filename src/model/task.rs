@@ -3,14 +3,15 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
-    builder::CreateMessage,
+    builder::{CreateMessage, EditThread},
     client::Context,
     model::{
-        id::{ChannelId, UserId},
+        channel::GuildChannel,
+        id::{ChannelId, RoleId, UserId},
         timestamp::Timestamp,
     },
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt::format, sync::Arc};
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
 
@@ -80,8 +81,14 @@ impl TaskManager {
     }
 
     pub async fn new_task(&mut self, ctx: &Context, thread_id: ChannelId) -> Result<u32, String> {
+        let task = Task::new(&ctx, self.last_task_id + 1, thread_id).await?;
         self.last_task_id += 1;
-        let task = Task::new(&ctx, self.last_task_id, thread_id).await?;
+
+        Logger::low(
+            "tasks_man.new_task",
+            &format!("created new task {}", task.name),
+        )
+        .await;
 
         self.tasks_by_thread
             .insert(task.thread_id.clone(), self.last_task_id);
@@ -119,12 +126,13 @@ pub struct Task {
     pub mentor_id: Option<UserId>,
     pub members: Vec<UserId>,
     pub start_date: Option<Timestamp>,
+    pub end_date: Option<Timestamp>,
     pub last_save: Option<String>,
 }
 
 impl Task {
     async fn new(ctx: &Context, id: u32, thread_id: ChannelId) -> Result<Self, String> {
-        let thread = fetch_channel(&ctx, thread_id)?;
+        let mut thread = fetch_channel(&ctx, thread_id)?;
 
         let mut instance = Self {
             id,
@@ -141,8 +149,36 @@ impl Task {
                     return Err("no found thread metadata, maybe its not a thread".to_string());
                 }
             },
+            end_date: None,
             last_save: None,
         };
+
+        if let Some(tags) = TAGSMANAGER
+            .try_read()
+            .map_err(|e| e.to_string())?
+            .get_by_type(&thread.parent_id.unwrap(), TageTypes::InWork)
+        {
+            let mut new_tags = thread.applied_tags.clone();
+            new_tags.extend(tags.iter());
+
+            thread
+                .edit_thread(&ctx.http, EditThread::new().applied_tags(new_tags))
+                .await
+                .map_err(|e| format!("cannot change thread tags, {}", e.to_string()))?
+        }
+
+        if let Some(ping_msg) = instance.get_roles_ping(&thread, None) {
+            thread
+                .send_message(&ctx.http, CreateMessage::new().content(ping_msg))
+                .await
+                .map_err(|e| {
+                    format!(
+                        "cannot send ping message in task \"{}\", {}",
+                        instance.name,
+                        e.to_string()
+                    )
+                })?;
+        }
 
         instance.fetch_tags(&ctx).await;
         Ok(instance)
@@ -204,14 +240,184 @@ impl Task {
         self.serialize();
     }
 
-    pub fn set_mentor(&mut self, mentor_id: Option<UserId>) {
-        self.mentor_id = mentor_id;
+    pub async fn close(&mut self, ctx: &Context) {
+        for member in self.members.iter() {
+            // TODO
+            //member.finish_task(self.id);
+        }
+
+        self.finished = true;
+        self.members.clear();
+        self.mentor_id = None;
+        self.end_date = Some(Timestamp::now());
         self.update();
+
+        let mut thread = match fetch_channel(&ctx, self.thread_id) {
+            Ok(thread) => thread,
+            Err(e) => {
+                Logger::error(
+                    "task.close",
+                    &format!(
+                        "cannot fetch thread of task \"{}\", because: {}",
+                        self.name,
+                        e.to_string()
+                    ),
+                )
+                .await;
+                return;
+            }
+        };
+
+        match thread
+            .send_message(
+                &ctx.http,
+                CreateMessage::new().content(get_string("task-closed", None)),
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                Logger::error(
+                    "task.close",
+                    &format!(
+                        "cannot send message about closing task \"{}\": {}",
+                        self.name,
+                        e.to_string()
+                    ),
+                )
+                .await;
+            }
+        }
+
+        if let Some(tags) = TAGSMANAGER
+            .try_read()
+            .expect("task.close")
+            .get_by_type(&thread.parent_id.unwrap(), TageTypes::ClosedTask)
+        {
+            match thread
+                .edit_thread(&ctx.http, EditThread::new().applied_tags(tags).locked(true))
+                .await
+            {
+                Ok(_) => (),
+                Err(e) => {
+                    Logger::error(
+                        "task.close",
+                        &format!(
+                            "cannot change thread tags and lock thread, {}",
+                            e.to_string()
+                        ),
+                    )
+                    .await
+                }
+            }
+        }
     }
 
-    pub fn set_last_save(&mut self, last_save: Option<String>) {
+    pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) {
+        self.mentor_id = mentor_id;
+        self.update();
+
+        let thread = match fetch_channel(&ctx, self.thread_id) {
+            Ok(thread) => thread,
+            Err(e) => {
+                Logger::error(
+                    "task.set_mentor",
+                    &format!(
+                        "cannot fetch thread of task \"{}\", because: {}",
+                        self.name,
+                        e.to_string()
+                    ),
+                )
+                .await;
+                return;
+            }
+        };
+
+        match thread
+            .send_message(
+                &ctx.http,
+                CreateMessage::new().content(match self.mentor_id {
+                    Some(id) => get_string(
+                        "task-mentor-changed",
+                        Some(HashMap::from([(
+                            "mentor_id",
+                            id.get().to_string().as_str(),
+                        )])),
+                    ),
+                    None => get_string("task-no-more-mentor", None),
+                }),
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                Logger::error(
+                    "task.set_mentor",
+                    &format!(
+                        "cannot send message about changing mentor of task \"{}\": {}",
+                        self.name,
+                        e.to_string()
+                    ),
+                )
+                .await;
+            }
+        }
+    }
+
+    pub async fn set_last_save(&mut self, ctx: &Context, last_save: Option<String>) {
         self.last_save = last_save;
         self.update();
+
+        if self.members.len() >= self.max_members as usize {
+            let thread = match fetch_channel(&ctx, self.thread_id) {
+                Ok(thread) => thread,
+                Err(e) => {
+                    Logger::error(
+                        "task.set_last_save",
+                        &format!(
+                            "cannot fetch thread of task \"{}\", because: {}",
+                            self.name,
+                            e.to_string()
+                        ),
+                    )
+                    .await;
+                    return;
+                }
+            };
+
+            match thread
+                .send_message(
+                    &ctx.http,
+                    CreateMessage::new().content(match self.last_save {
+                        Some(ref save) => get_string(
+                            "task-last-save",
+                            Some(HashMap::from([("save", save.as_str())])),
+                        ),
+                        None => get_string(
+                            "task-last-save",
+                            Some(HashMap::from([(
+                                "save",
+                                get_string("task-lask-save-not-specified", None).as_str(),
+                            )])),
+                        ),
+                    }),
+                )
+                .await
+            {
+                Ok(_) => (),
+                Err(e) => {
+                    Logger::error(
+                        "task.set_last_save",
+                        &format!(
+                            "cannot send message about changing last save of task \"{}\": {}",
+                            self.name,
+                            e.to_string()
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
     }
 
     pub async fn set_max_members(&mut self, ctx: &Context, max_members: u32) {
@@ -299,6 +505,32 @@ impl Task {
         self.update();
     }
 
+    pub fn get_roles_ping(
+        &self,
+        thread: &GuildChannel,
+        waiter_role: Option<RoleId>,
+    ) -> Option<String> {
+        let mut ping = String::new();
+
+        if let Some(role_id) = waiter_role {
+            ping = format!("<@&{}>", role_id.get());
+        }
+
+        let tags_man = TAGSMANAGER.try_read().expect("task.get_roles_ping");
+        for tag in thread.applied_tags.iter() {
+            if let Some(tag) = tags_man.get(tag) {
+                if let Some(ping_role) = tag.ping_role {
+                    ping = format!("{} <@&{}>", ping, ping_role.get());
+                }
+            }
+        }
+
+        if ping == String::new() {
+            return None;
+        }
+        Some(ping)
+    }
+
     pub fn get_members_ping(&self) -> String {
         let mut ping = String::new();
         for member in self.members.iter() {
@@ -318,7 +550,7 @@ impl Task {
             });
 
         if Some(member) == self.mentor_id {
-            self.mentor_id = None;
+            self.set_mentor(&ctx, None).await;
         }
 
         self.update();

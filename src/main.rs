@@ -1,8 +1,7 @@
 use serenity::prelude::*;
 use std::env;
 use task_bot::{
-    config::load_env, handler::Handler, localization::LOCALIZATION, model::MEMBERSMANAGER,
-    shop::SHOPMANAGER,
+    config::load_env, handler::Handler, localization::LOCALIZATION, prelude::*, shop::SHOPMANAGER,
 };
 use tokio;
 
@@ -11,8 +10,8 @@ use tokio;
 async fn main() {
     LOCALIZATION.read().unwrap();
     SHOPMANAGER.write().await.init().await;
-    println!("{:#?}", SHOPMANAGER.read().await);
     MEMBERSMANAGER.write().await.init().await;
+    TAGSMANAGER.write().await.init().await;
     load_env();
 
     let token = env::var("TOKEN").unwrap();

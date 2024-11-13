@@ -7,12 +7,13 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Copy)]
 pub enum TageTypes {
     Base,
     FrozenTask,
     EndedTask,
     ClosedTask,
+    InWork,
 }
 
 pub static TAGSMANAGER: Lazy<Arc<RwLock<TagsManager>>> =
@@ -94,6 +95,22 @@ impl TagsManager {
         let mut tags = Vec::new();
         for tag_id in self.tags_by_channel.get(&forum_id)? {
             tags.push(self.tags.get(tag_id)?);
+        }
+        Some(tags)
+    }
+
+    pub fn get_by_type(
+        &self,
+        forum_id: &ChannelId,
+        tag_type: TageTypes,
+    ) -> Option<Vec<ForumTagId>> {
+        let mut tags = Vec::new();
+        for tag_id in self.tags_by_channel.get(&forum_id)? {
+            if let Some(tag) = self.tags.get(tag_id) {
+                if tag.tag_type == Some(tag_type) {
+                    tags.push(tag.id);
+                }
+            }
         }
         Some(tags)
     }
