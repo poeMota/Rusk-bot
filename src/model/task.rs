@@ -376,6 +376,12 @@ impl Task {
                 }
             }
         }
+
+        Logger::low(
+            "task.close",
+            &format!("task \"{}\" closed", self.name.get()),
+        )
+        .await
     }
 
     pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) {
@@ -433,6 +439,16 @@ impl Task {
                 .await;
             }
         }
+
+        Logger::low(
+            "task.set_mentor",
+            &format!(
+                "task \"{}\" mentor now is {:?}",
+                self.name.get(),
+                self.mentor_id
+            ),
+        )
+        .await;
     }
 
     pub async fn set_last_save(&mut self, ctx: &Context, last_save: Option<String>) {
@@ -489,6 +505,16 @@ impl Task {
                 }
             }
         }
+
+        Logger::low(
+            "task.set_last_save",
+            &format!(
+                "task \"{}\" last save now is {:?}",
+                self.name.get(),
+                self.last_save.get()
+            ),
+        )
+        .await;
     }
 
     pub async fn set_max_members(&mut self, ctx: &Context, max_members: u32) {
@@ -569,11 +595,31 @@ impl Task {
                 }
             }
         }
+
+        Logger::low(
+            "task.set_max_members",
+            &format!(
+                "task \"{}\" max members changed to {}",
+                self.name.get(),
+                self.max_members.get()
+            ),
+        )
+        .await;
     }
 
-    pub fn set_score(&mut self, score: i64) {
+    pub async fn set_score(&mut self, score: i64) {
         self.score.set(score);
         self.update();
+
+        Logger::low(
+            "task.set_score",
+            &format!(
+                "task \"{}\" score changed to {}",
+                self.name.get(),
+                self.score.get()
+            ),
+        )
+        .await;
     }
 
     pub fn get_roles_ping(
@@ -677,6 +723,16 @@ impl Task {
                     .await;
                 }
             }
+
+            Logger::low(
+                "task.remove_member",
+                &format!(
+                    "member {} removed from task \"{}\" members",
+                    member.get(),
+                    self.name.get()
+                ),
+            )
+            .await;
         }
     }
 
@@ -734,6 +790,16 @@ impl Task {
                     }
                 }
             }
+
+            Logger::low(
+                "task.add_member",
+                &format!(
+                    "member {} added to task \"{}\" members",
+                    member.get(),
+                    self.name.get()
+                ),
+            )
+            .await;
         }
     }
 }
