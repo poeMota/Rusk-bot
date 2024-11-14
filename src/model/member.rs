@@ -4,7 +4,7 @@ use crate::{
     shop::ShopData,
 };
 use once_cell::sync::Lazy;
-use serde::{de::value, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
     builder::CreateEmbed,
@@ -93,6 +93,12 @@ pub enum TaskHistory {
     OldFormat(String),
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub enum NotesHistory {
+    Current((UserId, Timestamp, String)),
+    OldFormat(String),
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ProjectMember {
     pub id: UserId,
@@ -108,9 +114,11 @@ pub struct ProjectMember {
     #[serde(default)]
     pub all_time_score: i64,
     #[serde(default)]
-    pub warns: Vec<String>,
+    pub last_activity: HashMap<String, Timestamp>,
     #[serde(default)]
-    pub notes: Vec<String>,
+    pub warns: Vec<NotesHistory>,
+    #[serde(default)]
+    pub notes: Vec<NotesHistory>,
     #[serde(default, skip_serializing)]
     pub shop_data: ShopData,
 }
@@ -128,6 +136,7 @@ impl ProjectMember {
                 own_folder: None,
                 score: 0,
                 all_time_score: 0,
+                last_activity: HashMap::new(),
                 warns: Vec::new(),
                 notes: Vec::new(),
                 shop_data: ShopData::default(),
@@ -211,7 +220,47 @@ impl ProjectMember {
         self.update();
     }
 
-    pub async fn to_embed(&self, ctx: &Context) -> CreateEmbed {
+    pub async fn add_note(&mut self, user: UserId, note: String) {
+        Logger::medium(
+            "member.add_note",
+            &format!(
+                "user {} issued a note **\"{}\"** to a user {}",
+                user.get(),
+                &note,
+                self.id.get()
+            ),
+        )
+        .await;
+
+        self.notes
+            .push(NotesHistory::Current((user, Timestamp::now(), note)));
+        self.update();
+    }
+
+    pub async fn add_warn(&mut self, user: UserId, warn: String) {
+        Logger::high(
+            "member.add_warn",
+            &format!(
+                "user {} issued a warn **\"{}\"** to a user {}",
+                user.get(),
+                &warn,
+                self.id.get()
+            ),
+        )
+        .await;
+
+        self.warns
+            .push(NotesHistory::Current((user, Timestamp::now(), warn)));
+        self.update();
+    }
+
+    pub fn update_last_activity(&mut self, project_name: &String) {
+        self.last_activity
+            .insert(project_name.clone(), Timestamp::now());
+        self.update();
+    }
+
+    pub async fn to_embed(&self, ctx: &Context, show_secret: bool) -> CreateEmbed {
         let dis_member = self.member().await.unwrap();
 
         let mut embed = CreateEmbed::new()
@@ -357,21 +406,129 @@ impl ProjectMember {
         if let Some(ref folder) = self.own_folder {
             embed = embed.field(
                 get_string("member-stat-embed-folder-name", None),
-                folder,
+                format!("`{}`", folder),
                 false,
             );
         }
 
-        embed
+        embed = embed
             .field(
                 get_string("member-stat-embed-score-name", None),
-                self.score.to_string(),
+                format!("`{}`", self.score),
                 false,
             )
             .field(
                 get_string("member-stat-embed-all-time-score-name", None),
-                self.all_time_score.to_string(),
+                format!("`{}`", self.all_time_score),
                 false,
-            )
+            );
+
+        if show_secret {
+            if !self.last_activity.is_empty() {
+                embed = embed.field(
+                    get_string("member-stat-embed-last-activity-name", None),
+                    {
+                        let mut value = String::new();
+                        let mut i = 0;
+
+                        for (proj, time) in &self.last_activity {
+                            i += 1;
+                            value = format!(
+                                "{}{} **{}**: <t:{}:R>\n",
+                                value,
+                                match i == self.last_activity.len() {
+                                    true => "╠︎",
+                                    false => "╚",
+                                },
+                                proj,
+                                time.timestamp()
+                            );
+                        }
+                        value
+                    },
+                    false,
+                );
+            }
+
+            if !self.notes.is_empty() {
+                embed = embed.field(
+                    get_string(
+                        "member-stat-embed-notes-name",
+                        Some(HashMap::from([(
+                            "num",
+                            self.notes.len().to_string().as_str(),
+                        )])),
+                    ),
+                    {
+                        let mut value = String::new();
+
+                        for note in &self.notes {
+                            value = format!(
+                                "{}{} {}\n",
+                                value,
+                                match note == self.notes.last().unwrap() {
+                                    true => "╠︎",
+                                    false => "╚",
+                                },
+                                match note {
+                                    NotesHistory::OldFormat(string) => string.clone(),
+                                    NotesHistory::Current((user, time, string)) => {
+                                        format!(
+                                            "<@{}> <t:{}:D>: {}",
+                                            user.get(),
+                                            time.timestamp(),
+                                            string
+                                        )
+                                    }
+                                }
+                            );
+                        }
+                        value
+                    },
+                    false,
+                );
+            }
+
+            if !self.warns.is_empty() {
+                embed = embed.field(
+                    get_string(
+                        "member-stat-embed-warns-name",
+                        Some(HashMap::from([(
+                            "num",
+                            self.warns.len().to_string().as_str(),
+                        )])),
+                    ),
+                    {
+                        let mut value = String::new();
+
+                        for warn in &self.notes {
+                            value = format!(
+                                "{}{} {}\n",
+                                value,
+                                match warn == self.warns.last().unwrap() {
+                                    true => "╠︎",
+                                    false => "╚",
+                                },
+                                match warn {
+                                    NotesHistory::OldFormat(string) => string.clone(),
+                                    NotesHistory::Current((user, time, string)) => {
+                                        format!(
+                                            "<@{}> <t:{}:D>: {}",
+                                            user.get(),
+                                            time.timestamp(),
+                                            string
+                                        )
+                                    }
+                                }
+                            );
+                        }
+                        value
+                    },
+                    false,
+                );
+            }
+        }
+
+        embed
     }
 }

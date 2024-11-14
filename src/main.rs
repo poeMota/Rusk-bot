@@ -8,6 +8,7 @@ use tokio;
 #[allow(unused_must_use)]
 #[tokio::main]
 async fn main() {
+    CONFIG.read().await;
     LOCALIZATION.read().unwrap();
     SHOPMANAGER.write().await.init().await;
     MEMBERSMANAGER.write().await.init().await;
@@ -22,6 +23,6 @@ async fn main() {
         .unwrap();
 
     if let Err(why) = client.start().await {
-        println!("Bot start error: {:?}", why);
+        Logger::error("main", &format!("Bot start error: {:?}", why)).await;
     }
 }

@@ -1,6 +1,5 @@
 use crate::{
-    command_manager::COMMANDMANAGER, commands::*, config::CONFIG, logger::Logger,
-    model::MEMBERSMANAGER, shop::SHOPMANAGER,
+    command_manager::COMMANDMANAGER, commands::*, config::CONFIG, prelude::*, shop::SHOPMANAGER,
 };
 use serenity::{
     all::async_trait,
@@ -28,11 +27,12 @@ impl EventHandler for Handler {
         let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
 
         // TODO: better commands sync
-        //clear_guild_commands(&ctx.http, &guild_id).await;
+        //_clear_guild_commands(&ctx.http, &guild_id).await;
 
         fun_commands(ctx.clone(), guild_id).await;
         debug_commands(ctx.clone(), guild_id).await;
         shop_commands(ctx.clone(), guild_id).await;
+        member_commands(ctx.clone(), guild_id).await;
 
         Logger::debug("handler.ready", "bot is ready").await;
     }

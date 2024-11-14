@@ -9,7 +9,16 @@ pub use crate::{
 };
 pub use command_macro::*;
 pub use serenity::{
-    builder::{CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage},
+    builder::{
+        CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage,
+        EditInteractionResponse,
+    },
     client::Context,
-    model::{application::CommandInteraction, id::GuildId},
+    model::{
+        application::CommandInteraction,
+        channel::GuildChannel,
+        guild::{Guild, Member},
+        id::GuildId,
+        user::User,
+    },
 };
