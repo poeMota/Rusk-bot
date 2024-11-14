@@ -103,7 +103,7 @@ pub enum NotesHistory {
 pub struct ProjectMember {
     pub id: UserId,
     #[serde(default)]
-    pub in_tasks: Vec<u32>,
+    pub in_tasks: HashMap<String, Vec<u32>>,
     #[serde(default)]
     pub done_tasks: HashMap<String, Vec<TaskHistory>>,
     #[serde(default)]
@@ -130,7 +130,7 @@ impl ProjectMember {
         Ok(match content.as_str() {
             "" => Self {
                 id: id.clone(),
-                in_tasks: Vec::new(),
+                in_tasks: HashMap::new(),
                 done_tasks: HashMap::new(),
                 mentor_tasks: HashMap::new(),
                 own_folder: None,
@@ -170,23 +170,26 @@ impl ProjectMember {
         self.update();
     }
 
-    pub fn leave_task(&mut self, id: u32) {
-        if self.in_tasks.contains(&id) {
-            self.in_tasks
-                .remove(match self.in_tasks.iter().position(|x| x == &id) {
+    pub fn leave_task(&mut self, task: &Task) {
+        if let Some(tasks) = self.in_tasks.get_mut(&task.project) {
+            if tasks.contains(&task.id) {
+                tasks.remove(match tasks.iter().position(|x| x == &task.id) {
                     Some(index) => index,
                     None => {
                         return ();
                     }
                 });
-            self.update();
+                self.update();
+            }
         }
     }
 
-    pub fn join_task(&mut self, id: u32) {
-        if !self.in_tasks.contains(&id) {
-            self.in_tasks.push(id);
-            self.update();
+    pub fn join_task(&mut self, task: &Task) {
+        if let Some(tasks) = self.in_tasks.get_mut(&task.project) {
+            if !tasks.contains(&task.id) {
+                tasks.push(task.id);
+                self.update();
+            }
         }
     }
 
@@ -260,6 +263,66 @@ impl ProjectMember {
         self.update();
     }
 
+    pub async fn to_project_stat(
+        &self,
+        project_name: &String,
+    ) -> Result<(String, String, bool), String> {
+        let dis_member = self
+            .member()
+            .await
+            .map_err(|e| format!("cannot fetch ProjectMember member, {}", e.to_string()))?;
+
+        Ok((
+            dis_member.display_name().to_string(),
+            format!(
+                r#"
+                ╠︎ **{}:** {}\n
+                ╠︎ **{}:** {}\n
+                ╠︎ **{}:** {}\n
+                ╠︎ **{}:** {}\n
+                ╚ **{}:** {}\n
+                "#,
+                get_string("member-project-stat-done-tasks-name", None),
+                match self.done_tasks.get(project_name) {
+                    Some(tasks) => tasks.len(),
+                    None => 0,
+                },
+                get_string("member-project-stat-mentor-tasks-name", None),
+                match self.mentor_tasks.get(project_name) {
+                    Some(tasks) => tasks.len(),
+                    None => 0,
+                },
+                get_string("member-project-stat-in-tasks-name", None),
+                match self.in_tasks.get(project_name) {
+                    Some(tasks) => {
+                        let mut value = String::new();
+                        let task_man = TASKMANAGER
+                            .try_read()
+                            .map_err(|e| format!("cannot lock TASKMANAGER, {}", e.to_string()))?;
+
+                        for task in tasks.iter() {
+                            value = format!(
+                                "{}╠︎ <#{}>\n",
+                                value,
+                                task_man.get(*task).unwrap().thread_id.get()
+                            );
+                        }
+                        value
+                    }
+                    None => get_string("member-project-stat-no-in-tasks", None),
+                },
+                get_string("member-project-stat-last-activity-name", None),
+                match self.last_activity.get(project_name) {
+                    Some(activity) => format!("<t:{}:R>", activity.timestamp()),
+                    None => get_string("member-project-stat-no-last-activity", None),
+                },
+                get_string("member-project-stat-score-name", None),
+                self.score,
+            ),
+            true,
+        ))
+    }
+
     pub async fn to_embed(&self, ctx: &Context, show_secret: bool) -> CreateEmbed {
         let dis_member = self.member().await.unwrap();
 
@@ -288,17 +351,23 @@ impl ProjectMember {
                 ),
                 {
                     let mut value = String::new();
-                    for id in self.in_tasks.iter() {
-                        if let Some(task) = task_man.get(*id) {
-                            value = format!(
-                                "{}{} <#{}>\n",
-                                value,
-                                match id == self.in_tasks.last().unwrap() {
-                                    true => "╠︎",
-                                    false => "╚",
-                                },
-                                task.thread_id.get()
-                            );
+                    for (proj, tasks) in self.in_tasks.iter() {
+                        if !tasks.is_empty() {
+                            value = format!("{}**{} ({}):**\n", value, proj, tasks.len());
+
+                            for id in tasks.iter() {
+                                if let Some(task) = task_man.get(*id) {
+                                    value = format!(
+                                        "{}{} <#{}>\n",
+                                        value,
+                                        match id == tasks.last().unwrap() {
+                                            true => "╠︎",
+                                            false => "╚",
+                                        },
+                                        task.thread_id.get()
+                                    );
+                                }
+                            }
                         }
                     }
                     value
