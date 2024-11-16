@@ -4,9 +4,9 @@ use crate::{
 };
 use serenity::{builder::CreateButton, model::application::ButtonStyle};
 
-pub async fn shop_commands(ctx: Context, guild: GuildId) {
+pub async fn shop_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
-    async fn shop(ctx: Context, inter: CommandInteraction) {
+    async fn shop(ctx: &Context, inter: CommandInteraction) {
         let shop_man = SHOPMANAGER.try_read().unwrap();
         let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
 

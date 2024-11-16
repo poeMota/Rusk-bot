@@ -1,9 +1,9 @@
 use crate::prelude::*;
 use serenity;
 
-pub async fn member_commands(ctx: Context, guild: GuildId) {
+pub async fn member_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
-    async fn my_statistics(ctx: Context, inter: CommandInteraction) {
+    async fn my_statistics(ctx: &Context, inter: CommandInteraction) {
         let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
         let member = mem_man.get(inter.user.id).await.unwrap();
 
@@ -19,7 +19,7 @@ pub async fn member_commands(ctx: Context, guild: GuildId) {
     }
 
     #[slash_command([])]
-    async fn member_statistics(ctx: Context, inter: CommandInteraction, dismember: User) {
+    async fn member_statistics(ctx: &Context, inter: CommandInteraction, dismember: User) {
         let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
         let member = mem_man.get(dismember.id).await.unwrap();
 

@@ -305,7 +305,7 @@ impl Task {
         for member_id in self.members.get().iter() {
             let member = mem_man.get_mut(member_id.clone()).await.unwrap();
 
-            member.leave_task(self.id);
+            member.leave_task(&self);
 
             let end_score = (*self.score.get() as f64
                 * self.ending_results.get(member_id).unwrap_or(&1.0))
@@ -688,7 +688,7 @@ impl Task {
         match MEMBERSMANAGER.try_write().as_mut() {
             Ok(man) => {
                 if let Ok(mem) = man.get_mut(member.clone()).await {
-                    mem.leave_task(self.id);
+                    mem.leave_task(&self);
                 }
             }
             Err(_) => {
@@ -757,7 +757,7 @@ impl Task {
             match MEMBERSMANAGER.try_write().as_mut() {
                 Ok(man) => {
                     if let Ok(mem) = man.get_mut(member.clone()).await {
-                        mem.join_task(self.id);
+                        mem.join_task(&self);
                     }
                 }
                 Err(_) => {

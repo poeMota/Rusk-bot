@@ -24,7 +24,7 @@ pub fn get_http() -> &'static Http {
 static GUILD: Lazy<GuildId> = Lazy::new(|| GuildId::new(CONFIG.try_read().unwrap().guild));
 
 pub fn get_guild() -> GuildId {
-    GUILD.clone()
+    *GUILD
 }
 
 pub async fn fetch_member(id: u64) -> Result<Member, serenity::Error> {

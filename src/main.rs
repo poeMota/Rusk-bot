@@ -13,6 +13,7 @@ async fn main() {
     SHOPMANAGER.write().await.init().await;
     MEMBERSMANAGER.write().await.init().await;
     TAGSMANAGER.write().await.init().await;
+    PROJECTMANAGER.write().await.init().await;
     load_env();
 
     let token = env::var("TOKEN").unwrap();

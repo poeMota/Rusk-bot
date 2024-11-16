@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
-pub async fn fun_commands(ctx: Context, guild: GuildId) {
+pub async fn fun_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
-    async fn bot_send(ctx: Context, inter: CommandInteraction, message: String) {
+    async fn bot_send(ctx: &Context, inter: CommandInteraction, message: String) {
         inter
             .create_response(
                 &ctx.http,
@@ -30,7 +30,7 @@ pub async fn fun_commands(ctx: Context, guild: GuildId) {
     }
 
     #[slash_command([])]
-    async fn when(ctx: Context, inter: CommandInteraction) {
+    async fn when(ctx: &Context, inter: CommandInteraction) {
         bot_send(ctx, inter, get_string("when-command-responce", None)).await;
     }
 }

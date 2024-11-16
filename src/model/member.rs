@@ -263,24 +263,20 @@ impl ProjectMember {
         self.update();
     }
 
-    pub async fn to_project_stat(
+    pub fn to_project_stat(
         &self,
+        member_name: String,
         project_name: &String,
     ) -> Result<(String, String, bool), String> {
-        let dis_member = self
-            .member()
-            .await
-            .map_err(|e| format!("cannot fetch ProjectMember member, {}", e.to_string()))?;
-
         Ok((
-            dis_member.display_name().to_string(),
+            member_name,
             format!(
                 r#"
-                ╠︎ **{}:** {}\n
-                ╠︎ **{}:** {}\n
-                ╠︎ **{}:** {}\n
-                ╠︎ **{}:** {}\n
-                ╚ **{}:** {}\n
+                ╠︎ **{}:** {}
+                ╠︎ **{}:** {}
+                ╠︎ **{}:** {}
+                ╠︎ **{}:** {}
+                ╚ **{}:** {}
                 "#,
                 get_string("member-project-stat-done-tasks-name", None),
                 match self.done_tasks.get(project_name) {
@@ -339,7 +335,18 @@ impl ProjectMember {
                 None => Colour::LIGHT_GREY,
             });
 
-        let task_man = TASKMANAGER.try_read().unwrap();
+        let task_man = match TASKMANAGER.try_read() {
+            Ok(man) => man,
+            Err(_) => {
+                Logger::error(
+                    "member.to_embed",
+                    "error while try_read TASKMANAGER, maybe deadlock, trying await...",
+                )
+                .await;
+                TASKMANAGER.read().await
+            }
+        };
+
         if !self.in_tasks.is_empty() {
             embed = embed.field(
                 get_string(

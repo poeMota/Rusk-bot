@@ -16,9 +16,9 @@ pub use serenity::{
     client::Context,
     model::{
         application::CommandInteraction,
-        channel::GuildChannel,
-        guild::{Guild, Member},
-        id::GuildId,
+        channel::{GuildChannel, PartialChannel},
+        guild::{Guild, Member, Role},
+        id::{ChannelId, GuildId},
         user::User,
     },
 };

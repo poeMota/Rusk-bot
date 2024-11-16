@@ -143,10 +143,11 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                                 // Code to load choices
                                                 command_choices_code = quote! {
                                                     #command_choices_code
-                                                    let #choice_name_ident: Vec<String> =
+                                                    let #choice_name_ident: std::collections::HashMap<String, String> =
                                                         get_string(#choice_locale_key, None)
+                                                        .trim()
                                                         .split("\n")
-                                                        .map(|e| get_string(e, None))
+                                                        .map(|e| (get_string(e, None), e.to_string()))
                                                         .collect();
                                                 };
 
@@ -167,14 +168,14 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                                             ),
                                                         );
                                                     }
-                                                    "string" => {
+                                                    "locale" => {
                                                         parameter_choices.insert(
                                                             param_name.clone(),
                                                             (
                                                                 choice_name_ident.clone(),
                                                                 quote! {
-                                                                    add_string_choice(choice, choice)
-                                                                }
+                                                                    add_string_choice(name.chars().take(100).collect::<String>().as_str(), value)
+                                                                },
                                                             ),
                                                         );
                                                     }
@@ -304,7 +305,7 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
             Box::pin(async move {
                 tokio::task::spawn(async move {
                     #parameter_conversion_code
-                    #function_name((*std::sync::Arc::clone(&ctx)).clone(), command, #(#parameter_names),*).await;
+                    #function_name(&ctx, command, #(#parameter_names),*).await;
                     Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
                 }).await?
             })
@@ -359,7 +360,7 @@ fn generate_option_token_stream(
                     serenity::model::application::CommandOptionType::#option_type_ident,
                     get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
                     get_string(format!("{}-param-{}-description", #command_key, #option_key).as_str(), None).as_str(),
-                ), |acc, choice| acc.#choice_builder)
+                ), |acc, (name, value)| acc.#choice_builder)
                     .required(#is_required)
             }
         }

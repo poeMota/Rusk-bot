@@ -8,6 +8,7 @@ use serenity::{
     http::Http,
     model::{
         application::{ButtonStyle, ComponentInteractionDataKind, Interaction},
+        event::GuildMemberUpdateEvent,
         gateway::Ready,
         id::GuildId,
     },
@@ -29,10 +30,11 @@ impl EventHandler for Handler {
         // TODO: better commands sync
         //_clear_guild_commands(&ctx.http, &guild_id).await;
 
-        fun_commands(ctx.clone(), guild_id).await;
-        debug_commands(ctx.clone(), guild_id).await;
-        shop_commands(ctx.clone(), guild_id).await;
-        member_commands(ctx.clone(), guild_id).await;
+        fun_commands(&ctx, guild_id).await;
+        debug_commands(&ctx, guild_id).await;
+        shop_commands(&ctx, guild_id).await;
+        member_commands(&ctx, guild_id).await;
+        project_commands(&ctx, guild_id).await;
 
         Logger::debug("handler.ready", "bot is ready").await;
     }
@@ -40,17 +42,50 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         match interaction {
             Interaction::Command(ref command) => {
-                let command_man = COMMANDMANAGER.try_read().unwrap();
+                let command_man = match COMMANDMANAGER.try_read() {
+                    Ok(man) => man,
+                    Err(_) => {
+                        Logger::error(
+                            "handler.interaction_create",
+                            "error while try_read COMMANDMANAGER, maybe deadlock, trying await...",
+                        )
+                        .await;
+                        COMMANDMANAGER.read().await
+                    }
+                };
+
                 command_man
                     .call_command(&command.data.name, command.clone(), Arc::new(ctx))
                     .await;
             }
             Interaction::Component(ref component) => {
                 if let ComponentInteractionDataKind::Button = component.data.kind {
-                    let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+                    let mut mem_man = match MEMBERSMANAGER.try_write() {
+                        Ok(man) => man,
+                        Err(_) => {
+                            Logger::error(
+                            "handler.interaction_create",
+                            "error while try_write MEMBERSMANAGER, maybe deadlock, trying await...",
+                        )
+                        .await;
+                            MEMBERSMANAGER.write().await
+                        }
+                    };
+
                     let member = mem_man.get_mut(component.user.id.clone()).await.unwrap();
 
-                    let shop_man = SHOPMANAGER.try_read().unwrap();
+                    let shop_man = match SHOPMANAGER.try_read() {
+                        Ok(man) => man,
+                        Err(_) => {
+                            Logger::error(
+                                "handler.interaction_create",
+                                "error while try_read SHOPMANAGER, maybe deadlock, trying await...",
+                            )
+                            .await;
+                            SHOPMANAGER.read().await
+                        }
+                    };
+
                     member.shop_data.pages = shop_man
                         .get_pages(&ctx, &member.member().await.unwrap())
                         .await;
@@ -119,6 +154,23 @@ impl EventHandler for Handler {
                 }
             }
             _ => (),
+        }
+    }
+
+    #[allow(unused_variables)]
+    async fn guild_member_update(
+        &self,
+        ctx: Context,
+        old_if_available: Option<Member>,
+        new: Option<Member>,
+        event: GuildMemberUpdateEvent,
+    ) {
+        if let Some(member) = new {
+            let mut proj_mem = PROJECTMANAGER.write().await;
+            proj_mem.update_from_member(&ctx, &member).await;
+        } else if let Some(member) = old_if_available {
+            let mut proj_mem = PROJECTMANAGER.write().await;
+            proj_mem.update_from_member(&ctx, &member).await;
         }
     }
 }

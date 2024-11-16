@@ -8,9 +8,9 @@ use serenity::{
     model::{application::CommandInteraction, id::GuildId},
 };
 
-pub async fn debug_commands(ctx: Context, guild: GuildId) {
+pub async fn debug_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
-    async fn shutdown(ctx: Context, inter: CommandInteraction) {
+    async fn shutdown(ctx: &Context, inter: CommandInteraction) {
         inter
             .create_response(
                 &ctx.http,
