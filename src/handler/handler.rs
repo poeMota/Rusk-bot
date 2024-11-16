@@ -167,8 +167,8 @@ impl EventHandler for Handler {
     ) {
         let mut roles_diff = Vec::new();
 
-        if let Some(new) = new {
-            if let Some(old) = old_if_available {
+        if let Some(ref new) = new {
+            if let Some(ref old) = old_if_available {
                 for role in new.roles.iter() {
                     if !old.roles.contains(&role) {
                         roles_diff.push(role.clone());
@@ -199,6 +199,22 @@ impl EventHandler for Handler {
             };
 
             proj_mem.update_from_roles(&ctx, &roles_diff).await;
+        } else if let Some(_) = event.nick {
+            if let Some(new) = new {
+                let mut proj_mem = match PROJECTMANAGER.try_write() {
+                    Ok(man) => man,
+                    Err(_) => {
+                        Logger::error(
+                            "handler.guild_member_update",
+                            "error while try_write PROJECTMANAGER, maybe deadlock, trying await...",
+                        )
+                        .await;
+                        PROJECTMANAGER.write().await
+                    }
+                };
+
+                proj_mem.update_from_member(&ctx, &new).await;
+            }
         }
     }
 }
