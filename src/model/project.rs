@@ -113,6 +113,17 @@ impl ProjectManager {
             }
         }
     }
+
+    pub async fn update_from_roles(&mut self, ctx: &Context, roles: &Vec<RoleId>) {
+        'projects: for proj in self.projects.values_mut() {
+            for role in roles.iter() {
+                if proj.associated_roles.contains(role) {
+                    proj.update_stat_post(&ctx).await;
+                    continue 'projects;
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

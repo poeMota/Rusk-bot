@@ -165,12 +165,40 @@ impl EventHandler for Handler {
         new: Option<Member>,
         event: GuildMemberUpdateEvent,
     ) {
-        if let Some(member) = new {
-            let mut proj_mem = PROJECTMANAGER.write().await;
-            proj_mem.update_from_member(&ctx, &member).await;
-        } else if let Some(member) = old_if_available {
-            let mut proj_mem = PROJECTMANAGER.write().await;
-            proj_mem.update_from_member(&ctx, &member).await;
+        let mut roles_diff = Vec::new();
+
+        if let Some(new) = new {
+            if let Some(old) = old_if_available {
+                for role in new.roles.iter() {
+                    if !old.roles.contains(&role) {
+                        roles_diff.push(role.clone());
+                    }
+                }
+
+                for role in old.roles.iter() {
+                    if !new.roles.contains(&role) {
+                        roles_diff.push(role.clone());
+                    }
+                }
+            } else {
+                roles_diff = new.roles.clone();
+            }
+        }
+
+        if !roles_diff.is_empty() {
+            let mut proj_mem = match PROJECTMANAGER.try_write() {
+                Ok(man) => man,
+                Err(_) => {
+                    Logger::error(
+                        "handler.guild_member_update",
+                        "error while try_write PROJECTMANAGER, maybe deadlock, trying await...",
+                    )
+                    .await;
+                    PROJECTMANAGER.write().await
+                }
+            };
+
+            proj_mem.update_from_roles(&ctx, &roles_diff).await;
         }
     }
 }
