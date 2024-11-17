@@ -93,6 +93,38 @@ pub enum TaskHistory {
     OldFormat(String),
 }
 
+impl TaskHistory {
+    pub async fn get(&self) -> String {
+        let task_man = match TASKMANAGER.try_read() {
+            Ok(man) => man,
+            Err(_) => {
+                Logger::error(
+                    "taskhistory.get",
+                    "error while try_read TASKMANAGER, maybe deadlock, trying await...",
+                )
+                .await;
+                TASKMANAGER.read().await
+            }
+        };
+
+        match self {
+            TaskHistory::Current(map) => {
+                let mut value_2 = String::new();
+                for (time, id) in map.iter() {
+                    value_2 = format!(
+                        "{}<t:{}:D> <#{}>\n",
+                        value_2,
+                        time.timestamp(),
+                        task_man.get(*id).unwrap().thread_id.get()
+                    );
+                }
+                value_2
+            }
+            TaskHistory::OldFormat(string) => string.clone(),
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub enum NotesHistory {
     Current((UserId, Timestamp, String)),

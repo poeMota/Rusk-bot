@@ -98,6 +98,10 @@ impl ProjectManager {
         Ok(())
     }
 
+    pub fn projects(&self) -> Vec<&String> {
+        self.projects.keys().collect()
+    }
+
     pub fn get(&self, name: &String) -> Option<&Project> {
         self.projects.get(name)
     }

@@ -33,4 +33,18 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
             .await
             .unwrap();
     }
+
+    #[slash_command([])]
+    async fn change_member(ctx: &Context, inter: CommandInteraction) {
+        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let member = mem_man.get(inter.user.id).await.unwrap();
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(member.main_changer(&ctx).await),
+            )
+            .await
+            .unwrap();
+    }
 }

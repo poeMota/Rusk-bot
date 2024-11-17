@@ -1,4 +1,5 @@
 mod member;
+mod member_changer;
 mod project;
 mod tag;
 mod task;

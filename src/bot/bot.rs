@@ -1,14 +1,19 @@
 use serenity::{
+    builder::{CreateActionRow, CreateButton},
     client::Context,
     http::Http,
     model::{
+        application::ButtonStyle,
         channel::GuildChannel,
         guild::Member,
         id::{ChannelId, GuildId, UserId},
     },
 };
 
-use crate::config::{load_env, CONFIG};
+use crate::{
+    config::{load_env, CONFIG},
+    prelude::*,
+};
 use once_cell::sync::Lazy;
 use std::env;
 
@@ -49,4 +54,20 @@ pub fn fetch_channel(ctx: &Context, id: ChannelId) -> Result<GuildChannel, Strin
             return Err("cannot get channel by id".to_string());
         }
     }
+}
+
+pub fn get_params_buttons(name: &str, params: Vec<&str>) -> Vec<CreateActionRow> {
+    let mut buttons = Vec::new();
+    for param in params.iter() {
+        buttons.push(CreateActionRow::Buttons(Vec::from([
+            CreateButton::new(format!("{}:{}-label", name, param))
+                .label(get_string(&format!("{}-{}-label", name, param), None))
+                .style(ButtonStyle::Secondary)
+                .disabled(true),
+            CreateButton::new(format!("{}:{}", name, param))
+                .emoji('🛠')
+                .style(ButtonStyle::Success),
+        ])));
+    }
+    buttons
 }
