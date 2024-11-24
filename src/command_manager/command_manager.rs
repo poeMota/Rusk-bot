@@ -160,7 +160,7 @@ impl CommandManager {
             Logger::error(
                 "com_man.call_command",
                 &format!(
-                    "command manager cannot find call for command: {}",
+                    "command manager cannot find call for command: \"{}\"",
                     command_name
                 ),
             )
@@ -204,7 +204,7 @@ impl CommandManager {
             Logger::error(
                 "com_man.call_component",
                 &format!(
-                    "command manager cannot find call for component: {}",
+                    "command manager cannot find call for component: \"{}\"",
                     component_id
                 ),
             )
@@ -242,7 +242,10 @@ impl CommandManager {
         } else {
             Logger::error(
                 "com_man.call_modal",
-                &format!("command manager cannot find call for modal: {}", modal_id),
+                &format!(
+                    "command manager cannot find call for modal: \"{}\"",
+                    modal_id
+                ),
             )
             .await;
         }

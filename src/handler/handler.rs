@@ -1,15 +1,9 @@
-use crate::{commands::*, config::CONFIG, prelude::*, shop::SHOPMANAGER};
+use crate::{commands::*, config::CONFIG, prelude::*, shop::shop_component_listeners};
 use serenity::{
     all::async_trait,
-    builder::{CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage},
     client::{Context, EventHandler},
     http::Http,
-    model::{
-        application::{ButtonStyle, ComponentInteractionDataKind, Interaction},
-        event::GuildMemberUpdateEvent,
-        gateway::Ready,
-        id::GuildId,
-    },
+    model::{application::Interaction, event::GuildMemberUpdateEvent, gateway::Ready, id::GuildId},
 };
 use std::sync::Arc;
 
@@ -34,122 +28,34 @@ impl EventHandler for Handler {
         member_commands(&ctx, guild_id).await;
         project_commands(&ctx, guild_id).await;
 
+        shop_component_listeners().await;
+
         Logger::debug("handler.ready", "bot is ready").await;
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        let command_man = match COMMANDMANAGER.try_read() {
+            Ok(man) => man,
+            Err(_) => {
+                Logger::error(
+                    "handler.interaction_create",
+                    "error while try_read COMMANDMANAGER, maybe deadlock, trying await...",
+                )
+                .await;
+                COMMANDMANAGER.read().await
+            }
+        };
+
         match interaction {
             Interaction::Command(ref command) => {
-                let command_man = match COMMANDMANAGER.try_read() {
-                    Ok(man) => man,
-                    Err(_) => {
-                        Logger::error(
-                            "handler.interaction_create",
-                            "error while try_read COMMANDMANAGER, maybe deadlock, trying await...",
-                        )
-                        .await;
-                        COMMANDMANAGER.read().await
-                    }
-                };
-
                 command_man
                     .call_command(&command.data.name, command, Arc::new(ctx))
                     .await;
             }
             Interaction::Component(ref component) => {
-                if let ComponentInteractionDataKind::Button = component.data.kind {
-                    let mut mem_man = match MEMBERSMANAGER.try_write() {
-                        Ok(man) => man,
-                        Err(_) => {
-                            Logger::error(
-                            "handler.interaction_create",
-                            "error while try_write MEMBERSMANAGER, maybe deadlock, trying await...",
-                        )
-                        .await;
-                            MEMBERSMANAGER.write().await
-                        }
-                    };
-
-                    let member = mem_man.get_mut(component.user.id.clone()).await.unwrap();
-
-                    let shop_man = match SHOPMANAGER.try_read() {
-                        Ok(man) => man,
-                        Err(_) => {
-                            Logger::error(
-                                "handler.interaction_create",
-                                "error while try_read SHOPMANAGER, maybe deadlock, trying await...",
-                            )
-                            .await;
-                            SHOPMANAGER.read().await
-                        }
-                    };
-
-                    member.shop_data.pages = shop_man
-                        .get_pages(&ctx, &member.member().await.unwrap())
-                        .await;
-
-                    match component.data.custom_id.as_str() {
-                        "previous" => {
-                            member.shop_data.current_page -= 1;
-                            if member.shop_data.current_page < 0 {
-                                member.shop_data.current_page =
-                                    member.shop_data.pages.len() as i32 - 1;
-                            }
-                        }
-                        "next" => {
-                            member.shop_data.current_page += 1;
-                            if member.shop_data.current_page
-                                > member.shop_data.pages.len() as i32 - 1
-                            {
-                                member.shop_data.current_page = 0;
-                            }
-                        }
-                        "buy" => {
-                            if let Some(page) = member
-                                .shop_data
-                                .pages
-                                .get(member.shop_data.current_page as usize)
-                                .cloned()
-                            {
-                                page.buy(component, member).await;
-                            }
-                        }
-                        _ => (),
-                    }
-
-                    component
-                        .create_response(
-                            &ctx.http,
-                            CreateInteractionResponse::UpdateMessage(
-                                CreateInteractionResponseMessage::new()
-                                    .embed(
-                                        member
-                                            .shop_data
-                                            .pages
-                                            .get(member.shop_data.current_page as usize)
-                                            .unwrap()
-                                            .to_embed(&member, member.shop_data.pages.len() as i32),
-                                    )
-                                    .button(
-                                        CreateButton::new("previous")
-                                            .emoji('◀')
-                                            .style(ButtonStyle::Secondary),
-                                    )
-                                    .button(
-                                        CreateButton::new("buy")
-                                            .emoji('🛒')
-                                            .style(ButtonStyle::Success),
-                                    )
-                                    .button(
-                                        CreateButton::new("next")
-                                            .emoji('▶')
-                                            .style(ButtonStyle::Secondary),
-                                    ),
-                            ),
-                        )
-                        .await
-                        .unwrap();
-                }
+                command_man
+                    .call_component(&component.data.custom_id, component, Arc::new(ctx))
+                    .await;
             }
             _ => (),
         }
