@@ -1,4 +1,5 @@
 use crate::{
+    model::member::MEMBERSMANAGER,
     prelude::*,
     shop::{ShopData, SHOPMANAGER},
 };

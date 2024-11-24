@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{model::member::MEMBERSMANAGER, prelude::*};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;

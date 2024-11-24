@@ -1,4 +1,4 @@
-use crate::model::ProjectMember;
+use crate::model::member::ProjectMember;
 use crate::{
     config::{read_file, DATA_PATH},
     prelude::*,

@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{model::member::MEMBERSMANAGER, prelude::*};
 use serenity;
 
 pub async fn member_commands(ctx: &Context, guild: GuildId) {

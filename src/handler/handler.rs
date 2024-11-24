@@ -1,4 +1,7 @@
-use crate::{commands::*, config::CONFIG, prelude::*, shop::shop_component_listeners};
+use crate::{
+    commands::*, config::CONFIG, model::project::PROJECTMANAGER, prelude::*,
+    shop::shop_component_listeners,
+};
 use serenity::{
     all::async_trait,
     client::{Context, EventHandler},

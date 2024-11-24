@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{model::member::MEMBERSMANAGER, prelude::*};
 use serenity::{
     builder::{CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage},
     client::Context,

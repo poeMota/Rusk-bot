@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{model::project::PROJECTMANAGER, prelude::*};
 use serenity;
 
 pub async fn project_commands(ctx: &Context, guild: GuildId) {

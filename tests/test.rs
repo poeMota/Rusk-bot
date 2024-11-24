@@ -12,7 +12,13 @@ use serenity::{
 use std::collections::HashMap;
 use std::fs;
 use task_bot::{
-    command_manager::*, config::*, connect::*, localization::*, logger::*, model::*, prelude::*,
+    command_manager::*,
+    config::*,
+    connect::*,
+    localization::*,
+    logger::*,
+    model::{member::MEMBERSMANAGER, project::PROJECTMANAGER, tag::TAGSMANAGER, task::TASKMANAGER},
+    prelude::*,
 };
 use tokio;
 
