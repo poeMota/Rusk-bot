@@ -50,22 +50,27 @@ impl MembersManager {
                 continue;
             }
 
-            let member: ProjectMember =
-                match serde_yaml::from_str(read_file(&entry.path().to_path_buf()).as_str()) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        Logger::error(
-                            "mem_man.init",
-                            &format!(
-                                "error while parsing member data file \"{}\": {}",
-                                entry.file_name().to_str().unwrap(),
-                                e.to_string()
-                            ),
-                        )
-                        .await;
-                        continue;
-                    }
-                };
+            let content = read_file(&entry.path().to_path_buf());
+
+            if content == String::new() {
+                continue;
+            }
+
+            let member: ProjectMember = match serde_yaml::from_str(content.as_str()) {
+                Ok(c) => c,
+                Err(e) => {
+                    Logger::error(
+                        "mem_man.init",
+                        &format!(
+                            "error while parsing member data file \"{}\": {}",
+                            entry.file_name().to_str().unwrap(),
+                            e.to_string()
+                        ),
+                    )
+                    .await;
+                    continue;
+                }
+            };
 
             self.members.insert(member.id.clone(), member);
         }
@@ -193,14 +198,33 @@ impl ProjectMember {
         self.serialize();
     }
 
-    pub fn change_score(&mut self, score: i64) {
+    pub async fn change_score(&mut self, score: i64) {
         self.score += score;
         self.update();
+
+        let dis_member = self.member().await.unwrap();
+        Logger::debug(
+            &format!("member.{}", dis_member.display_name()),
+            &format!("score changed by {}", score.to_string()),
+        )
+        .await;
     }
 
-    pub fn change_folder(&mut self, folder: Option<String>) {
+    pub async fn change_folder(&mut self, folder: Option<String>) {
+        let old_folder = self.own_folder.clone();
+
         self.own_folder = folder;
         self.update();
+
+        let dis_member = self.member().await.unwrap();
+        Logger::debug(
+            &format!("member.{}", dis_member.display_name()),
+            &format!(
+                "own folder changed from {:?} to {:?}",
+                old_folder, self.own_folder
+            ),
+        )
+        .await;
     }
 
     pub fn leave_task(&mut self, task: &Task) {

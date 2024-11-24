@@ -33,6 +33,8 @@ impl EventHandler for Handler {
 
         shop_component_listeners().await;
 
+        member::member_changer_listener().await;
+
         Logger::debug("handler.ready", "bot is ready").await;
     }
 
@@ -58,6 +60,11 @@ impl EventHandler for Handler {
             Interaction::Component(ref component) => {
                 command_man
                     .call_component(&component.data.custom_id, component, Arc::new(ctx))
+                    .await;
+            }
+            Interaction::Modal(ref modal) => {
+                command_man
+                    .call_modal(&modal.data.custom_id, modal, Arc::new(ctx))
                     .await;
             }
             _ => (),

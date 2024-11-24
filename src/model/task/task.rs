@@ -318,7 +318,7 @@ impl Task {
             .round() as i64;
 
             if end_score > 0 {
-                member.change_score(*self.score.get());
+                member.change_score(*self.score.get()).await;
 
                 if &Some(member_id.clone()) != self.mentor_id.get() {
                     member.add_done_task(&self.project, self.id);

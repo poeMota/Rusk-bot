@@ -4,10 +4,9 @@ use crate::{model::member::ProjectMember, prelude::*};
 use serenity::{builder::CreateEmbed, model::Colour};
 
 impl ProjectMember {
-    pub async fn main_changer(&self, ctx: &Context) -> CreateInteractionResponseMessage {
+    pub async fn main_changer(&self) -> CreateInteractionResponseMessage {
         CreateInteractionResponseMessage::new()
-            .embeds(Vec::from([
-                self.to_embed(ctx, true).await,
+            .embed(
                 CreateEmbed::new()
                     .title(get_string("member-changer-embed-title", None))
                     .description(get_string(
@@ -18,7 +17,7 @@ impl ProjectMember {
                         )])),
                     ))
                     .color(Colour::BLUE),
-            ]))
+            )
             .components(get_params_buttons(
                 "member-changer",
                 vec!["score", "own-folder", "tasks", "notes", "warns"],

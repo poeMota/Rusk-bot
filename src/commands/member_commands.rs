@@ -42,7 +42,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
         inter
             .create_response(
                 &ctx.http,
-                CreateInteractionResponse::Message(member.main_changer(&ctx).await),
+                CreateInteractionResponse::Message(member.main_changer().await),
             )
             .await
             .unwrap();

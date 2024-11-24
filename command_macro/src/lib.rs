@@ -323,7 +323,7 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
             use std::sync::Arc;
             #command_declaration
 
-            let mut command_manager = COMMANDMANAGER.try_write().expect("Cannot lock COMMANDMANAGER for write to add command call");
+            let mut command_manager = COMMANDMANAGER.write().await;
             command_manager.add_command(
                 get_string(format!("{}-name", #command_locale_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
                 #function_call_code

@@ -339,7 +339,7 @@ impl Page {
             }
         }
 
-        member.change_score(-self.price);
+        member.change_score(-self.price).await;
         Logger::low(
             "shop.page.buy",
             &format!(
