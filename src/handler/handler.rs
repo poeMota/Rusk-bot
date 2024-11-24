@@ -1,6 +1,4 @@
-use crate::{
-    command_manager::COMMANDMANAGER, commands::*, config::CONFIG, prelude::*, shop::SHOPMANAGER,
-};
+use crate::{commands::*, config::CONFIG, prelude::*, shop::SHOPMANAGER};
 use serenity::{
     all::async_trait,
     builder::{CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage},
@@ -55,7 +53,7 @@ impl EventHandler for Handler {
                 };
 
                 command_man
-                    .call_command(&command.data.name, command.clone(), Arc::new(ctx))
+                    .call_command(&command.data.name, command, Arc::new(ctx))
                     .await;
             }
             Interaction::Component(ref component) => {

@@ -7,9 +7,10 @@ edition = "2021"
 bytes = "1"
 chrono = "0.4"
 command_macro = { path = "./command_macro" }
+component_macro = { path = "./component_macro" }
+modal_macro = { path = "./modal_macro" }
 dashmap = "5.3"
 dotenv = "0.15"
-event_macro = { path = "./event_macro" }
 once_cell = "1.17"
 reqwest = "0.11"
 scraper = "0.13"

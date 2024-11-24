@@ -1,5 +1,4 @@
 use command_macro::slash_command;
-use event_macro::*;
 use serenity::{
     client::Context,
     model::{
@@ -13,8 +12,7 @@ use serenity::{
 use std::collections::HashMap;
 use std::fs;
 use task_bot::{
-    command_manager::*, config::*, connect::*, events::*, localization::*, logger::*, model::*,
-    shop::*,
+    command_manager::*, config::*, connect::*, localization::*, logger::*, model::*, prelude::*,
 };
 use tokio;
 
@@ -54,50 +52,13 @@ fn locale_test() {
         .expect("Cannot delete test locale file");
 }
 
-#[test]
-fn events_test() {
-    #[derive(Event)]
-    struct Event1 {
-        name: String,
-    }
-
-    #[derive(Event)]
-    struct Event2 {
-        id: u8,
-    }
-
-    fn test_event_fn1(ev: &Event1) {
-        println!("Raised test func 1 - {}", ev.name);
-    }
-
-    struct TestStruct {}
-
-    impl TestStruct {
-        fn test_event_fn2(&self, ev: &Event2) {
-            println!("Raised test func 2 - {}", ev.id);
-        }
-    }
-
-    subscribe_event::<Event1>(Box::new(test_event_fn1));
-
-    let test = TestStruct {};
-    subscribe_event::<Event2>(Box::new(move |ev: &Event2| test.test_event_fn2(ev)));
-
-    Event1 {
-        name: String::from("test"),
-    }
-    .raise();
-
-    Event2 { id: 9 }.raise();
-}
-
 #[allow(unused_must_use)]
 #[tokio::test]
 async fn macro_test() {
     async fn _test_apply_command(ctx: Context, guild: GuildId) {
         #[slash_command([])]
         async fn save(
-            _ctx: Context,
+            _ctx: &Context,
             _inter: CommandInteraction,
             _num: i64,
             _float: f64,
@@ -111,7 +72,7 @@ async fn macro_test() {
 
         #[slash_command([])]
         async fn save_plus(
-            _ctx: Context,
+            _ctx: &Context,
             _inter: CommandInteraction,
             _num: Option<i64>,
             _float: Option<f64>,
@@ -135,17 +96,17 @@ async fn macro_test() {
                 max_number_value = 10.0
             ],
             _string = [
-                choice = int,
+                choice = locale,
                 min_length = 5,
                 max_length = 50
             ],
-            _param3 = [choice = int],
-            _param4 = [choice = int],
-            _param5 = [choice = int],
-            _param6 = [choice = int],
+            _param3 = [choice = locale],
+            _param4 = [choice = locale],
+            _param5 = [choice = locale],
+            _param6 = [choice = locale],
         ])]
         async fn save_save(
-            _ctx: Context,
+            _ctx: &Context,
             _inter: CommandInteraction,
             _num: i64,
             _float: f64,
@@ -179,7 +140,7 @@ async fn macro_test() {
             _param6 = [choice = int],
         ])]
         async fn _command(
-            _ctx: Context,
+            _ctx: &Context,
             _inter: CommandInteraction,
             _num: Option<i64>,
             _float: Option<f64>,
@@ -191,6 +152,21 @@ async fn macro_test() {
         ) {
         }
     }
+}
+
+#[tokio::test]
+async fn listen_macros_test() {
+    #[listen_component("test_comp")]
+    async fn test_comp_listener(_ctx: &Context, _inter: ComponentInteraction) {}
+
+    #[listen_component("test_comp2")]
+    async fn test_comp_listener2(_ctx: &Context, _inter: ComponentInteraction) {}
+
+    #[listen_modal("test_modal")]
+    async fn test_modal_listener(_ctx: &Context, _inter: ModalInteraction) {}
+
+    #[listen_modal("test_modal2")]
+    async fn test_modal_listener2(_ctx: &Context, _inter: ModalInteraction) {}
 }
 
 #[tokio::test]

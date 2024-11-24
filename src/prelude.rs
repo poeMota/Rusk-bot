@@ -7,7 +7,9 @@ pub use crate::{
     model::*,
     shop::SHOPMANAGER,
 };
-pub use command_macro::*;
+pub use command_macro::slash_command;
+pub use component_macro::listen_component;
+pub use modal_macro::listen_modal;
 pub use serenity::{
     builder::{
         CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage,
@@ -15,7 +17,7 @@ pub use serenity::{
     },
     client::Context,
     model::{
-        application::CommandInteraction,
+        application::{CommandInteraction, ComponentInteraction, ModalInteraction},
         channel::{GuildChannel, PartialChannel},
         guild::{Guild, Member, Role},
         id::{ChannelId, GuildId},

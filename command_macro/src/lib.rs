@@ -159,9 +159,9 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                                             (
                                                                 choice_name_ident.clone(),
                                                                 quote! {
-                                                                    add_int_choice(choice, #choice_name_ident
+                                                                    add_int_choice(name, #choice_name_ident
                                                                         .iter()
-                                                                        .position(|x| x == choice.as_str())
+                                                                        .position(|x| x == (name, value))
                                                                         .unwrap() as i32
                                                                     )
                                                                 }
@@ -323,11 +323,12 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
             use std::sync::Arc;
             #command_declaration
 
-            let mut command_manager = COMMANDMANAGER.write().await;
+            let mut command_manager = COMMANDMANAGER.try_write().expect("Cannot lock COMMANDMANAGER for write to add command call");
             command_manager.add_command(
                 get_string(format!("{}-name", #command_locale_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
                 #function_call_code
             );
+            drop(command_manager);
 
         }
 
