@@ -159,6 +159,8 @@ pub struct ProjectMember {
     pub notes: Vec<NotesHistory>,
     #[serde(default, skip_serializing)]
     pub shop_data: ShopData,
+    #[serde(default, skip_serializing)]
+    pub changed_member: Option<UserId>,
 }
 
 impl ProjectMember {
@@ -178,6 +180,7 @@ impl ProjectMember {
                 warns: Vec::new(),
                 notes: Vec::new(),
                 shop_data: ShopData::default(),
+                changed_member: None,
             },
             _ => serde_json::from_str(&content)?,
         })
@@ -401,6 +404,30 @@ impl ProjectMember {
         self.update();
     }
 
+    pub async fn remove_note(&mut self, user: UserId, index: usize) {
+        Logger::low(
+            "member.remove_note",
+            &format!(
+                "user {} deleted a note **\"{}\"** to a user {}",
+                user.get(),
+                match self.notes.get(index) {
+                    Some(note) => {
+                        match note {
+                            NotesHistory::Current((_, _, string)) => string.clone(),
+                            NotesHistory::OldFormat(string) => string.clone(),
+                        }
+                    }
+                    None => String::from("Not Found"),
+                },
+                self.id.get()
+            ),
+        )
+        .await;
+
+        self.notes.remove(index);
+        self.update();
+    }
+
     pub async fn add_warn(&mut self, user: UserId, warn: String) {
         Logger::high(
             "member.add_warn",
@@ -415,6 +442,30 @@ impl ProjectMember {
 
         self.warns
             .push(NotesHistory::Current((user, Timestamp::now(), warn)));
+        self.update();
+    }
+
+    pub async fn remove_warn(&mut self, user: UserId, index: usize) {
+        Logger::low(
+            "member.remove_warn",
+            &format!(
+                "user {} deleted a warn **\"{}\"** to a user {}",
+                user.get(),
+                match self.warns.get(index) {
+                    Some(warn) => {
+                        match warn {
+                            NotesHistory::Current((_, _, string)) => string.clone(),
+                            NotesHistory::OldFormat(string) => string.clone(),
+                        }
+                    }
+                    None => String::from("Not Found"),
+                },
+                self.id.get()
+            ),
+        )
+        .await;
+
+        self.warns.remove(index);
         self.update();
     }
 
@@ -529,8 +580,8 @@ impl ProjectMember {
                                         "{}{} <#{}>\n",
                                         value,
                                         match id == tasks.last().unwrap() {
-                                            true => "╠︎",
-                                            false => "╚",
+                                            false => "╠︎",
+                                            true => "╚",
                                         },
                                         task.thread_id.get()
                                     );
@@ -674,8 +725,8 @@ impl ProjectMember {
                                 "{}{} **{}**: <t:{}:R>\n",
                                 value,
                                 match i == self.last_activity.len() {
-                                    true => "╠︎",
-                                    false => "╚",
+                                    false => "╠︎",
+                                    true => "╚",
                                 },
                                 proj,
                                 time.timestamp()
@@ -704,8 +755,8 @@ impl ProjectMember {
                                 "{}{} {}\n",
                                 value,
                                 match note == self.notes.last().unwrap() {
-                                    true => "╠︎",
-                                    false => "╚",
+                                    false => "╠︎",
+                                    true => "╚",
                                 },
                                 match note {
                                     NotesHistory::OldFormat(string) => string.clone(),
@@ -738,13 +789,13 @@ impl ProjectMember {
                     {
                         let mut value = String::new();
 
-                        for warn in &self.notes {
+                        for warn in &self.warns {
                             value = format!(
                                 "{}{} {}\n",
                                 value,
                                 match warn == self.warns.last().unwrap() {
-                                    true => "╠︎",
-                                    false => "╚",
+                                    false => "╠︎",
+                                    true => "╚",
                                 },
                                 match warn {
                                     NotesHistory::OldFormat(string) => string.clone(),

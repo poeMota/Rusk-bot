@@ -23,7 +23,12 @@ pub async fn member_changer_listener() {
     #[listen_component("member-changer:score")]
     async fn score_changer(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         inter
             .create_response(
@@ -50,7 +55,12 @@ pub async fn member_changer_listener() {
     #[listen_component("member-changer:own-folder")]
     async fn folder_changer(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         inter
             .create_response(
@@ -79,13 +89,51 @@ pub async fn member_changer_listener() {
 
     #[listen_component("member-changer:notes")]
     async fn notes_changer(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
+        let mut rows = Vec::new();
+        let mut notes = Vec::new();
+
+        for note in member.notes.iter() {
+            let value = match note {
+                member::NotesHistory::Current((_, _, string)) => string,
+                member::NotesHistory::OldFormat(string) => string,
+            };
+
+            notes.push(CreateSelectMenuOption::new(value, value));
+        }
+
+        if !notes.is_empty() {
+            rows.push(CreateActionRow::SelectMenu(CreateSelectMenu::new(
+                "member-changer:notes:note-remove",
+                serenity::all::CreateSelectMenuKind::String { options: notes },
+            )));
+        }
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer:notes:note-add",
+        )
+        .label(get_string("member-changer-notes-add-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer",
+        )
+        .label(get_string("back-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
         inter
             .create_response(
                 &ctx.http,
-                CreateInteractionResponse::Modal(CreateModal::new(
-                    "member-changer:notes",
-                    get_string("member-changer-modal-notes-title", None),
-                )),
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().components(rows),
+                ),
             )
             .await
             .unwrap();
@@ -93,13 +141,51 @@ pub async fn member_changer_listener() {
 
     #[listen_component("member-changer:warns")]
     async fn warns_changer(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
+        let mut rows = Vec::new();
+        let mut warns = Vec::new();
+
+        for warn in member.warns.iter() {
+            let value = match warn {
+                member::NotesHistory::Current((_, _, string)) => string,
+                member::NotesHistory::OldFormat(string) => string,
+            };
+
+            warns.push(CreateSelectMenuOption::new(value, value));
+        }
+
+        if !warns.is_empty() {
+            rows.push(CreateActionRow::SelectMenu(CreateSelectMenu::new(
+                "member-changer:warns:warn-remove",
+                serenity::all::CreateSelectMenuKind::String { options: warns },
+            )));
+        }
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer:warns:warn-add",
+        )
+        .label(get_string("member-changer-warns-add-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer",
+        )
+        .label(get_string("back-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
         inter
             .create_response(
                 &ctx.http,
-                CreateInteractionResponse::Modal(CreateModal::new(
-                    "member-changer:warns",
-                    get_string("member-changer-modal-warns-title", None),
-                )),
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().components(rows),
+                ),
             )
             .await
             .unwrap();
@@ -108,7 +194,12 @@ pub async fn member_changer_listener() {
     #[listen_modal("member-changer:score")]
     async fn score_modal_submit(ctx: &Context, inter: ModalInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         for row in inter.data.components.iter() {
             for comp in row.components.iter() {
@@ -160,7 +251,12 @@ pub async fn member_changer_listener() {
     #[listen_modal("member-changer:own-folder")]
     async fn folder_modal_submit(ctx: &Context, inter: ModalInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         for row in inter.data.components.iter() {
             for comp in row.components.iter() {
@@ -194,7 +290,12 @@ pub async fn member_changer_listener() {
     async fn tasks_changer_project(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
         let proj_man = project::PROJECTMANAGER.read().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         let mut rows = Vec::new();
 
@@ -278,7 +379,13 @@ pub async fn member_changer_listener() {
     async fn done_tasks_project(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
         let task_man = task::TASKMANAGER.read().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
         let project = match &inter.data.kind {
             ComponentInteractionDataKind::StringSelect { values } => {
                 values.first().unwrap().clone()
@@ -360,7 +467,13 @@ pub async fn member_changer_listener() {
     async fn mentor_tasks_project(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
         let task_man = task::TASKMANAGER.read().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
         let project = match &inter.data.kind {
             ComponentInteractionDataKind::StringSelect { values } => {
                 values.first().unwrap().clone()
@@ -535,7 +648,11 @@ pub async fn member_changer_listener() {
     #[listen_modal("member-changer:tasks:done-tasks-add-custom")]
     async fn add_done_task_submit(ctx: &Context, inter: ModalInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         let mut project = &String::new();
         let mut task = &String::new();
@@ -580,7 +697,11 @@ pub async fn member_changer_listener() {
     #[listen_modal("member-changer:tasks:mentor-tasks-add-custom")]
     async fn add_mentor_task_submit(ctx: &Context, inter: ModalInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         let mut project = &String::new();
         let mut task = &String::new();
@@ -626,7 +747,11 @@ pub async fn member_changer_listener() {
     #[listen_component("member-changer:tasks:done-tasks-remove")]
     async fn remove_done_tasks(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         if let ComponentInteractionDataKind::StringSelect { ref values } = inter.data.kind {
             for value in values {
@@ -698,7 +823,11 @@ pub async fn member_changer_listener() {
     #[listen_component("member-changer:tasks:mentor-tasks-remove")]
     async fn remove_mentor_tasks(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
-        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
 
         if let ComponentInteractionDataKind::StringSelect { ref values } = inter.data.kind {
             for value in values {
@@ -750,6 +879,216 @@ pub async fn member_changer_listener() {
                             index += 1;
                         }
                     }
+                }
+            }
+        }
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:notes:note-add")]
+    async fn note_add_changer(ctx: &Context, inter: ComponentInteraction) {
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Modal(
+                    CreateModal::new(
+                        "member-changer:notes:note-add",
+                        get_string("member-changer-notes-note-add-modal", None),
+                    )
+                    .components(Vec::from([CreateActionRow::InputText(
+                        CreateInputText::new(
+                            InputTextStyle::Short,
+                            get_string("member-changer-notes-note-add-label", None),
+                            "member-changer:notes:note-add-input",
+                        ),
+                    )])),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:warns:warn-add")]
+    async fn warn_add_changer(ctx: &Context, inter: ComponentInteraction) {
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Modal(
+                    CreateModal::new(
+                        "member-changer:warns:warn-add",
+                        get_string("member-changer-warns-warn-add-modal", None),
+                    )
+                    .components(Vec::from([CreateActionRow::InputText(
+                        CreateInputText::new(
+                            InputTextStyle::Short,
+                            get_string("member-changer-warns-warn-add-label", None),
+                            "member-changer:warns:warn-add-input",
+                        ),
+                    )])),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_modal("member-changer:notes:note-add")]
+    async fn note_add_submit(ctx: &Context, inter: ModalInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
+        for row in inter.data.components.iter() {
+            for comp in row.components.iter() {
+                match comp {
+                    ActionRowComponent::InputText(input) => {
+                        if input.custom_id == "member-changer:notes:note-add-input" {
+                            if let Some(ref text) = input.value {
+                                member.add_note(inter.user.id, text.clone()).await;
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_modal("member-changer:warns:warn-add")]
+    async fn warn_add_submit(ctx: &Context, inter: ModalInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
+        for row in inter.data.components.iter() {
+            for comp in row.components.iter() {
+                match comp {
+                    ActionRowComponent::InputText(input) => {
+                        if input.custom_id == "member-changer:warns:warn-add-input" {
+                            if let Some(ref text) = input.value {
+                                member.add_warn(inter.user.id, text.clone()).await;
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:notes:note-remove")]
+    async fn note_remove(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
+        if let ComponentInteractionDataKind::StringSelect { ref values } = inter.data.kind {
+            for value in values {
+                let mut index: usize = 0;
+
+                for note in member.notes.clone().iter() {
+                    match note {
+                        member::NotesHistory::Current((_, _, string)) => {
+                            if string == value {
+                                member.remove_note(author.id, index).await;
+                            }
+                        }
+                        member::NotesHistory::OldFormat(string) => {
+                            if string == value {
+                                member.remove_note(author.id, index).await;
+                            }
+                        }
+                    }
+
+                    index += 1;
+                }
+            }
+        }
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:warns:warn-remove")]
+    async fn warn_remove(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let author = mem_man.get(inter.user.id).await.unwrap().clone();
+        let member = mem_man
+            .get_mut(author.changed_member.unwrap())
+            .await
+            .unwrap();
+
+        if let ComponentInteractionDataKind::StringSelect { ref values } = inter.data.kind {
+            for value in values {
+                let mut index: usize = 0;
+
+                for warn in member.warns.clone().iter() {
+                    match warn {
+                        member::NotesHistory::Current((_, _, string)) => {
+                            if string == value {
+                                member.remove_warn(author.id, index).await;
+                            }
+                        }
+                        member::NotesHistory::OldFormat(string) => {
+                            if string == value {
+                                member.remove_warn(author.id, index).await;
+                            }
+                        }
+                    }
+
+                    index += 1;
                 }
             }
         }

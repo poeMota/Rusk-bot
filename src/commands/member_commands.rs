@@ -37,6 +37,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
     async fn change_member(ctx: &Context, inter: CommandInteraction, member: User) {
         let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        mem_man.get_mut(inter.user.id).await.unwrap().changed_member = Some(member.id.clone());
         let member = mem_man.get(member.id).await.unwrap();
 
         inter
