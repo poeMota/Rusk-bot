@@ -110,10 +110,13 @@ pub async fn member_changer_listener() {
         }
 
         if !notes.is_empty() {
-            rows.push(CreateActionRow::SelectMenu(CreateSelectMenu::new(
-                "member-changer:notes:note-remove",
-                serenity::all::CreateSelectMenuKind::String { options: notes },
-            )));
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:notes:note-remove",
+                    serenity::all::CreateSelectMenuKind::String { options: notes },
+                )
+                .placeholder(get_string("member-changer-notes-remove", None)),
+            ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
@@ -162,10 +165,13 @@ pub async fn member_changer_listener() {
         }
 
         if !warns.is_empty() {
-            rows.push(CreateActionRow::SelectMenu(CreateSelectMenu::new(
-                "member-changer:warns:warn-remove",
-                serenity::all::CreateSelectMenuKind::String { options: warns },
-            )));
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:warns:warn-remove",
+                    serenity::all::CreateSelectMenuKind::String { options: warns },
+                )
+                .placeholder(get_string("member-changer-warns-remove", None)),
+            ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(

@@ -250,27 +250,13 @@ async fn members_manager_test() {
         r#"
         {
             "id": 1234324,
-            "done_tasks": {
-                "11": "111",
-                "12": "122",
-                "13": "133"
-            },
-            "curation_tasks": {
-                "11": "111",
-                "12": "122",
-                "13": "133"
-             },
+            "done_tasks": { },
+            "curation_tasks": { },
             "own_folder": "SomeFolder",
             "score": 12,
             "all_time_score": 123,
-            "warns": [
-                "warn1",
-                "warn2"
-            ],
-            "notes": [
-                "note1",
-                "note2"
-            ]
+            "warns": [ ],
+            "notes": [ ]
         }"#
         .to_string(),
     );
