@@ -56,7 +56,7 @@ impl MembersManager {
                 continue;
             }
 
-            let member: ProjectMember = match serde_yaml::from_str(content.as_str()) {
+            let member: ProjectMember = match serde_json::from_str(content.as_str()) {
                 Ok(c) => c,
                 Err(e) => {
                     Logger::error(
@@ -200,6 +200,9 @@ impl ProjectMember {
 
     pub async fn change_score(&mut self, score: i64) {
         self.score += score;
+        if score > 0 {
+            self.all_time_score += score;
+        }
         self.update();
 
         let dis_member = self.member().await.unwrap();
@@ -236,6 +239,11 @@ impl ProjectMember {
                         return ();
                     }
                 });
+
+                if tasks.is_empty() {
+                    self.in_tasks.remove(&task.project);
+                }
+
                 self.update();
             }
         }
@@ -265,6 +273,33 @@ impl ProjectMember {
         self.update();
     }
 
+    pub async fn remove_done_task(&mut self, project_name: &String, task_index: usize) {
+        let member = self.member().await.unwrap();
+
+        if let Some(tasks) = self.done_tasks.get_mut(project_name) {
+            Logger::debug(
+                "member.remove_done_task",
+                &format!(
+                    "task \"{}\" deleted from done tasks of member {} ({})",
+                    match tasks.get(task_index) {
+                        Some(task) => task.get().await,
+                        None => String::from("Not Found"),
+                    },
+                    member.display_name(),
+                    self.id.get().to_string()
+                ),
+            )
+            .await;
+
+            tasks.remove(task_index);
+            if tasks.is_empty() {
+                self.done_tasks.remove(project_name);
+            }
+
+            self.update();
+        }
+    }
+
     pub fn add_mentor_task(&mut self, project_name: &String, task: u32) {
         if !self.mentor_tasks.contains_key(project_name) {
             self.mentor_tasks.insert(project_name.clone(), Vec::new());
@@ -278,6 +313,75 @@ impl ProjectMember {
                 task,
             )])));
         self.update();
+    }
+
+    pub async fn remove_mentor_task(&mut self, project_name: &String, task_index: usize) {
+        let member = self.member().await.unwrap();
+
+        if let Some(tasks) = self.mentor_tasks.get_mut(project_name) {
+            Logger::debug(
+                "member.remove_mentor_task",
+                &format!(
+                    "task \"{}\" deleted from mentor tasks of member {} ({})",
+                    match tasks.get(task_index) {
+                        Some(task) => task.get().await,
+                        None => String::from("Not Found"),
+                    },
+                    member.display_name(),
+                    self.id.get().to_string()
+                ),
+            )
+            .await;
+
+            tasks.remove(task_index);
+            if tasks.is_empty() {
+                self.mentor_tasks.remove(project_name);
+            }
+
+            self.update();
+        }
+    }
+
+    pub async fn add_custom_done_task(&mut self, project: &String, task: TaskHistory) {
+        if let TaskHistory::OldFormat(ref string) = task {
+            Logger::medium(
+                "member.add_custom_done_task",
+                &format!(
+                    "added custom task \"{}\" to done tasks of user {}",
+                    string,
+                    self.id.get()
+                ),
+            )
+            .await;
+
+            if let None = self.done_tasks.get(project) {
+                self.done_tasks.insert(project.clone(), Vec::new());
+            }
+
+            self.done_tasks.get_mut(project).unwrap().push(task);
+            self.update();
+        }
+    }
+
+    pub async fn add_custom_mentor_task(&mut self, project: &String, task: TaskHistory) {
+        if let TaskHistory::OldFormat(ref string) = task {
+            Logger::medium(
+                "member.add_custom_mentor_task",
+                &format!(
+                    "added custom task \"{}\" to mentor tasks of user {}",
+                    string,
+                    self.id.get()
+                ),
+            )
+            .await;
+
+            if let None = self.mentor_tasks.get(project) {
+                self.mentor_tasks.insert(project.clone(), Vec::new());
+            }
+
+            self.mentor_tasks.get_mut(project).unwrap().push(task);
+            self.update();
+        }
     }
 
     pub async fn add_note(&mut self, user: UserId, note: String) {
@@ -453,15 +557,15 @@ impl ProjectMember {
                     let mut value = String::new();
                     for (proj, tasks) in self.done_tasks.iter() {
                         if !tasks.is_empty() {
-                            value = format!("{}{} ({})\n", value, proj, tasks.len());
+                            value = format!("{}**{} ({})**\n", value, proj, tasks.len());
 
                             for task in tasks.iter() {
                                 value = format!(
                                     "{}{} {}\n",
                                     value,
                                     match task == tasks.last().unwrap() {
-                                        true => "╠︎",
-                                        false => "╚",
+                                        false => "╠︎",
+                                        true => "╚",
                                     },
                                     match task {
                                         TaskHistory::Current(map) => {
@@ -501,15 +605,15 @@ impl ProjectMember {
                     let mut value = String::new();
                     for (proj, tasks) in self.mentor_tasks.iter() {
                         if !tasks.is_empty() {
-                            value = format!("{}{} ({})\n", value, proj, tasks.len());
+                            value = format!("{}**{} ({})**\n", value, proj, tasks.len());
 
                             for task in tasks.iter() {
                                 value = format!(
                                     "{}{} {}\n",
                                     value,
                                     match task == tasks.last().unwrap() {
-                                        true => "╠︎",
-                                        false => "╚",
+                                        false => "╠︎",
+                                        true => "╚",
                                     },
                                     match task {
                                         TaskHistory::Current(map) => {

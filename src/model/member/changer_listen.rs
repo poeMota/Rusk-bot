@@ -1,10 +1,25 @@
 use serenity::all::{
-    ActionRowComponent, CreateActionRow, CreateInputText, CreateModal, InputTextStyle,
+    ActionRowComponent, ComponentInteractionDataKind, CreateActionRow, CreateButton,
+    CreateInputText, CreateModal, CreateSelectMenu, CreateSelectMenuOption, InputTextStyle,
 };
 
 use crate::prelude::*;
 
 pub async fn member_changer_listener() {
+    #[listen_component("member-changer")]
+    async fn changer(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.try_write().unwrap();
+        let member = mem_man.get(inter.user.id).await.unwrap();
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::UpdateMessage(member.main_changer().await),
+            )
+            .await
+            .unwrap();
+    }
+
     #[listen_component("member-changer:score")]
     async fn score_changer(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
@@ -57,20 +72,6 @@ pub async fn member_changer_listener() {
                         .value(member.own_folder.clone().unwrap_or(String::new())),
                     )])),
                 ),
-            )
-            .await
-            .unwrap();
-    }
-
-    #[listen_component("member-changer:tasks")]
-    async fn tasks_changer(ctx: &Context, inter: ComponentInteraction) {
-        inter
-            .create_response(
-                &ctx.http,
-                CreateInteractionResponse::Modal(CreateModal::new(
-                    "member-changer:tasks",
-                    get_string("member-changer-modal-tasks-title", None),
-                )),
             )
             .await
             .unwrap();
@@ -172,6 +173,583 @@ pub async fn member_changer_listener() {
                         }
                     }
                     _ => (),
+                }
+            }
+        }
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks")]
+    async fn tasks_changer_project(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let proj_man = project::PROJECTMANAGER.read().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let mut rows = Vec::new();
+
+        let mut projects = Vec::new();
+        for proj in proj_man.projects() {
+            projects.push(CreateSelectMenuOption::new(proj, proj));
+        }
+
+        if !member.done_tasks.is_empty() {
+            let mut projs = Vec::new();
+            for (proj, _) in member.done_tasks.iter() {
+                projs.push(CreateSelectMenuOption::new(proj, proj));
+            }
+
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:tasks:done-tasks-remove-project",
+                    serenity::all::CreateSelectMenuKind::String { options: projs },
+                )
+                .placeholder(get_string("member-changer-tasks-done-tasks-remove", None)),
+            ));
+        }
+
+        if !projects.is_empty() {
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:tasks:done-tasks-add",
+                    serenity::all::CreateSelectMenuKind::String {
+                        options: projects.clone(),
+                    },
+                )
+                .placeholder(get_string("member-changer-tasks-done-tasks-add", None)),
+            ));
+        }
+
+        if !member.mentor_tasks.is_empty() {
+            let mut projs = Vec::new();
+            for (proj, _) in member.mentor_tasks.iter() {
+                projs.push(CreateSelectMenuOption::new(proj, proj));
+            }
+
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:tasks:mentor-tasks-remove-project",
+                    serenity::all::CreateSelectMenuKind::String { options: projs },
+                )
+                .placeholder(get_string("member-changer-tasks-mentor-tasks-remove", None)),
+            ));
+        }
+
+        if !projects.is_empty() {
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:tasks:mentor-tasks-add",
+                    serenity::all::CreateSelectMenuKind::String {
+                        options: projects.clone(),
+                    },
+                )
+                .placeholder(get_string("member-changer-tasks-mentor-tasks-add", None)),
+            ));
+        }
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer",
+        )
+        .label(get_string("back-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().components(rows),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks:done-tasks-remove-project")]
+    async fn done_tasks_project(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let task_man = task::TASKMANAGER.read().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let project = match &inter.data.kind {
+            ComponentInteractionDataKind::StringSelect { values } => {
+                values.first().unwrap().clone()
+            }
+            _ => return,
+        };
+        let mut rows = Vec::new();
+        let mut done_tasks_remove = Vec::new();
+
+        for task in task_man.get_by_project(&project) {
+            let mut in_done = false;
+            for hist in member
+                .done_tasks
+                .get(&project)
+                .unwrap_or(&Vec::new())
+                .iter()
+            {
+                if let member::TaskHistory::Current(current) = hist {
+                    for (_, id) in current.iter() {
+                        if task.id == *id {
+                            in_done = true;
+                        }
+                    }
+                }
+            }
+
+            if in_done {
+                done_tasks_remove.push(CreateSelectMenuOption::new(
+                    task.name.get(),
+                    format!("{}:::{}", project, task.id.to_string()),
+                ));
+            }
+        }
+
+        for task in member
+            .done_tasks
+            .get(&project)
+            .unwrap_or(&Vec::new())
+            .iter()
+        {
+            if let member::TaskHistory::OldFormat(string) = task {
+                done_tasks_remove.push(CreateSelectMenuOption::new(
+                    string,
+                    format!("{}:::{}", project, string),
+                ));
+            }
+        }
+
+        if !done_tasks_remove.is_empty() {
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:tasks:done-tasks-remove",
+                    serenity::all::CreateSelectMenuKind::String {
+                        options: done_tasks_remove,
+                    },
+                )
+                .placeholder(get_string("member-changer-tasks-done-tasks-remove", None)),
+            ));
+        }
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer:tasks",
+        )
+        .label(get_string("back-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().components(rows),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks:mentor-tasks-remove-project")]
+    async fn mentor_tasks_project(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let task_man = task::TASKMANAGER.read().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let project = match &inter.data.kind {
+            ComponentInteractionDataKind::StringSelect { values } => {
+                values.first().unwrap().clone()
+            }
+            _ => return,
+        };
+        let mut rows = Vec::new();
+        let mut mentor_tasks_remove = Vec::new();
+
+        for task in task_man.get_by_project(&project) {
+            let mut in_mentor = false;
+            for hist in member
+                .mentor_tasks
+                .get(&project)
+                .unwrap_or(&Vec::new())
+                .iter()
+            {
+                if let member::TaskHistory::Current(current) = hist {
+                    for (_, id) in current.iter() {
+                        if task.id == *id {
+                            in_mentor = true;
+                        }
+                    }
+                }
+            }
+
+            if in_mentor {
+                mentor_tasks_remove.push(CreateSelectMenuOption::new(
+                    task.name.get(),
+                    format!("{}:::{}", project, task.id.to_string()),
+                ));
+            }
+        }
+
+        for task in member
+            .mentor_tasks
+            .get(&project)
+            .unwrap_or(&Vec::new())
+            .iter()
+        {
+            if let member::TaskHistory::OldFormat(string) = task {
+                mentor_tasks_remove.push(CreateSelectMenuOption::new(
+                    string,
+                    format!("{}:::{}", project, string),
+                ));
+            }
+        }
+
+        if !mentor_tasks_remove.is_empty() {
+            rows.push(CreateActionRow::SelectMenu(
+                CreateSelectMenu::new(
+                    "member-changer:tasks:mentor-tasks-remove",
+                    serenity::all::CreateSelectMenuKind::String {
+                        options: mentor_tasks_remove,
+                    },
+                )
+                .placeholder(get_string("member-changer-tasks-mentor-tasks-remove", None)),
+            ));
+        }
+
+        rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
+            "member-changer:tasks",
+        )
+        .label(get_string("back-button", None))
+        .style(serenity::all::ButtonStyle::Success)])));
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().components(rows),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks:done-tasks-add")]
+    async fn add_done_task(ctx: &Context, inter: ComponentInteraction) {
+        let project = match &inter.data.kind {
+            ComponentInteractionDataKind::StringSelect { values } => {
+                values.first().unwrap().clone()
+            }
+            _ => return,
+        };
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Modal(
+                    CreateModal::new(
+                        "member-changer:tasks:done-tasks-add-custom",
+                        get_string(
+                            "member-changer-tasks-done-tasks-add-custom-modal-label",
+                            None,
+                        ),
+                    )
+                    .components(Vec::from([
+                        CreateActionRow::InputText(
+                            CreateInputText::new(
+                                InputTextStyle::Short,
+                                get_string(
+                                    "member-changer-tasks-done-tasks-add-project-input-label",
+                                    None,
+                                ),
+                                "member-changer:tasks:done-tasks-add-project-input",
+                            )
+                            .value(project),
+                        ),
+                        CreateActionRow::InputText(CreateInputText::new(
+                            InputTextStyle::Short,
+                            get_string(
+                                "member-changer-tasks-done-tasks-add-custom-input-label",
+                                None,
+                            ),
+                            "member-changer:tasks:done-tasks-add-custom-input",
+                        )),
+                    ])),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks:mentor-tasks-add")]
+    async fn add_mentor_task(ctx: &Context, inter: ComponentInteraction) {
+        let project = match &inter.data.kind {
+            ComponentInteractionDataKind::StringSelect { values } => {
+                values.first().unwrap().clone()
+            }
+            _ => return,
+        };
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Modal(
+                    CreateModal::new(
+                        "member-changer:tasks:mentor-tasks-add-custom",
+                        get_string(
+                            "member-changer-tasks-mentor-tasks-add-custom-modal-label",
+                            None,
+                        ),
+                    )
+                    .components(Vec::from([
+                        CreateActionRow::InputText(
+                            CreateInputText::new(
+                                InputTextStyle::Short,
+                                get_string(
+                                    "member-changer-tasks-mentor-tasks-add-project-input-label",
+                                    None,
+                                ),
+                                "member-changer:tasks:mentor-tasks-add-project-input",
+                            )
+                            .value(project),
+                        ),
+                        CreateActionRow::InputText(CreateInputText::new(
+                            InputTextStyle::Short,
+                            get_string(
+                                "member-changer-tasks-mentor-tasks-add-custom-input-label",
+                                None,
+                            ),
+                            "member-changer:tasks:mentor-tasks-add-custom-input",
+                        )),
+                    ])),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_modal("member-changer:tasks:done-tasks-add-custom")]
+    async fn add_done_task_submit(ctx: &Context, inter: ModalInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let mut project = &String::new();
+        let mut task = &String::new();
+
+        for row in inter.data.components.iter() {
+            for comp in row.components.iter() {
+                match comp {
+                    ActionRowComponent::InputText(input) => {
+                        if input.custom_id == "member-changer:tasks:done-tasks-add-custom-input" {
+                            if let Some(ref text) = input.value {
+                                task = text;
+                            }
+                        }
+                        if input.custom_id == "member-changer:tasks:done-tasks-add-project-input" {
+                            if let Some(ref text) = input.value {
+                                project = text;
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        member
+            .add_custom_done_task(project, member::TaskHistory::OldFormat(task.clone()))
+            .await;
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_modal("member-changer:tasks:mentor-tasks-add-custom")]
+    async fn add_mentor_task_submit(ctx: &Context, inter: ModalInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        let mut project = &String::new();
+        let mut task = &String::new();
+
+        for row in inter.data.components.iter() {
+            for comp in row.components.iter() {
+                match comp {
+                    ActionRowComponent::InputText(input) => {
+                        if input.custom_id == "member-changer:tasks:mentor-tasks-add-custom-input" {
+                            if let Some(ref text) = input.value {
+                                task = text;
+                            }
+                        }
+                        if input.custom_id == "member-changer:tasks:mentor-tasks-add-project-input"
+                        {
+                            if let Some(ref text) = input.value {
+                                project = text;
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        member
+            .add_custom_mentor_task(project, member::TaskHistory::OldFormat(task.clone()))
+            .await;
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks:done-tasks-remove")]
+    async fn remove_done_tasks(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        if let ComponentInteractionDataKind::StringSelect { ref values } = inter.data.kind {
+            for value in values {
+                let project = value
+                    .split(":::")
+                    .collect::<Vec<&str>>()
+                    .first()
+                    .unwrap()
+                    .to_string();
+
+                let val = value.split(":::").last().unwrap();
+
+                match val.parse::<u32>() {
+                    Ok(id) => {
+                        let mut index = 0;
+
+                        'hist: for hist in member
+                            .done_tasks
+                            .get(&project)
+                            .unwrap_or(&Vec::new())
+                            .iter()
+                        {
+                            if let member::TaskHistory::Current(current) = hist {
+                                for (_, hist_id) in current.iter() {
+                                    if id == *hist_id {
+                                        member.remove_done_task(&project, index).await;
+                                        break 'hist;
+                                    }
+                                }
+
+                                index += 1;
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        let mut index = 0;
+
+                        for hist in member
+                            .done_tasks
+                            .get(&project)
+                            .unwrap_or(&Vec::new())
+                            .iter()
+                        {
+                            if hist.get().await.contains(&val) {
+                                member.remove_done_task(&project, index).await;
+                                break;
+                            }
+
+                            index += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(member.to_embed(&ctx, true).await)
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[listen_component("member-changer:tasks:mentor-tasks-remove")]
+    async fn remove_mentor_tasks(ctx: &Context, inter: ComponentInteraction) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        if let ComponentInteractionDataKind::StringSelect { ref values } = inter.data.kind {
+            for value in values {
+                let project = value
+                    .split(":::")
+                    .collect::<Vec<&str>>()
+                    .first()
+                    .unwrap()
+                    .to_string();
+
+                let val = value.split(":::").last().unwrap();
+
+                match val.parse::<u32>() {
+                    Ok(id) => {
+                        let mut index = 0;
+
+                        'hist: for hist in member
+                            .mentor_tasks
+                            .get(&project)
+                            .unwrap_or(&Vec::new())
+                            .iter()
+                        {
+                            if let member::TaskHistory::Current(current) = hist {
+                                for (_, hist_id) in current.iter() {
+                                    if id == *hist_id {
+                                        member.remove_mentor_task(&project, index).await;
+                                        break 'hist;
+                                    }
+                                }
+
+                                index += 1;
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        let mut index = 0;
+
+                        for hist in member
+                            .mentor_tasks
+                            .get(&project)
+                            .unwrap_or(&Vec::new())
+                            .iter()
+                        {
+                            if hist.get().await.contains(&val) {
+                                member.remove_mentor_task(&project, index).await;
+                                break;
+                            }
+
+                            index += 1;
+                        }
+                    }
                 }
             }
         }

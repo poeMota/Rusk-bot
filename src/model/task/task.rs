@@ -162,6 +162,13 @@ impl TaskManager {
         self.tasks
             .get_mut(self.tasks_by_thread.get_mut(&thread_id)?)
     }
+
+    pub fn get_by_project(&self, project: &String) -> Vec<&Task> {
+        self.tasks
+            .values()
+            .filter(|task| &task.project == project)
+            .collect()
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
