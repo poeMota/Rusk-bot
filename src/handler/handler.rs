@@ -3,7 +3,7 @@ use crate::{
     shop::shop_component_listeners,
 };
 use serenity::{
-    all::async_trait,
+    all::{async_trait, ForumEmoji, Reaction, ReactionType},
     client::{Context, EventHandler},
     http::Http,
     model::{application::Interaction, event::GuildMemberUpdateEvent, gateway::Ready, id::GuildId},
@@ -128,6 +128,71 @@ impl EventHandler for Handler {
                 };
 
                 proj_mem.update_from_member(&ctx, &new).await;
+            }
+        }
+    }
+
+    async fn thread_create(&self, ctx: Context, thread: GuildChannel) {
+        let proj_man = project::PROJECTMANAGER.read().await;
+        let mut task_man = task::TASKMANAGER.write().await;
+        let mut thread = thread;
+
+        if let Some(ref parent) = thread.parent_id {
+            if let Some(project) = proj_man.get_from_forum(parent) {
+                match task_man
+                    .new_task(&ctx, &mut thread, project.name().clone())
+                    .await
+                {
+                    Ok(_) => (),
+                    Err(e) => {
+                        Logger::error(
+                            "handler.thread_create",
+                            &format!(
+                            "error while creating task from thread \"{}\" for project \"{}\": {}",
+                            thread.name,
+                            project.name(),
+                            e
+                        ),
+                        )
+                        .await
+                    }
+                }
+            }
+        }
+    }
+
+    async fn reaction_add(&self, ctx: Context, add_reaction: Reaction) {
+        if let Some(user) = add_reaction.user_id {
+            if let Ok(thread) = fetch_thread(&ctx, add_reaction.channel_id) {
+                if let Some(parent_id) = thread.parent_id {
+                    if let Ok(parent) = fetch_channel(&ctx, parent_id) {
+                        if let Some(default_react) = parent.default_reaction_emoji {
+                            match default_react {
+                                ForumEmoji::Id(emoji) => {
+                                    if let ReactionType::Custom { id, .. } = add_reaction.emoji {
+                                        if emoji == id {
+                                            let mut task_man = task::TASKMANAGER.write().await;
+                                            if let Some(task) = task_man.get_thread_mut(parent_id) {
+                                                task.add_member(&ctx, user).await;
+                                            }
+                                        }
+                                    }
+                                }
+                                ForumEmoji::Name(emoji) => {
+                                    if let ReactionType::Unicode(string) = add_reaction.emoji {
+                                        if emoji == string {
+                                            let mut task_man = task::TASKMANAGER.write().await;
+                                            if let Some(task) = task_man.get_thread_mut(thread.id) {
+                                                task.add_member(&ctx, user).await;
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
+                }
             }
         }
     }

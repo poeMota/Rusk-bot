@@ -128,6 +128,24 @@ impl ProjectManager {
             }
         }
     }
+
+    pub fn get_from_forum(&self, forum: &ChannelId) -> Option<&Project> {
+        for project in self.projects.values() {
+            if &project.tasks_forum == forum {
+                return Some(project);
+            }
+        }
+        None
+    }
+
+    pub fn get_mut_from_forum(&mut self, forum: &ChannelId) -> Option<&mut Project> {
+        for project in self.projects.values_mut() {
+            if &project.tasks_forum == forum {
+                return Some(project);
+            }
+        }
+        None
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

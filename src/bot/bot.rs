@@ -56,6 +56,23 @@ pub fn fetch_channel(ctx: &Context, id: ChannelId) -> Result<GuildChannel, Strin
     }
 }
 
+pub fn fetch_thread(ctx: &Context, id: ChannelId) -> Result<GuildChannel, String> {
+    let guild = match get_guild().to_guild_cached(&ctx.cache) {
+        Some(g) => g,
+        None => {
+            return Err("cannot get guild from id".to_string());
+        }
+    };
+
+    for thread in guild.threads.iter() {
+        if thread.id == id {
+            return Ok(thread.clone());
+        }
+    }
+
+    Err("cannot get channel by id".to_string())
+}
+
 pub fn get_params_buttons(name: &str, params: Vec<&str>) -> Vec<CreateActionRow> {
     let mut buttons = Vec::new();
     for param in params.iter() {

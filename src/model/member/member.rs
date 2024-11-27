@@ -233,6 +233,7 @@ impl ProjectMember {
         .await;
     }
 
+    // TODO - logging
     pub fn leave_task(&mut self, task: &Task) {
         if let Some(tasks) = self.in_tasks.get_mut(&task.project) {
             if tasks.contains(&task.id) {
@@ -258,6 +259,10 @@ impl ProjectMember {
                 tasks.push(task.id);
                 self.update();
             }
+        } else {
+            self.in_tasks
+                .insert(task.project.clone(), Vec::from([task.id]));
+            self.update();
         }
     }
 
