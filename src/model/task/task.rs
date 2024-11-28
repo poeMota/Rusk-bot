@@ -305,7 +305,7 @@ impl Task {
         for member_id in self.members.get().iter() {
             let member = mem_man.get_mut(member_id.clone()).await.unwrap();
 
-            member.leave_task(&self);
+            member.leave_task(&self).await;
 
             let end_score = (*self.score.get() as f64
                 * self.ending_results.get(member_id).unwrap_or(&1.0))
@@ -313,11 +313,12 @@ impl Task {
 
             if end_score > 0 {
                 member.change_score(*self.score.get()).await;
+                member.update_last_activity(&self.project).await;
 
                 if &Some(member_id.clone()) != self.mentor_id.get() {
-                    member.add_done_task(&self.project, self.id);
+                    member.add_done_task(&self.project, self.id).await;
                 } else {
-                    member.add_mentor_task(&self.project, self.id);
+                    member.add_mentor_task(&self.project, self.id).await;
                 }
             }
         }
@@ -737,7 +738,7 @@ impl Task {
         match MEMBERSMANAGER.try_write().as_mut() {
             Ok(man) => {
                 if let Ok(mem) = man.get_mut(member.clone()).await {
-                    mem.leave_task(&self);
+                    mem.leave_task(&self).await;
                 }
             }
             Err(_) => {
@@ -807,7 +808,7 @@ impl Task {
                         if mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
                             < CONFIG.read().await.max_tasks_per_user as usize
                         {
-                            mem.join_task(&self);
+                            mem.join_task(&self).await;
                         }
                     }
                 }

@@ -233,8 +233,7 @@ impl ProjectMember {
         .await;
     }
 
-    // TODO - logging
-    pub fn leave_task(&mut self, task: &Task) {
+    pub async fn leave_task(&mut self, task: &Task) {
         if let Some(tasks) = self.in_tasks.get_mut(&task.project) {
             if tasks.contains(&task.id) {
                 tasks.remove(match tasks.iter().position(|x| x == &task.id) {
@@ -249,11 +248,17 @@ impl ProjectMember {
                 }
 
                 self.update();
+
+                Logger::debug(
+                    &format!("members.{}", self.id.get().to_string().as_str()),
+                    &format!("leaved form task {}", task.id),
+                )
+                .await;
             }
         }
     }
 
-    pub fn join_task(&mut self, task: &Task) {
+    pub async fn join_task(&mut self, task: &Task) {
         if let Some(tasks) = self.in_tasks.get_mut(&task.project) {
             if !tasks.contains(&task.id) {
                 tasks.push(task.id);
@@ -264,9 +269,15 @@ impl ProjectMember {
                 .insert(task.project.clone(), Vec::from([task.id]));
             self.update();
         }
+
+        Logger::debug(
+            &format!("members.{}", self.id.get().to_string().as_str()),
+            &format!("joined to task {}", task.id),
+        )
+        .await;
     }
 
-    pub fn add_done_task(&mut self, project_name: &String, task: u32) {
+    pub async fn add_done_task(&mut self, project_name: &String, task: u32) {
         if !self.done_tasks.contains_key(project_name) {
             self.done_tasks.insert(project_name.clone(), Vec::new());
         }
@@ -278,7 +289,15 @@ impl ProjectMember {
                 Timestamp::now(),
                 task,
             )])));
+
+        self.update_last_activity(&project_name).await;
         self.update();
+
+        Logger::debug(
+            &format!("members.{}", self.id.get().to_string().as_str()),
+            &format!("added done task {}", task),
+        )
+        .await;
     }
 
     pub async fn remove_done_task(&mut self, project_name: &String, task_index: usize) {
@@ -308,7 +327,7 @@ impl ProjectMember {
         }
     }
 
-    pub fn add_mentor_task(&mut self, project_name: &String, task: u32) {
+    pub async fn add_mentor_task(&mut self, project_name: &String, task: u32) {
         if !self.mentor_tasks.contains_key(project_name) {
             self.mentor_tasks.insert(project_name.clone(), Vec::new());
         }
@@ -320,7 +339,15 @@ impl ProjectMember {
                 Timestamp::now(),
                 task,
             )])));
+
+        self.update_last_activity(&project_name).await;
         self.update();
+
+        Logger::debug(
+            &format!("members.{}", self.id.get().to_string().as_str()),
+            &format!("added mentor task {}", task),
+        )
+        .await;
     }
 
     pub async fn remove_mentor_task(&mut self, project_name: &String, task_index: usize) {
@@ -474,10 +501,16 @@ impl ProjectMember {
         self.update();
     }
 
-    pub fn update_last_activity(&mut self, project_name: &String) {
+    pub async fn update_last_activity(&mut self, project_name: &String) {
         self.last_activity
             .insert(project_name.clone(), Timestamp::now());
         self.update();
+
+        Logger::debug(
+            &format!("members.{}", self.id.get().to_string().as_str()),
+            &format!("updated last activity for project \"{}\"", project_name),
+        )
+        .await;
     }
 
     pub fn to_project_stat(
