@@ -11,6 +11,7 @@ use serenity::{
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
+use tokio::time::{sleep, Duration};
 use walkdir::WalkDir;
 
 pub static PROJECTMANAGER: Lazy<Arc<RwLock<ProjectManager>>> =
@@ -97,6 +98,23 @@ impl ProjectManager {
         Ok(())
     }
 
+    pub async fn start_update_stat(ctx: Context) {
+        tokio::spawn(async move {
+            let timer = CONFIG.read().await.project_stat_update_duration;
+
+            loop {
+                let mut man = PROJECTMANAGER.write().await;
+
+                for project in man.projects.values_mut() {
+                    project.update_stat_post(&ctx).await;
+                }
+
+                drop(man);
+                sleep(Duration::from_secs(timer)).await;
+            }
+        });
+    }
+
     pub fn projects(&self) -> Vec<&String> {
         self.projects.keys().collect()
     }
@@ -107,31 +125,6 @@ impl ProjectManager {
 
     pub fn get_mut(&mut self, name: &String) -> Option<&mut Project> {
         self.projects.get_mut(name)
-    }
-
-    pub async fn update_from_member(&mut self, ctx: &Context, member: &Member) {
-        for proj in self.projects.values_mut() {
-            if proj.member_in_project(&member) {
-                proj.update_stat_post(&ctx).await;
-            }
-        }
-    }
-
-    pub async fn update(&mut self, ctx: &Context, project_name: &String) {
-        if let Some(project) = self.projects.get_mut(project_name) {
-            project.update_stat_post(&ctx).await;
-        }
-    }
-
-    pub async fn update_from_roles(&mut self, ctx: &Context, roles: &Vec<RoleId>) {
-        'projects: for proj in self.projects.values_mut() {
-            for role in roles.iter() {
-                if proj.associated_roles.contains(role) {
-                    proj.update_stat_post(&ctx).await;
-                    continue 'projects;
-                }
-            }
-        }
     }
 
     pub fn get_from_forum(&self, forum: &ChannelId) -> Option<&Project> {

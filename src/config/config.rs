@@ -31,6 +31,7 @@ pub struct Config {
     pub guild: u64,
     pub max_dropdowns_per_message: u64,
     pub max_tasks_per_user: u64,
+    pub project_stat_update_duration: u64,
     pub brigadire_score_modifier: f64,
     pub userid_api_url: String,
     pub log: Option<u64>,

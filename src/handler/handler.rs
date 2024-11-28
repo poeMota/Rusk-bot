@@ -1,12 +1,9 @@
-use crate::{
-    commands::*, config::CONFIG, model::project::PROJECTMANAGER, prelude::*,
-    shop::shop_component_listeners,
-};
+use crate::{commands::*, config::CONFIG, prelude::*, shop::shop_component_listeners};
 use serenity::{
     all::{async_trait, ForumEmoji, Reaction, ReactionType},
     client::{Context, EventHandler},
     http::Http,
-    model::{application::Interaction, event::GuildMemberUpdateEvent, gateway::Ready, id::GuildId},
+    model::{application::Interaction, gateway::Ready, id::GuildId},
 };
 use std::sync::Arc;
 
@@ -35,6 +32,8 @@ impl EventHandler for Handler {
         shop_component_listeners().await;
 
         member::member_changer_listener().await;
+
+        project::ProjectManager::start_update_stat(ctx).await;
 
         Logger::debug("handler.ready", "bot is ready").await;
     }
@@ -69,67 +68,6 @@ impl EventHandler for Handler {
                     .await;
             }
             _ => (),
-        }
-    }
-
-    #[allow(unused_variables)]
-    async fn guild_member_update(
-        &self,
-        ctx: Context,
-        old_if_available: Option<Member>,
-        new: Option<Member>,
-        event: GuildMemberUpdateEvent,
-    ) {
-        let mut roles_diff = Vec::new();
-
-        if let Some(ref new) = new {
-            if let Some(ref old) = old_if_available {
-                for role in new.roles.iter() {
-                    if !old.roles.contains(&role) {
-                        roles_diff.push(role.clone());
-                    }
-                }
-
-                for role in old.roles.iter() {
-                    if !new.roles.contains(&role) {
-                        roles_diff.push(role.clone());
-                    }
-                }
-            } else {
-                roles_diff = new.roles.clone();
-            }
-        }
-
-        if !roles_diff.is_empty() {
-            let mut proj_mem = match PROJECTMANAGER.try_write() {
-                Ok(man) => man,
-                Err(_) => {
-                    Logger::error(
-                        "handler.guild_member_update",
-                        "error while try_write PROJECTMANAGER, maybe deadlock, trying await...",
-                    )
-                    .await;
-                    PROJECTMANAGER.write().await
-                }
-            };
-
-            proj_mem.update_from_roles(&ctx, &roles_diff).await;
-        } else if let Some(_) = event.nick {
-            if let Some(new) = new {
-                let mut proj_mem = match PROJECTMANAGER.try_write() {
-                    Ok(man) => man,
-                    Err(_) => {
-                        Logger::error(
-                            "handler.guild_member_update",
-                            "error while try_write PROJECTMANAGER, maybe deadlock, trying await...",
-                        )
-                        .await;
-                        PROJECTMANAGER.write().await
-                    }
-                };
-
-                proj_mem.update_from_member(&ctx, &new).await;
-            }
         }
     }
 

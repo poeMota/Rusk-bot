@@ -1,3 +1,3 @@
 mod project;
 
-pub use project::PROJECTMANAGER;
+pub use project::{ProjectManager, PROJECTMANAGER};
