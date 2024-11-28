@@ -30,6 +30,7 @@ impl EventHandler for Handler {
         shop_commands(&ctx, guild_id).await;
         member_commands(&ctx, guild_id).await;
         project_commands(&ctx, guild_id).await;
+        task_commands(&ctx, guild_id).await;
 
         shop_component_listeners().await;
 
@@ -136,6 +137,10 @@ impl EventHandler for Handler {
         let proj_man = project::PROJECTMANAGER.read().await;
         let mut task_man = task::TASKMANAGER.write().await;
         let mut thread = thread;
+
+        if let Some(_) = task_man.get_thread(thread.id) {
+            return;
+        }
 
         if let Some(ref parent) = thread.parent_id {
             if let Some(project) = proj_man.get_from_forum(parent) {

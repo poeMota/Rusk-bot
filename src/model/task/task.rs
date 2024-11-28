@@ -9,6 +9,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
+    all::{Colour, CreateEmbed},
     builder::{CreateMessage, EditThread},
     client::Context,
     model::{
@@ -894,5 +895,74 @@ impl Task {
         }
 
         false
+    }
+
+    pub fn to_embed(&self) -> CreateEmbed {
+        let mut fields = Vec::new();
+
+        fields.push((
+            get_string("task-embed-id-name", None),
+            format!("`{}`", self.id),
+            false,
+        ));
+
+        if let Some(date) = self.start_date {
+            fields.push((
+                get_string("task-embed-start-date-name", None),
+                format!("<t:{}:f>", date.timestamp()),
+                false,
+            ));
+        }
+
+        fields.push((
+            get_string("task-embed-score-name", None),
+            format!("`{}`", self.score.get()),
+            false,
+        ));
+
+        fields.push((
+            get_string("task-embed-last-save-name", None),
+            format!(
+                "`{}`",
+                match self.last_save.get() {
+                    Some(save) => save.clone(),
+                    None => get_string("task-embed-no-last-save", None),
+                }
+            ),
+            false,
+        ));
+
+        if let Some(mentor) = self.mentor_id.get() {
+            fields.push((
+                get_string("task-embed-mentor-name", None),
+                format!("- <@{}>", mentor.get()),
+                false,
+            ));
+        }
+
+        let mut members_text = String::new();
+        for member in self.members.get().iter() {
+            members_text = format!("{}- <@{}>\n", members_text, member.get());
+        }
+
+        fields.push((
+            get_string(
+                "task-embed-members-name",
+                Some(HashMap::from([
+                    ("current", self.members.get().len().to_string().as_str()),
+                    ("max", self.max_members.get().to_string().as_str()),
+                ])),
+            ),
+            members_text,
+            false,
+        ));
+
+        CreateEmbed::new()
+            .title(get_string(
+                "task-embed-title",
+                Some(HashMap::from([("task", self.name.get().as_str())])),
+            ))
+            .color(Colour::ORANGE)
+            .fields(fields)
     }
 }

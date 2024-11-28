@@ -548,7 +548,7 @@ impl ProjectMember {
 
                         for task in tasks.iter() {
                             value = format!(
-                                "{}╠︎ <#{}>\n",
+                                "{}\n╠︎ <#{}>",
                                 value,
                                 task_man.get(*task).unwrap().thread_id.get()
                             );
