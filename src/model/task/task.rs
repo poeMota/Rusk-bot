@@ -797,7 +797,7 @@ impl Task {
         }
     }
 
-    pub async fn add_member(&mut self, ctx: &Context, member: UserId) {
+    pub async fn add_member(&mut self, ctx: &Context, member: UserId) -> bool {
         if self.members.get().len() < *self.max_members.get() as usize
             && !self.members.get().contains(&member)
         {
@@ -813,7 +813,7 @@ impl Task {
                 }
                 Err(_) => {
                     Logger::error("task.add_member", "cannot lock MEMBERSMANAGER for write").await;
-                    return;
+                    return false;
                 }
             };
 
@@ -842,7 +842,7 @@ impl Task {
                         ),
                     )
                     .await;
-                    return;
+                    return false;
                 }
             };
 
@@ -887,6 +887,10 @@ impl Task {
                     }
                 }
             }
+
+            return true;
         }
+
+        false
     }
 }

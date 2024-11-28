@@ -173,17 +173,41 @@ impl EventHandler for Handler {
                                         if emoji == id {
                                             let mut task_man = task::TASKMANAGER.write().await;
                                             if let Some(task) = task_man.get_thread_mut(parent_id) {
-                                                task.add_member(&ctx, user).await;
+                                                if !task.add_member(&ctx, user).await {
+                                                    if let Err(e) =
+                                                        add_reaction.delete(&ctx.http).await
+                                                    {
+                                                        Logger::error(
+                                                            "handler.reaction_add",
+                                                            &format!("cannot delete reaction on task \"{}\": {}",
+                                                                task.name.get(),
+                                                                e.to_string()
+                                                            )
+                                                        ).await;
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
                                 ForumEmoji::Name(emoji) => {
-                                    if let ReactionType::Unicode(string) = add_reaction.emoji {
-                                        if emoji == string {
+                                    if let ReactionType::Unicode(ref string) = add_reaction.emoji {
+                                        if &emoji == string {
                                             let mut task_man = task::TASKMANAGER.write().await;
                                             if let Some(task) = task_man.get_thread_mut(thread.id) {
-                                                task.add_member(&ctx, user).await;
+                                                if !task.add_member(&ctx, user).await {
+                                                    if let Err(e) =
+                                                        add_reaction.delete(&ctx.http).await
+                                                    {
+                                                        Logger::error(
+                                                            "handler.reaction_add",
+                                                            &format!("cannot delete reaction on task \"{}\": {}",
+                                                                task.name.get(),
+                                                                e.to_string()
+                                                            )
+                                                        ).await;
+                                                    }
+                                                }
                                             }
                                         }
                                     }
