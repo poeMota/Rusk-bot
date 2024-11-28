@@ -71,7 +71,6 @@ impl ProjectManager {
 
     pub async fn new_project(
         &mut self,
-        ctx: &Context,
         name: String,
         max_tasks_per_user: u32,
         tasks_forum: ChannelId,
@@ -89,7 +88,7 @@ impl ProjectManager {
                 associated_roles: Vec::new(),
             };
 
-            project.update(&ctx).await;
+            project.update().await;
             self.projects.insert(project.name.clone(), project);
         } else {
             return Err(format!("project with name \"{}\" currently excist", name));
@@ -115,6 +114,12 @@ impl ProjectManager {
             if proj.member_in_project(&member) {
                 proj.update_stat_post(&ctx).await;
             }
+        }
+    }
+
+    pub async fn update(&mut self, ctx: &Context, project_name: &String) {
+        if let Some(project) = self.projects.get_mut(project_name) {
+            project.update_stat_post(&ctx).await;
         }
     }
 
@@ -181,9 +186,8 @@ impl Project {
         );
     }
 
-    async fn update(&mut self, ctx: &Context) {
+    async fn update(&mut self) {
         self.write().await;
-        self.update_stat_post(&ctx).await;
     }
 
     pub fn member_in_project(&self, member: &Member) -> bool {
@@ -195,14 +199,14 @@ impl Project {
         false
     }
 
-    pub async fn add_role(&mut self, ctx: &Context, role: RoleId) {
+    pub async fn add_role(&mut self, role: RoleId) {
         if !self.associated_roles.contains(&role) {
             self.associated_roles.push(role);
-            self.update(&ctx).await;
+            self.update().await;
         }
     }
 
-    pub async fn remove_role(&mut self, ctx: &Context, role: RoleId) {
+    pub async fn remove_role(&mut self, role: RoleId) {
         if self.associated_roles.contains(&role) {
             self.associated_roles.remove(
                 match self.associated_roles.iter().position(|x| x == &role) {
@@ -213,7 +217,7 @@ impl Project {
                 },
             );
 
-            self.update(&ctx).await;
+            self.update().await;
         }
     }
 

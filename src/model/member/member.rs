@@ -187,7 +187,7 @@ impl ProjectMember {
     }
 
     pub async fn member(&self) -> Result<Member, serenity::Error> {
-        Ok(fetch_member(self.id.get()).await?)
+        Ok(fetch_member(&self.id).await?)
     }
 
     fn serialize(&self) {
@@ -210,8 +210,12 @@ impl ProjectMember {
 
         let dis_member = self.member().await.unwrap();
         Logger::debug(
-            &format!("member.{}", dis_member.display_name()),
-            &format!("score changed by {}", score.to_string()),
+            "member.change_score",
+            &format!(
+                "score of member {} changed by {}",
+                dis_member.display_name(),
+                score.to_string()
+            ),
         )
         .await;
     }
@@ -249,9 +253,15 @@ impl ProjectMember {
 
                 self.update();
 
+                let dis_member = self.member().await.unwrap();
                 Logger::debug(
-                    &format!("members.{}", self.id.get().to_string().as_str()),
-                    &format!("leaved form task {}", task.id),
+                    "members.leave_task",
+                    &format!(
+                        "{} ({}) leaved form task \"{}\"",
+                        dis_member.display_name(),
+                        self.id.get(),
+                        task.id
+                    ),
                 )
                 .await;
             }
@@ -270,9 +280,15 @@ impl ProjectMember {
             self.update();
         }
 
+        let dis_member = self.member().await.unwrap();
         Logger::debug(
-            &format!("members.{}", self.id.get().to_string().as_str()),
-            &format!("joined to task {}", task.id),
+            "member.join_task",
+            &format!(
+                "{} ({}) joined to task \"{}\"",
+                dis_member.display_name(),
+                self.id.get(),
+                task.id
+            ),
         )
         .await;
     }
@@ -293,9 +309,15 @@ impl ProjectMember {
         self.update_last_activity(&project_name).await;
         self.update();
 
+        let dis_member = self.member().await.unwrap();
         Logger::debug(
-            &format!("members.{}", self.id.get().to_string().as_str()),
-            &format!("added done task {}", task),
+            "member.add_done_task",
+            &format!(
+                "{} ({}) added done task {}",
+                dis_member.display_name(),
+                self.id.get(),
+                task
+            ),
         )
         .await;
     }
@@ -343,9 +365,15 @@ impl ProjectMember {
         self.update_last_activity(&project_name).await;
         self.update();
 
+        let member = self.member().await.unwrap();
         Logger::debug(
-            &format!("members.{}", self.id.get().to_string().as_str()),
-            &format!("added mentor task {}", task),
+            "member.add_mentor_task",
+            &format!(
+                "added mentor task {} to member {} ({})",
+                task,
+                member.display_name(),
+                self.id.get()
+            ),
         )
         .await;
     }
@@ -379,11 +407,13 @@ impl ProjectMember {
 
     pub async fn add_custom_done_task(&mut self, project: &String, task: TaskHistory) {
         if let TaskHistory::OldFormat(ref string) = task {
+            let member = self.member().await.unwrap();
             Logger::medium(
                 "member.add_custom_done_task",
                 &format!(
-                    "added custom task \"{}\" to done tasks of user {}",
+                    "added custom task \"{}\" to done tasks of member {} ({})",
                     string,
+                    member.display_name(),
                     self.id.get()
                 ),
             )
@@ -400,11 +430,13 @@ impl ProjectMember {
 
     pub async fn add_custom_mentor_task(&mut self, project: &String, task: TaskHistory) {
         if let TaskHistory::OldFormat(ref string) = task {
+            let member = self.member().await.unwrap();
             Logger::medium(
                 "member.add_custom_mentor_task",
                 &format!(
-                    "added custom task \"{}\" to mentor tasks of user {}",
+                    "added custom task \"{}\" to mentor tasks of member {} ({})",
                     string,
+                    member.display_name(),
                     self.id.get()
                 ),
             )

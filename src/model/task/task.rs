@@ -811,6 +811,8 @@ impl Task {
                             < CONFIG.read().await.max_tasks_per_user as usize
                         {
                             mem.join_task(&self).await;
+                        } else {
+                            return false;
                         }
                     }
                 }

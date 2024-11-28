@@ -32,12 +32,11 @@ pub fn get_guild() -> GuildId {
     *GUILD
 }
 
-pub async fn fetch_member(id: u64) -> Result<Member, serenity::Error> {
-    let user_id = UserId::new(id);
+pub async fn fetch_member(id: &UserId) -> Result<Member, serenity::Error> {
     let http = get_http();
     let guild = get_guild();
 
-    guild.member(http, user_id).await
+    guild.member(http, id).await
 }
 
 pub fn fetch_channel(ctx: &Context, id: ChannelId) -> Result<GuildChannel, String> {

@@ -17,7 +17,6 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
 
         match proj_man
             .new_project(
-                &ctx,
                 name,
                 max_tasks_per_user as u32,
                 tasks_forum.id,
@@ -80,10 +79,10 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
 
         match mode.as_str() {
             "change-project-role-command-param-mode-choice-add" => {
-                project.add_role(&ctx, role.id).await;
+                project.add_role(role.id).await;
             }
             "change-project-role-command-param-mode-choice-remove" => {
-                project.remove_role(&ctx, role.id).await;
+                project.remove_role(role.id).await;
             }
             _ => panic!("unknown mode choice: {}", mode),
         }
