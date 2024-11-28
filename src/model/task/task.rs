@@ -313,7 +313,6 @@ impl Task {
 
             if end_score > 0 {
                 member.change_score(*self.score.get()).await;
-                member.update_last_activity(&self.project).await;
 
                 if &Some(member_id.clone()) != self.mentor_id.get() {
                     member.add_done_task(&self.project, self.id).await;
@@ -799,9 +798,11 @@ impl Task {
     }
 
     pub async fn add_member(&mut self, ctx: &Context, member: UserId) -> bool {
-        if self.members.get().len() < *self.max_members.get() as usize
-            && !self.members.get().contains(&member)
-        {
+        if self.members.get().len() < *self.max_members.get() as usize {
+            if self.members.get().contains(&member) {
+                return true;
+            }
+
             match MEMBERSMANAGER.try_write().as_mut() {
                 Ok(man) => {
                     if let Ok(mem) = man.get_mut(member.clone()).await {
