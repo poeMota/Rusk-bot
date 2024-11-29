@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::prelude::*;
-use serenity;
+use serenity::{
+    self,
+    all::{Colour, CreateEmbed},
+};
 
 pub async fn task_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
@@ -136,6 +139,45 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                             .content(get_string("task-command-not-in-task", None))
                             .ephemeral(true),
                     ),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    #[slash_command([])]
+    async fn task_change(ctx: &Context, inter: CommandInteraction, id: i64) {
+        inter.defer_ephemeral(&ctx.http).await.unwrap();
+
+        let task_man = task::TASKMANAGER.read().await;
+
+        if let Some(task) = task_man.get(id as u32) {
+            let mut mem_man = member::MEMBERSMANAGER.write().await;
+            mem_man.get_mut(inter.user.id).await.unwrap().changed_task = Some(id as u64);
+
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new()
+                        .embed(
+                            CreateEmbed::new()
+                                .title(get_string("task-changer-embed-title", None))
+                                .description(get_string(
+                                    "task-changer-embed-description",
+                                    Some(HashMap::from([("task", task.name.get().as_str())])),
+                                ))
+                                .color(Colour::BLUE),
+                        )
+                        .components(task.main_changer().await),
+                )
+                .await
+                .unwrap();
+        } else {
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new()
+                        .content(get_string("task-change-command-not-found", None)),
                 )
                 .await
                 .unwrap();

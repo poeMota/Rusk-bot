@@ -161,6 +161,8 @@ pub struct ProjectMember {
     pub shop_data: ShopData,
     #[serde(default, skip_serializing)]
     pub changed_member: Option<UserId>,
+    #[serde(default, skip_serializing)]
+    pub changed_task: Option<u64>,
 }
 
 impl ProjectMember {
@@ -181,6 +183,7 @@ impl ProjectMember {
                 notes: Vec::new(),
                 shop_data: ShopData::default(),
                 changed_member: None,
+                changed_task: None,
             },
             _ => serde_json::from_str(&content)?,
         })

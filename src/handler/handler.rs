@@ -35,7 +35,7 @@ impl EventHandler for Handler {
 
         project::ProjectManager::start_update_stat(ctx).await;
 
-        Logger::debug("handler.ready", "bot is ready").await;
+        Logger::low("handler.ready", "bot is ready").await;
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {

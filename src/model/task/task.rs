@@ -295,6 +295,10 @@ impl Task {
     }
 
     pub async fn close(&mut self, ctx: &Context) {
+        if self.finished {
+            return;
+        }
+
         let mut mem_man = match MEMBERSMANAGER.try_write() {
             Ok(man) => man,
             Err(_) => {
