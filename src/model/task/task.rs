@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
-    all::{Colour, CreateEmbed},
+    all::{Colour, CreateEmbed, CreateSelectMenu, CreateSelectMenuOption},
     builder::{CreateMessage, EditThread},
     client::Context,
     model::{
@@ -397,7 +397,15 @@ impl Task {
         }
     }
 
-    pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) {
+    pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) -> bool {
+        if let Some(id) = mentor_id {
+            if !self.members.get().contains(&id) {
+                if !self.add_member(&ctx, id.clone()).await {
+                    return false;
+                }
+            }
+        }
+
         self.mentor_id.set(mentor_id);
         self.update();
 
@@ -406,16 +414,10 @@ impl Task {
             &format!(
                 "task \"{}\" mentor now is {:?}",
                 self.name.get(),
-                self.mentor_id
+                self.mentor_id.get()
             ),
         )
         .await;
-
-        if let Some(id) = self.mentor_id.get() {
-            if !self.members.get().contains(&id) {
-                self.add_member(&ctx, id.clone()).await;
-            }
-        }
 
         let thread = match fetch_thread(&ctx, self.thread_id) {
             Ok(thread) => thread,
@@ -429,7 +431,7 @@ impl Task {
                     ),
                 )
                 .await;
-                return;
+                return false;
             }
         };
 
@@ -459,6 +461,8 @@ impl Task {
                 .await;
             }
         }
+
+        true
     }
 
     pub async fn set_last_save(&mut self, ctx: &Context, last_save: Option<String>) {
@@ -902,6 +906,46 @@ impl Task {
         }
 
         false
+    }
+
+    pub async fn closing_messages(&self) -> Vec<CreateMessage> {
+        let mut messages = Vec::new();
+        let mut rows = Vec::new();
+        let cfg = CONFIG.read().await;
+
+        let mut options = Vec::new();
+        for (opt, num) in cfg.task_retings.iter() {
+            options.push(CreateSelectMenuOption::new(
+                format!("{} (x{})", opt, num),
+                ((*self.score.get() as f64 * num) as i64).to_string(),
+            ));
+        }
+
+        for member in self.members.get().iter() {
+            if &Some(member.clone()) != self.mentor_id.get() {
+                rows.push(serenity::all::CreateActionRow::SelectMenu(
+                    CreateSelectMenu::new(
+                        "task-close:member-score",
+                        serenity::all::CreateSelectMenuKind::String {
+                            options: options.clone(),
+                        },
+                    )
+                    .placeholder(match fetch_member(member).await {
+                        Ok(mem) => mem.display_name().to_string(),
+                        Err(_) => format!("Unknown ({})", member.get()),
+                    }),
+                ));
+            }
+        }
+
+        for row in rows
+            .chunks(cfg.max_dropdowns_per_message as usize)
+            .map(|x| x.to_vec())
+        {
+            messages.push(CreateMessage::new().components(row));
+        }
+
+        messages
     }
 
     pub fn to_embed(&self) -> CreateEmbed {

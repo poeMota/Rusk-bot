@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::prelude::*;
 use serenity;
 
@@ -18,6 +20,134 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                 )
                 .await
                 .unwrap();
+        } else {
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content(get_string("task-command-not-in-task", None))
+                            .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    #[slash_command([])]
+    async fn last_save(ctx: &Context, inter: CommandInteraction, path: Option<String>) {
+        let mut task_man = task::TASKMANAGER.write().await;
+
+        if let Some(task) = task_man.get_thread_mut(inter.channel_id) {
+            if let Some(save) = path {
+                task.set_last_save(&ctx, Some(save)).await;
+            }
+
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content(get_string(
+                                "last-save-command-message",
+                                Some(HashMap::from([(
+                                    "last_save",
+                                    match task.last_save.get() {
+                                        Some(task_save) => task_save.clone(),
+                                        None => get_string("task-no-last-save", None),
+                                    }
+                                    .as_str(),
+                                )])),
+                            ))
+                            .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
+        } else {
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content(get_string("task-command-not-in-task", None))
+                            .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    #[slash_command([])]
+    async fn become_mentor(ctx: &Context, inter: CommandInteraction) {
+        let mut task_man = task::TASKMANAGER.write().await;
+
+        if let Some(task) = task_man.get_thread_mut(inter.channel_id) {
+            if let None = task.mentor_id.get() {
+                if task.set_mentor(&ctx, Some(inter.user.id)).await {
+                    inter
+                        .create_response(
+                            &ctx.http,
+                            CreateInteractionResponse::Message(
+                                CreateInteractionResponseMessage::new()
+                                    .content(get_string("command-done-response", None))
+                                    .ephemeral(true),
+                            ),
+                        )
+                        .await
+                        .unwrap();
+                } else {
+                    inter
+                        .create_response(
+                            &ctx.http,
+                            CreateInteractionResponse::Message(
+                                CreateInteractionResponseMessage::new()
+                                    .content(get_string(
+                                        "become-mentor-command-max-members-error",
+                                        None,
+                                    ))
+                                    .ephemeral(true),
+                            ),
+                        )
+                        .await
+                        .unwrap();
+                }
+            } else {
+                inter
+                    .create_response(
+                        &ctx.http,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .content(get_string("become-mentor-command-mentor-exist", None))
+                                .ephemeral(true),
+                        ),
+                    )
+                    .await
+                    .unwrap();
+            }
+        } else {
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content(get_string("task-command-not-in-task", None))
+                            .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    // TODO
+    #[slash_command([])]
+    async fn close(ctx: &Context, inter: CommandInteraction) {
+        let task_man = task::TASKMANAGER.read().await;
+
+        if let Some(_task) = task_man.get_thread(inter.channel_id) {
         } else {
             inter
                 .create_response(
