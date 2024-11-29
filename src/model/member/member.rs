@@ -162,7 +162,7 @@ pub struct ProjectMember {
     #[serde(default, skip_serializing)]
     pub changed_member: Option<UserId>,
     #[serde(default, skip_serializing)]
-    pub changed_task: Option<u64>,
+    pub changed_task: Option<u32>,
 }
 
 impl ProjectMember {

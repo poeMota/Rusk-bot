@@ -89,7 +89,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
 
         if let Some(task) = task_man.get_thread_mut(inter.channel_id) {
             if let None = task.mentor_id.get() {
-                if task.set_mentor(&ctx, Some(inter.user.id)).await {
+                if task.set_mentor(&ctx, Some(inter.user.id), false).await {
                     inter
                         .create_response(
                             &ctx.http,
@@ -153,7 +153,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
 
         if let Some(task) = task_man.get(id as u32) {
             let mut mem_man = member::MEMBERSMANAGER.write().await;
-            mem_man.get_mut(inter.user.id).await.unwrap().changed_task = Some(id as u64);
+            mem_man.get_mut(inter.user.id).await.unwrap().changed_task = Some(id as u32);
 
             inter
                 .edit_response(

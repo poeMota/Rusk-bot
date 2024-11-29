@@ -401,10 +401,15 @@ impl Task {
         }
     }
 
-    pub async fn set_mentor(&mut self, ctx: &Context, mentor_id: Option<UserId>) -> bool {
+    pub async fn set_mentor(
+        &mut self,
+        ctx: &Context,
+        mentor_id: Option<UserId>,
+        ignore_limits: bool,
+    ) -> bool {
         if let Some(id) = mentor_id {
             if !self.members.get().contains(&id) {
-                if !self.add_member(&ctx, id.clone()).await {
+                if !self.add_member(&ctx, id.clone(), ignore_limits).await {
                     return false;
                 }
             }
@@ -635,6 +640,10 @@ impl Task {
     pub async fn set_score(&mut self, ctx: &Context, score: i64) {
         let old_score = *self.score.get();
 
+        if old_score == score {
+            return;
+        }
+
         self.score.set(score);
         self.update();
 
@@ -669,7 +678,7 @@ impl Task {
             .send_message(
                 &ctx.http,
                 CreateMessage::new().content(get_string(
-                    "task-score-change",
+                    "task-score-changed",
                     Some(HashMap::from([
                         ("old", old_score.to_string().as_str()),
                         ("new", self.score.get().to_string().as_str()),
@@ -740,7 +749,7 @@ impl Task {
             });
 
         if &Some(member) == self.mentor_id.get() {
-            self.set_mentor(&ctx, None).await;
+            self.set_mentor(&ctx, None, false).await;
         }
 
         match MEMBERSMANAGER.try_write().as_mut() {
@@ -806,7 +815,7 @@ impl Task {
         }
     }
 
-    pub async fn add_member(&mut self, ctx: &Context, member: UserId) -> bool {
+    pub async fn add_member(&mut self, ctx: &Context, member: UserId, ignore_limits: bool) -> bool {
         if self.members.get().len() < *self.max_members.get() as usize {
             if self.members.get().contains(&member) {
                 return true;
@@ -815,13 +824,14 @@ impl Task {
             match MEMBERSMANAGER.try_write().as_mut() {
                 Ok(man) => {
                     if let Ok(mem) = man.get_mut(member.clone()).await {
-                        if mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
+                        if (mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
                             < project::PROJECTMANAGER
                                 .read()
                                 .await
                                 .get(&self.project)
                                 .unwrap()
-                                .max_tasks_per_user as usize
+                                .max_tasks_per_user as usize)
+                            || ignore_limits
                         {
                             mem.join_task(&self).await;
                         } else {

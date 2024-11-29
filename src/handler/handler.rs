@@ -32,6 +32,7 @@ impl EventHandler for Handler {
         shop_component_listeners().await;
 
         member::member_changer_listener().await;
+        task::task_changer_listener().await;
 
         project::ProjectManager::start_update_stat(ctx).await;
 
@@ -116,7 +117,7 @@ impl EventHandler for Handler {
                                         if emoji == id {
                                             let mut task_man = task::TASKMANAGER.write().await;
                                             if let Some(task) = task_man.get_thread_mut(parent_id) {
-                                                if !task.add_member(&ctx, user).await {
+                                                if !task.add_member(&ctx, user, false).await {
                                                     if let Err(e) =
                                                         add_reaction.delete(&ctx.http).await
                                                     {
@@ -138,7 +139,7 @@ impl EventHandler for Handler {
                                         if &emoji == string {
                                             let mut task_man = task::TASKMANAGER.write().await;
                                             if let Some(task) = task_man.get_thread_mut(thread.id) {
-                                                if !task.add_member(&ctx, user).await {
+                                                if !task.add_member(&ctx, user, false).await {
                                                     if let Err(e) =
                                                         add_reaction.delete(&ctx.http).await
                                                     {
