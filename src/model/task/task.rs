@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
-    all::{Colour, CreateEmbed, CreateSelectMenu, CreateSelectMenuOption},
+    all::{Colour, CreateActionRow, CreateEmbed, CreateSelectMenu, CreateSelectMenuOption},
     builder::{CreateMessage, EditThread},
     client::Context,
     model::{
@@ -188,7 +188,7 @@ pub struct Task {
     pub mentor_id: TaskOption<Option<UserId>>,
     pub members: TaskOption<Vec<UserId>>,
     pub start_date: Option<Timestamp>,
-    pub end_date: Option<Timestamp>,
+    pub end_date: TaskOption<Option<Timestamp>>,
     pub last_save: TaskOption<Option<String>>,
     #[serde(default, skip_serializing)]
     pub ending_results: HashMap<UserId, f64>,
@@ -217,7 +217,7 @@ impl Task {
                     return Err("no found thread metadata, maybe its not a thread".to_string());
                 }
             },
-            end_date: None,
+            end_date: TaskOption::new(None),
             last_save: TaskOption::new(None),
             ending_results: HashMap::new(),
         };
@@ -331,7 +331,7 @@ impl Task {
         self.finished = true;
         self.members.get_mut().clear();
         self.mentor_id.set(None);
-        self.end_date = Some(Timestamp::now());
+        self.end_date.set(Some(Timestamp::now()));
         self.update();
 
         Logger::low(
@@ -377,26 +377,118 @@ impl Task {
             }
         }
 
-        if let Some(tags) = TAGSMANAGER
-            .try_read()
-            .expect("task.close")
-            .get_by_type(&thread.parent_id.unwrap(), TageTypes::ClosedTask)
-        {
-            match thread
-                .edit_thread(&ctx.http, EditThread::new().applied_tags(tags).locked(true))
-                .await
-            {
-                Ok(_) => (),
-                Err(e) => {
-                    Logger::error(
-                        "task.close",
-                        &format!(
-                            "cannot change thread tags and lock thread, {}",
-                            e.to_string()
-                        ),
+        match thread
+            .edit_thread(
+                &ctx.http,
+                EditThread::new()
+                    .applied_tags(
+                        TAGSMANAGER
+                            .try_read()
+                            .expect("task.close")
+                            .get_by_type(&thread.parent_id.unwrap(), TageTypes::ClosedTask)
+                            .unwrap_or(Vec::new()),
                     )
-                    .await
-                }
+                    .locked(true),
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                Logger::error(
+                    "task.close",
+                    &format!(
+                        "cannot change thread tags and lock thread, {}",
+                        e.to_string()
+                    ),
+                )
+                .await
+            }
+        }
+    }
+
+    pub async fn open(&mut self, ctx: &Context) {
+        if !self.finished {
+            return;
+        }
+
+        self.finished = false;
+        self.end_date.set(None);
+        self.update();
+
+        Logger::low(
+            "task.open",
+            &format!("task \"{}\" reopened", self.name.get()),
+        )
+        .await;
+
+        let mut thread = match fetch_thread(&ctx, self.thread_id) {
+            Ok(thread) => thread,
+            Err(e) => {
+                Logger::error(
+                    "task.open",
+                    &format!(
+                        "cannot fetch thread of task \"{}\", because: {}",
+                        self.name.get(),
+                        e.to_string()
+                    ),
+                )
+                .await;
+                return;
+            }
+        };
+
+        match thread
+            .send_message(
+                &ctx.http,
+                CreateMessage::new().content(get_string("task-opened", None)),
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                Logger::error(
+                    "task.open",
+                    &format!(
+                        "cannot send message about opening task \"{}\": {}",
+                        self.name.get(),
+                        e.to_string()
+                    ),
+                )
+                .await;
+            }
+        }
+
+        let tags = TAGSMANAGER
+            .read()
+            .await
+            .get_by_type(&thread.parent_id.unwrap(), TageTypes::ClosedTask)
+            .unwrap_or(Vec::new());
+
+        match thread
+            .edit_thread(
+                &ctx.http,
+                EditThread::new()
+                    .applied_tags(
+                        thread
+                            .applied_tags
+                            .iter()
+                            .filter(|x| !tags.contains(x))
+                            .cloned(),
+                    )
+                    .locked(false),
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                Logger::error(
+                    "task.open",
+                    &format!(
+                        "cannot change thread tags and unlock thread, {}",
+                        e.to_string()
+                    ),
+                )
+                .await
             }
         }
     }
@@ -407,6 +499,10 @@ impl Task {
         mentor_id: Option<UserId>,
         ignore_limits: bool,
     ) -> bool {
+        if self.finished {
+            return false;
+        }
+
         if let Some(id) = mentor_id {
             if !self.members.get().contains(&id) {
                 if !self.add_member(&ctx, id.clone(), ignore_limits).await {
@@ -821,6 +917,10 @@ impl Task {
                 return true;
             }
 
+            if self.finished {
+                return false;
+            }
+
             match MEMBERSMANAGER.try_write().as_mut() {
                 Ok(man) => {
                     if let Ok(mem) = man.get_mut(member.clone()).await {
@@ -922,44 +1022,36 @@ impl Task {
         false
     }
 
-    pub async fn closing_messages(&self) -> Vec<CreateMessage> {
-        let mut messages = Vec::new();
-        let mut rows = Vec::new();
+    pub async fn closing_option(&self, member: &UserId) -> CreateActionRow {
         let cfg = CONFIG.read().await;
 
         let mut options = Vec::new();
+        let mut index = 0;
         for (opt, num) in cfg.task_retings.iter() {
             options.push(CreateSelectMenuOption::new(
-                format!("{} (x{})", opt, num),
-                ((*self.score.get() as f64 * num) as i64).to_string(),
+                format!("{} (x{})", get_string(opt, None), num),
+                format!(
+                    "{}:::{}:::{}",
+                    member.get(),
+                    index,
+                    *self.score.get() as f64 * num
+                ),
             ));
+            index += 1;
         }
 
-        for member in self.members.get().iter() {
-            if &Some(member.clone()) != self.mentor_id.get() {
-                rows.push(serenity::all::CreateActionRow::SelectMenu(
-                    CreateSelectMenu::new(
-                        "task-close:member-score",
-                        serenity::all::CreateSelectMenuKind::String {
-                            options: options.clone(),
-                        },
-                    )
-                    .placeholder(match fetch_member(member).await {
-                        Ok(mem) => mem.display_name().to_string(),
-                        Err(_) => format!("Unknown ({})", member.get()),
-                    }),
-                ));
-            }
-        }
-
-        for row in rows
-            .chunks(cfg.max_dropdowns_per_message as usize)
-            .map(|x| x.to_vec())
-        {
-            messages.push(CreateMessage::new().components(row));
-        }
-
-        messages
+        serenity::all::CreateActionRow::SelectMenu(
+            CreateSelectMenu::new(
+                "task-close:member-score",
+                serenity::all::CreateSelectMenuKind::String {
+                    options: options.clone(),
+                },
+            )
+            .placeholder(match fetch_member(&member).await {
+                Ok(mem) => mem.display_name().to_string(),
+                Err(_) => format!("Unknown ({})", member.get()),
+            }),
+        )
     }
 
     pub fn to_embed(&self) -> CreateEmbed {
