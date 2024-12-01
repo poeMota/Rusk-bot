@@ -478,11 +478,14 @@ fn generate_option_converter(
         let #option_ident = match &command
             .data
             .options
-            .get(#option_index)
-            .expect("Unexpected error with command option converter")
-            .value {
-                serenity::model::application::CommandDataOptionValue::#option_type_ident(value) => Some(#prefix value #suffix),
-                _ => None,
+            .get(#option_index) {
+                Some(option) => {
+                    match &option.value {
+                        serenity::model::application::CommandDataOptionValue::#option_type_ident(value) => Some(#prefix value #suffix),
+                        _ => None,
+                    }
+                }
+                None => None,
             }
     };
 
