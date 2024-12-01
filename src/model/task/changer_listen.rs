@@ -215,37 +215,39 @@ pub async fn task_changer_listener() {
                 task.ending_results.insert(mentor.clone(), 2.0);
             }
 
-            if let Some(member) = task.members.get().first() {
-                inter
-                    .create_response(
-                        &ctx.http,
-                        CreateInteractionResponse::UpdateMessage(
-                            CreateInteractionResponseMessage::new().components(Vec::from([
-                                task.closing_option(member).await,
-                                CreateActionRow::Buttons(Vec::from([CreateButton::new(
-                                    "task-changer",
-                                )
-                                .style(serenity::all::ButtonStyle::Success)
-                                .label(get_string("back-button", None))])),
-                            ])),
-                        ),
-                    )
-                    .await
-                    .unwrap();
-            } else {
-                task.close(&ctx).await;
+            if task.ending_results.len() != task.members.get().len() {
+                for member in task.members.get().iter() {
+                    if &Some(member.clone()) == task.mentor_id.get() {
+                        continue;
+                    }
 
-                inter
-                    .create_response(
-                        &ctx.http,
-                        CreateInteractionResponse::UpdateMessage(
-                            CreateInteractionResponseMessage::new()
-                                .components(task.main_changer().await),
-                        ),
-                    )
-                    .await
-                    .unwrap();
+                    inter
+                        .create_response(
+                            &ctx.http,
+                            CreateInteractionResponse::UpdateMessage(
+                                CreateInteractionResponseMessage::new()
+                                    .components(Vec::from([task.closing_option(member).await])),
+                            ),
+                        )
+                        .await
+                        .unwrap();
+
+                    return;
+                }
             }
+
+            task.close(&ctx).await;
+
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .components(task.main_changer().await),
+                    ),
+                )
+                .await
+                .unwrap();
         }
     }
 

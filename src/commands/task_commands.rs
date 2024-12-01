@@ -184,12 +184,55 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
         }
     }
 
-    // TODO
     #[slash_command([])]
     async fn close(ctx: &Context, inter: CommandInteraction) {
-        let task_man = task::TASKMANAGER.read().await;
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+        let mut task_man = task::TASKMANAGER.write().await;
 
-        if let Some(_task) = task_man.get_thread(inter.channel_id) {
+        if let Some(task) = task_man.get_thread_mut(inter.channel_id) {
+            member.changed_task = Some(task.id);
+            drop(mem_man);
+
+            task.ending_results = HashMap::new();
+            if let Some(mentor) = task.mentor_id.get() {
+                task.ending_results.insert(mentor.clone(), 2.0);
+            }
+
+            if task.ending_results.len() != task.members.get().len() {
+                for member in task.members.get().iter() {
+                    if &Some(member.clone()) == task.mentor_id.get() {
+                        continue;
+                    }
+
+                    inter
+                        .create_response(
+                            &ctx.http,
+                            CreateInteractionResponse::Message(
+                                CreateInteractionResponseMessage::new()
+                                    .components(Vec::from([task.closing_option(member).await]))
+                                    .ephemeral(true),
+                            ),
+                        )
+                        .await
+                        .unwrap();
+                    return;
+                }
+            }
+
+            task.close(&ctx).await;
+
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content(get_string("command-done-response", None))
+                            .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
         } else {
             inter
                 .create_response(
