@@ -138,4 +138,44 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
             .await
             .unwrap();
     }
+
+    #[slash_command([])]
+    async fn note(ctx: &Context, inter: CommandInteraction, member: User, text: String) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let mem = mem_man.get_mut(member.id).await.unwrap();
+
+        mem.add_note(inter.user.id, text).await;
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content(get_string("command-done-response", None))
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[slash_command([])]
+    async fn warn(ctx: &Context, inter: CommandInteraction, member: User, text: String) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let mem = mem_man.get_mut(member.id).await.unwrap();
+
+        mem.add_warn(inter.user.id, text).await;
+
+        inter
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content(get_string("command-done-response", None))
+                        .ephemeral(true),
+                ),
+            )
+            .await
+            .unwrap();
+    }
 }
