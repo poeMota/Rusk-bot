@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use serenity::all::{
     ActionRowComponent, ComponentInteractionDataKind, CreateActionRow, CreateButton,
     CreateInputText, CreateModal, CreateSelectMenu, CreateSelectMenuOption, InputTextStyle,
 };
 
-use crate::prelude::*;
+use crate::{connect::ConnectionError, prelude::*};
 
 pub async fn member_changer_listener() {
     #[listen_component("member-changer")]
@@ -269,27 +271,88 @@ pub async fn member_changer_listener() {
                 match comp {
                     ActionRowComponent::InputText(text) => {
                         if text.custom_id == "member-changer:own-folder:folder" {
-                            let score: Option<String> = text.value.clone();
+                            let folder: Option<String> = text.value.clone();
 
-                            member.change_folder(score).await;
+                            match member.change_folder(folder).await {
+                                Ok(_) => inter
+                                    .create_response(
+                                        &ctx.http,
+                                        CreateInteractionResponse::Message(
+                                            CreateInteractionResponseMessage::new()
+                                                .ephemeral(true)
+                                                .embed(member.to_embed(&ctx, true).await),
+                                        ),
+                                    )
+                                    .await
+                                    .unwrap(),
+                                Err(e) => match e {
+                                    ConnectionError::InvalidUrl(url) => inter
+                                        .create_response(
+                                            &ctx.http,
+                                            CreateInteractionResponse::Message(
+                                                CreateInteractionResponseMessage::new()
+                                                    .ephemeral(true)
+                                                    .content(get_string(
+                                                        "invalid-url",
+                                                        Some(HashMap::from([(
+                                                            "path",
+                                                            url.as_str(),
+                                                        )])),
+                                                    )),
+                                            ),
+                                        )
+                                        .await
+                                        .unwrap(),
+                                    ConnectionError::ReqwestError(error) => {
+                                        Logger::error(
+                                            "commands.link_folder",
+                                            &format!(
+                                                "reqwest error while connection: {}",
+                                                error.to_string()
+                                            ),
+                                        )
+                                        .await;
+
+                                        inter
+                                            .create_response(
+                                                &ctx.http,
+                                                CreateInteractionResponse::Message(
+                                                    CreateInteractionResponseMessage::new()
+                                                        .ephemeral(true)
+                                                        .content(get_string(
+                                                            "link-folder-reqwest-error",
+                                                            None,
+                                                        )),
+                                                ),
+                                            )
+                                            .await
+                                            .unwrap()
+                                    }
+                                    _ => inter
+                                        .create_response(
+                                            &ctx.http,
+                                            CreateInteractionResponse::Message(
+                                                CreateInteractionResponseMessage::new()
+                                                    .ephemeral(true)
+                                                    .content(get_string(
+                                                        "link-folder-error",
+                                                        Some(HashMap::from([(
+                                                            "error",
+                                                            format!("{:#?}", e).as_str(),
+                                                        )])),
+                                                    )),
+                                            ),
+                                        )
+                                        .await
+                                        .unwrap(),
+                                },
+                            }
                         }
                     }
                     _ => (),
                 }
             }
         }
-
-        inter
-            .create_response(
-                &ctx.http,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .embed(member.to_embed(&ctx, true).await)
-                        .ephemeral(true),
-                ),
-            )
-            .await
-            .unwrap();
     }
 
     #[listen_component("member-changer:tasks")]

@@ -829,6 +829,10 @@ impl Task {
             ping = format!("{} <@{}>", ping, member.get());
         }
 
+        if ping == String::new() {
+            ping = get_string("task-no-ping", None);
+        }
+
         ping
     }
 

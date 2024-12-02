@@ -1,5 +1,5 @@
 use crate::{
-    config::{read_file, write_file, DATA_PATH},
+    connect::*,
     model::task::{Task, TASKMANAGER},
     prelude::*,
     shop::ShopData,
@@ -223,8 +223,29 @@ impl ProjectMember {
         .await;
     }
 
-    pub async fn change_folder(&mut self, folder: Option<String>) {
+    pub async fn change_folder(&mut self, folder: Option<String>) -> Result<(), ConnectionError> {
         let old_folder = self.own_folder.clone();
+
+        let folder = match folder {
+            Some(mut string) => Some({
+                string = string.trim().to_string();
+
+                if let Some(s) = string.strip_prefix("/") {
+                    string = s.to_string();
+                }
+
+                if let Some(s) = string.strip_suffix("/") {
+                    string = s.to_string();
+                }
+
+                string
+            }),
+            None => None,
+        };
+
+        if let Some(ref string) = folder {
+            unload_content(format!("{}/", string)).await?;
+        }
 
         self.own_folder = folder;
         self.update();
@@ -238,6 +259,8 @@ impl ProjectMember {
             ),
         )
         .await;
+
+        Ok(())
     }
 
     pub async fn leave_task(&mut self, task: &Task) {

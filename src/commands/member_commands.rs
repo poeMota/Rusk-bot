@@ -1,4 +1,6 @@
-use crate::{model::member::MEMBERSMANAGER, prelude::*};
+use std::collections::HashMap;
+
+use crate::{connect::ConnectionError, model::member::MEMBERSMANAGER, prelude::*};
 use serenity;
 
 pub async fn member_commands(ctx: &Context, guild: GuildId) {
@@ -47,5 +49,75 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
             )
             .await
             .unwrap();
+    }
+
+    #[slash_command([])]
+    async fn link_folder(ctx: &Context, inter: CommandInteraction, folder: String) {
+        inter.defer_ephemeral(&ctx.http).await.unwrap();
+
+        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+        if let None = member.own_folder {
+            match member.change_folder(Some(folder)).await {
+                Ok(_) => inter
+                    .edit_response(
+                        &ctx.http,
+                        EditInteractionResponse::new()
+                            .content(get_string("command-done-response", None)),
+                    )
+                    .await
+                    .unwrap(),
+                Err(e) => match e {
+                    ConnectionError::InvalidUrl(url) => inter
+                        .edit_response(
+                            &ctx.http,
+                            EditInteractionResponse::new().content(get_string(
+                                "invalid-url",
+                                Some(HashMap::from([("path", url.as_str())])),
+                            )),
+                        )
+                        .await
+                        .unwrap(),
+                    ConnectionError::ReqwestError(error) => {
+                        Logger::error(
+                            "commands.link_folder",
+                            &format!("reqwest error while connection: {}", error.to_string()),
+                        )
+                        .await;
+
+                        inter
+                            .edit_response(
+                                &ctx.http,
+                                EditInteractionResponse::new()
+                                    .content(get_string("link-folder-reqwest-error", None)),
+                            )
+                            .await
+                            .unwrap()
+                    }
+                    _ => inter
+                        .edit_response(
+                            &ctx.http,
+                            EditInteractionResponse::new().content(get_string(
+                                "link-folder-error",
+                                Some(HashMap::from([("error", format!("{:#?}", e).as_str())])),
+                            )),
+                        )
+                        .await
+                        .unwrap(),
+                },
+            };
+        } else {
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new().content(get_string(
+                        "link-folder-command-already-linked-response",
+                        None,
+                    )),
+                )
+                .await
+                .unwrap();
+        }
     }
 }

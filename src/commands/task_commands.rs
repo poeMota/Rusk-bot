@@ -185,7 +185,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
     }
 
     #[slash_command([])]
-    async fn close(ctx: &Context, inter: CommandInteraction) {
+    async fn task_close(ctx: &Context, inter: CommandInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
         let member = mem_man.get_mut(inter.user.id).await.unwrap();
         let mut task_man = task::TASKMANAGER.write().await;
@@ -229,6 +229,35 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                         CreateInteractionResponseMessage::new()
                             .content(get_string("command-done-response", None))
                             .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
+        } else {
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content(get_string("task-command-not-in-task", None))
+                            .ephemeral(true),
+                    ),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    #[slash_command([])]
+    async fn ping(ctx: &Context, inter: CommandInteraction) {
+        let mut task_man = task::TASKMANAGER.write().await;
+
+        if let Some(task) = task_man.get_thread_mut(inter.channel_id) {
+            inter
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new().content(task.get_members_ping()),
                     ),
                 )
                 .await
