@@ -58,41 +58,4 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
             }
         };
     }
-
-    #[slash_command([
-        mode = [
-            choice = locale
-        ]
-    ])]
-    async fn change_project_roles(
-        ctx: &Context,
-        inter: CommandInteraction,
-        project_name: String,
-        mode: String,
-        role: Role,
-    ) {
-        inter.defer_ephemeral(&ctx.http).await.unwrap();
-        let mut proj_man = PROJECTMANAGER.try_write().unwrap();
-        let project = proj_man
-            .get_mut(&project_name)
-            .expect(&format!("project with name {} not found", &project_name));
-
-        match mode.as_str() {
-            "change-project-role-command-param-mode-choice-add" => {
-                project.add_role(role.id).await;
-            }
-            "change-project-role-command-param-mode-choice-remove" => {
-                project.remove_role(role.id).await;
-            }
-            _ => panic!("unknown mode choice: {}", mode),
-        }
-
-        inter
-            .edit_response(
-                &ctx.http,
-                EditInteractionResponse::new().content(get_string("command-done-respose", None)),
-            )
-            .await
-            .unwrap();
-    }
 }
