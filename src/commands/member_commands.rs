@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{connect::ConnectionError, model::member::MEMBERSMANAGER, prelude::*};
+use crate::{
+    connect::{get_user_id, ConnectionError},
+    model::member::MEMBERSMANAGER,
+    prelude::*,
+};
 use serenity;
 
 pub async fn member_commands(ctx: &Context, guild: GuildId) {
@@ -119,5 +123,19 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                 .await
                 .unwrap();
         }
+    }
+
+    #[slash_command([])]
+    async fn user_id(ctx: &Context, inter: CommandInteraction, ckey: String) {
+        inter.defer_ephemeral(&ctx.http).await.unwrap();
+
+        inter
+            .edit_response(
+                &ctx.http,
+                EditInteractionResponse::new()
+                    .content(format!("```{}```", get_user_id(ckey).await)),
+            )
+            .await
+            .unwrap();
     }
 }
