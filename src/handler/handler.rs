@@ -28,6 +28,7 @@ impl EventHandler for Handler {
         member_commands(&ctx, guild_id).await;
         project_commands(&ctx, guild_id).await;
         task_commands(&ctx, guild_id).await;
+        save_commands(&ctx, guild_id).await;
 
         shop_component_listeners().await;
 

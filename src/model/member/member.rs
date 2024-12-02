@@ -252,10 +252,12 @@ impl ProjectMember {
 
         let dis_member = self.member().await.unwrap();
         Logger::debug(
-            &format!("member.{}", dis_member.display_name()),
+            "member.change_folder",
             &format!(
-                "own folder changed from {:?} to {:?}",
-                old_folder, self.own_folder
+                "own folder of member {} changed from {:?} to {:?}",
+                dis_member.display_name(),
+                old_folder,
+                self.own_folder
             ),
         )
         .await;

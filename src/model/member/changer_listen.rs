@@ -258,6 +258,8 @@ pub async fn member_changer_listener() {
 
     #[listen_modal("member-changer:own-folder")]
     async fn folder_modal_submit(ctx: &Context, inter: ModalInteraction) {
+        inter.defer_ephemeral(&ctx.http).await.unwrap();
+
         let mut mem_man = member::MEMBERSMANAGER.write().await;
 
         let author = mem_man.get(inter.user.id).await.unwrap().clone();
@@ -275,31 +277,21 @@ pub async fn member_changer_listener() {
 
                             match member.change_folder(folder).await {
                                 Ok(_) => inter
-                                    .create_response(
+                                    .edit_response(
                                         &ctx.http,
-                                        CreateInteractionResponse::Message(
-                                            CreateInteractionResponseMessage::new()
-                                                .ephemeral(true)
-                                                .embed(member.to_embed(&ctx, true).await),
-                                        ),
+                                        EditInteractionResponse::new()
+                                            .embed(member.to_embed(&ctx, true).await),
                                     )
                                     .await
                                     .unwrap(),
                                 Err(e) => match e {
                                     ConnectionError::InvalidUrl(url) => inter
-                                        .create_response(
+                                        .edit_response(
                                             &ctx.http,
-                                            CreateInteractionResponse::Message(
-                                                CreateInteractionResponseMessage::new()
-                                                    .ephemeral(true)
-                                                    .content(get_string(
-                                                        "invalid-url",
-                                                        Some(HashMap::from([(
-                                                            "path",
-                                                            url.as_str(),
-                                                        )])),
-                                                    )),
-                                            ),
+                                            EditInteractionResponse::new().content(get_string(
+                                                "invalid-url",
+                                                Some(HashMap::from([("path", url.as_str())])),
+                                            )),
                                         )
                                         .await
                                         .unwrap(),
@@ -314,39 +306,31 @@ pub async fn member_changer_listener() {
                                         .await;
 
                                         inter
-                                            .create_response(
+                                            .edit_response(
                                                 &ctx.http,
-                                                CreateInteractionResponse::Message(
-                                                    CreateInteractionResponseMessage::new()
-                                                        .ephemeral(true)
-                                                        .content(get_string(
-                                                            "link-folder-reqwest-error",
-                                                            None,
-                                                        )),
-                                                ),
+                                                EditInteractionResponse::new().content(get_string(
+                                                    "link-folder-reqwest-error",
+                                                    None,
+                                                )),
                                             )
                                             .await
                                             .unwrap()
                                     }
                                     _ => inter
-                                        .create_response(
+                                        .edit_response(
                                             &ctx.http,
-                                            CreateInteractionResponse::Message(
-                                                CreateInteractionResponseMessage::new()
-                                                    .ephemeral(true)
-                                                    .content(get_string(
-                                                        "link-folder-error",
-                                                        Some(HashMap::from([(
-                                                            "error",
-                                                            format!("{:#?}", e).as_str(),
-                                                        )])),
-                                                    )),
-                                            ),
+                                            EditInteractionResponse::new().content(get_string(
+                                                "link-folder-error",
+                                                Some(HashMap::from([(
+                                                    "error",
+                                                    format!("{:#?}", e).as_str(),
+                                                )])),
+                                            )),
                                         )
                                         .await
                                         .unwrap(),
                                 },
-                            }
+                            };
                         }
                     }
                     _ => (),

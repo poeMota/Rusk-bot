@@ -83,10 +83,18 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                         )
                         .await
                         .unwrap(),
-                    ConnectionError::ReqwestError(error) => {
+                    ConnectionError::NotAllowedUrl(_) => inter
+                        .edit_response(
+                            &ctx.http,
+                            EditInteractionResponse::new()
+                                .content(get_string("not-allowed-url", None)),
+                        )
+                        .await
+                        .unwrap(),
+                    _ => {
                         Logger::error(
                             "commands.link_folder",
-                            &format!("reqwest error while connection: {}", error.to_string()),
+                            &format!("error while connecting: {:?}", e),
                         )
                         .await;
 
@@ -94,21 +102,11 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                             .edit_response(
                                 &ctx.http,
                                 EditInteractionResponse::new()
-                                    .content(get_string("link-folder-reqwest-error", None)),
+                                    .content(get_string("link-folder-error", None)),
                             )
                             .await
                             .unwrap()
                     }
-                    _ => inter
-                        .edit_response(
-                            &ctx.http,
-                            EditInteractionResponse::new().content(get_string(
-                                "link-folder-error",
-                                Some(HashMap::from([("error", format!("{:#?}", e).as_str())])),
-                            )),
-                        )
-                        .await
-                        .unwrap(),
                 },
             };
         } else {
