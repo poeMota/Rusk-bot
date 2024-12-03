@@ -14,7 +14,7 @@ impl Project {
                 "project-changer:tasks-forum",
                 serenity::all::CreateSelectMenuKind::Channel {
                     channel_types: Some(Vec::from([ChannelType::Forum])),
-                    default_channels: None,
+                    default_channels: Some(Vec::from([self.tasks_forum])),
                 },
             )
             .placeholder(get_string("project-changer-tasks-forum-placeholder", None))
@@ -65,7 +65,7 @@ impl Project {
                 None,
             ))
             .min_values(0)
-            .max_values(20),
+            .max_values(u8::max_value()),
         ));
 
         rows

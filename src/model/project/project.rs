@@ -193,8 +193,61 @@ impl Project {
         Logger::low(
             "project.set_max_task_per_user",
             &format!(
-                "max tasks per user changed from {} to {}",
-                old, self.max_tasks_per_user
+                "max tasks per user of project \"{}\" changed from {} to {}",
+                self.name(),
+                old,
+                self.max_tasks_per_user
+            ),
+        )
+        .await;
+    }
+
+    pub async fn set_tasks_forum(&mut self, forum: ChannelId) {
+        let old = self.tasks_forum.get();
+        self.tasks_forum = forum;
+        self.update().await;
+
+        Logger::low(
+            "project.set_tasks_forum",
+            &format!(
+                "task forum of project \"{}\" changed from {} to {}",
+                self.name(),
+                old,
+                self.tasks_forum.get()
+            ),
+        )
+        .await;
+    }
+
+    pub async fn set_waiter_role(&mut self, waiter: Option<RoleId>) {
+        let old = self.waiter_role.clone();
+        self.waiter_role = waiter;
+        self.update().await;
+
+        Logger::low(
+            "project.set_waiter_role",
+            &format!(
+                "waiter role of project \"{}\" changed from {:?} to {:?}",
+                self.name(),
+                old,
+                self.waiter_role
+            ),
+        )
+        .await;
+    }
+
+    pub async fn set_stat_channel(&mut self, channel: Option<ChannelId>) {
+        let old = self.stat_channel.clone();
+        self.stat_channel = channel;
+        self.update().await;
+
+        Logger::low(
+            "project.set_stat_channel",
+            &format!(
+                "stat channel of project \"{}\" changed from {:?} to {:?}",
+                self.name(),
+                old,
+                self.stat_channel
             ),
         )
         .await;
@@ -213,6 +266,16 @@ impl Project {
         if !self.associated_roles.contains(&role) {
             self.associated_roles.push(role);
             self.update().await;
+
+            Logger::low(
+                "project.add_role",
+                &format!(
+                    "added associated role {} to project \"{}\"",
+                    role.get(),
+                    self.name(),
+                ),
+            )
+            .await;
         }
     }
 
@@ -228,6 +291,16 @@ impl Project {
             );
 
             self.update().await;
+
+            Logger::low(
+                "project.remove_role",
+                &format!(
+                    "removed associated role {} from project \"{}\"",
+                    role.get(),
+                    self.name(),
+                ),
+            )
+            .await;
         }
     }
 
@@ -238,13 +311,22 @@ impl Project {
 
             for (role, embed) in embeds.iter() {
                 match self.stat_posts.get(&role) {
-                    Some(msg) => {
-                        let mut post = stat_channel.message(&ctx.http, msg).await.unwrap();
+                    Some(msg) => match stat_channel.message(&ctx.http, msg).await {
+                        Ok(mut post) => {
+                            post.edit(&ctx.http, EditMessage::new().embed(embed.clone()))
+                                .await
+                                .unwrap();
+                        }
+                        Err(_) => {
+                            let stat_msg = stat_channel
+                                .send_message(&ctx.http, CreateMessage::new().embed(embed.clone()))
+                                .await
+                                .unwrap();
 
-                        post.edit(&ctx.http, EditMessage::new().embed(embed.clone()))
-                            .await
-                            .unwrap();
-                    }
+                            self.stat_posts.insert(role.clone(), stat_msg.id);
+                            self.write().await;
+                        }
+                    },
                     None => {
                         let stat_msg = stat_channel
                             .send_message(&ctx.http, CreateMessage::new().embed(embed.clone()))
