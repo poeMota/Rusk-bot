@@ -163,6 +163,8 @@ pub struct ProjectMember {
     pub changed_member: Option<UserId>,
     #[serde(default, skip_serializing)]
     pub changed_task: Option<u32>,
+    #[serde(default, skip_serializing)]
+    pub changed_project: Option<String>,
 }
 
 impl ProjectMember {
@@ -184,6 +186,7 @@ impl ProjectMember {
                 shop_data: ShopData::default(),
                 changed_member: None,
                 changed_task: None,
+                changed_project: None,
             },
             _ => serde_json::from_str(&content)?,
         })
@@ -224,6 +227,10 @@ impl ProjectMember {
     }
 
     pub async fn change_folder(&mut self, folder: Option<String>) -> Result<(), ConnectionError> {
+        if folder == self.own_folder {
+            return Ok(());
+        }
+
         let old_folder = self.own_folder.clone();
 
         let folder = match folder {

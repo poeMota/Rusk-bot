@@ -929,7 +929,7 @@ impl Task {
                 Ok(man) => {
                     if let Ok(mem) = man.get_mut(member.clone()).await {
                         if (mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
-                            < project::PROJECTMANAGER
+                            < project::PROJECTMANAGER // Will be problems when deleting the project
                                 .read()
                                 .await
                                 .get(&self.project)

@@ -3,6 +3,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
+    all::Colour,
     builder::{CreateEmbed, EditMessage},
     model::{
         guild::Member,
@@ -183,6 +184,22 @@ impl Project {
         self.write().await;
     }
 
+    pub async fn set_max_task_per_user(&mut self, max_tasks: u32) {
+        let old = self.max_tasks_per_user;
+
+        self.max_tasks_per_user = max_tasks;
+        self.update().await;
+
+        Logger::low(
+            "project.set_max_task_per_user",
+            &format!(
+                "max tasks per user changed from {} to {}",
+                old, self.max_tasks_per_user
+            ),
+        )
+        .await;
+    }
+
     pub fn member_in_project(&self, member: &Member) -> bool {
         for role in member.roles.iter() {
             if self.associated_roles.contains(&role) {
@@ -318,5 +335,73 @@ impl Project {
             );
         }
         embeds
+    }
+
+    pub async fn to_embed(&self) -> CreateEmbed {
+        let mut embed = CreateEmbed::new()
+            .title(get_string(
+                "project-embed-title",
+                Some(HashMap::from([("project", self.name().as_str())])),
+            ))
+            .colour(Colour::MAGENTA);
+
+        embed = embed.field(
+            get_string("project-embed-max-tasks-per-user-name", None),
+            self.max_tasks_per_user.to_string(),
+            false,
+        );
+
+        if let Some(role) = &self.waiter_role {
+            embed = embed.field(
+                get_string("project-embed-waiter-role-name", None),
+                &format!("<@&{}>", role.get()),
+                false,
+            );
+        }
+
+        embed = embed.field(
+            get_string("project-embed-task-forum-name", None),
+            &format!("<#{}>", self.tasks_forum.get()),
+            false,
+        );
+
+        if let Some(channel) = &self.stat_channel {
+            embed = embed.field(
+                get_string("project-embed-stat-channel-name", None),
+                &format!("<#{}>", channel.get()),
+                false,
+            );
+        }
+
+        if !self.associated_roles.is_empty() {
+            embed = embed.field(
+                get_string(
+                    "project-embed-associated-roles-name",
+                    Some(HashMap::from([(
+                        "num",
+                        self.associated_roles.len().to_string().as_str(),
+                    )])),
+                ),
+                {
+                    let mut value = String::new();
+                    for role in self.associated_roles.iter() {
+                        value = format!(
+                            "{}{} <@&{}>\n",
+                            value,
+                            match role == self.associated_roles.last().unwrap() {
+                                false => "╠︎",
+                                true => "╚",
+                            },
+                            role.get()
+                        );
+                    }
+
+                    value
+                },
+                false,
+            );
+        }
+
+        embed
     }
 }

@@ -34,6 +34,7 @@ impl EventHandler for Handler {
 
         member::member_changer_listener().await;
         task::task_changer_listener().await;
+        project::project_listen().await;
 
         project::ProjectManager::start_update_stat(ctx).await;
 
