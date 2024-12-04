@@ -36,6 +36,7 @@ impl EventHandler for Handler {
         task_commands(&ctx, guild_id).await;
         save_commands(&ctx, guild_id).await;
         tag_commands(&ctx, guild_id).await;
+        config_commands(&ctx, guild_id).await;
 
         shop::shop_component_listeners().await;
         member::member_changer_listener().await;

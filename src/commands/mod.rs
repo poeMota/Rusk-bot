@@ -1,3 +1,4 @@
+mod config_commands;
 mod debug_commands;
 mod fun_commands;
 mod member_commands;
@@ -7,6 +8,7 @@ mod shop_commands;
 mod tag_commands;
 mod task_commands;
 
+pub use config_commands::*;
 pub use debug_commands::*;
 pub use fun_commands::*;
 pub use member_commands::*;

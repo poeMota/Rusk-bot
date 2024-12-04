@@ -158,7 +158,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
     }
 
     #[slash_command([])]
-    async fn warn(ctx: &Context, inter: CommandInteraction, member: User, text: String) {
+    async fn warning(ctx: &Context, inter: CommandInteraction, member: User, text: String) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
         let mem = mem_man.get_mut(member.id).await.unwrap();
 
