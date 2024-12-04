@@ -41,7 +41,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
                     .edit_response(
                         &ctx.http,
                         EditInteractionResponse::new()
-                            .content(get_string("command-done-respose", None)),
+                            .content(get_string("command-done-response", None)),
                     )
                     .await
                     .unwrap();
@@ -116,6 +116,31 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
                 .edit_response(
                     &ctx.http,
                     EditInteractionResponse::new().embed(project.to_embed().await),
+                )
+                .await
+                .unwrap();
+        } else {
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new().content(get_string("project-not-found", None)),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    #[slash_command([])]
+    async fn delete_project(ctx: &Context, inter: CommandInteraction, project_name: String) {
+        inter.defer_ephemeral(&ctx.http).await.unwrap();
+
+        let mut proj_man = project::PROJECTMANAGER.write().await;
+        if let Some(_) = proj_man.delete(&project_name).await {
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new()
+                        .content(get_string("command-done-response", None)),
                 )
                 .await
                 .unwrap();

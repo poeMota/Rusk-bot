@@ -90,6 +90,12 @@ impl ProjectManager {
                 associated_roles: Vec::new(),
             };
 
+            Logger::high(
+                "proj_man.new_project",
+                &format!("created new project \"{}\"", project.name),
+            )
+            .await;
+
             project.update().await;
             self.projects.insert(project.name.clone(), project);
         } else {
@@ -97,6 +103,20 @@ impl ProjectManager {
         }
 
         Ok(())
+    }
+
+    pub async fn delete(&mut self, name: &String) -> Option<Project> {
+        if let Some(proj) = self.projects.remove(name) {
+            Logger::high(
+                "proj_man.delete",
+                &format!("deleted project \"{}\"", proj.name()),
+            )
+            .await;
+
+            return Some(proj);
+        }
+
+        None
     }
 
     pub async fn start_update_stat(ctx: Context) {

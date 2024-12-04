@@ -929,12 +929,10 @@ impl Task {
                 Ok(man) => {
                     if let Ok(mem) = man.get_mut(member.clone()).await {
                         if (mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
-                            < project::PROJECTMANAGER // Will be problems when deleting the project
-                                .read()
-                                .await
-                                .get(&self.project)
-                                .unwrap()
-                                .max_tasks_per_user as usize)
+                            < match project::PROJECTMANAGER.read().await.get(&self.project) {
+                                Some(project) => project.max_tasks_per_user as usize,
+                                None => usize::max_value(),
+                            })
                             || ignore_limits
                         {
                             mem.join_task(&self).await;

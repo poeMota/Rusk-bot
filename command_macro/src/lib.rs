@@ -20,7 +20,11 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
     let function_inputs = &input_function.sig.inputs;
 
     // Generate the locale string for the command name
-    let command_locale_key = function_name_str.replace("_", "-").to_lowercase() + "-command";
+    let command_locale_key = function_name_str
+        .replace("_", "-")
+        .replace(" ", "-")
+        .to_lowercase()
+        + "-command";
 
     // Initialize variables for command generation
     let mut parameter_index: usize = 0;
@@ -133,7 +137,10 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                                 let choice_locale_key = format!(
                                                     "{}-param-{}-choice",
                                                     command_locale_key,
-                                                    param_name.to_lowercase().replace("_", "-")
+                                                    param_name
+                                                        .to_lowercase()
+                                                        .replace("_", "-")
+                                                        .replace(" ", "-")
                                                 );
                                                 let choice_name_ident = syn::Ident::new(
                                                     format!("{}_choice", param_name).as_str(),
@@ -209,7 +216,11 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
                     Pat::Ident(ref ident) => &ident.ident,
                     _ => panic!("Unsupported parameter pattern"),
                 };
-                let param_locale_key = param_name.to_string().replace("_", "-").to_lowercase();
+                let param_locale_key = param_name
+                    .to_string()
+                    .replace("_", "-")
+                    .replace(" ", "-")
+                    .to_lowercase();
                 let param_type_str;
 
                 match &**ty {
