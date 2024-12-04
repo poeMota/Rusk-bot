@@ -57,6 +57,14 @@ impl<T: Clone> TaskOption<T> {
         &mut self.base_value
     }
 
+    pub fn set_base(&mut self, value: T) {
+        if let None = self.modified_value {
+            self.value_history.insert(Timestamp::now(), value.clone());
+        }
+
+        self.base_value = value;
+    }
+
     pub fn set(&mut self, value: T) {
         self.value_history.insert(Timestamp::now(), value.clone());
         self.modified_value = Some(value);
@@ -261,33 +269,35 @@ impl Task {
         );
     }
 
-    async fn fetch_tags(&mut self, thread: &GuildChannel) {
-        let tags_man = match TAGSMANAGER.try_read() {
-            Ok(man) => man,
-            Err(e) => {
-                Logger::error(
-                    "task.fetch_tags",
-                    &format!(
-                        "cannot lock TAGSMANAGER for read because: {}",
-                        e.to_string()
-                    ),
-                )
-                .await;
-                return;
-            }
-        };
+    pub async fn fetch_tags(&mut self, thread: &GuildChannel) {
+        let tags_man = TAGSMANAGER.read().await;
+        let mut max_members = 10000;
+        let mut score_modifier = 0;
 
         for dis_tag in thread.applied_tags.iter() {
             if let Some(tag) = tags_man.get(dis_tag) {
-                if let Some(max_members) = tag.max_members {
-                    self.max_members.set(max_members);
+                if let Some(num) = tag.max_members {
+                    max_members = num;
                 }
 
-                if let Some(score_modifier) = tag.score_modifier {
-                    self.score.set(score_modifier);
+                if let Some(num) = tag.score_modifier {
+                    score_modifier = num;
+                }
+
+                if let Some(project) = &tag.task_project {
+                    self.project = project.clone();
                 }
             }
         }
+
+        self.max_members.set_base(max_members);
+        self.score.set_base(score_modifier);
+
+        Logger::debug(
+            "task.fetch_tags",
+            &format!("updated tags of task \"{}\"", self.name.get()),
+        )
+        .await;
     }
 
     fn update(&self) {

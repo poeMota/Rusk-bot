@@ -1,4 +1,4 @@
-use crate::{commands::*, config::CONFIG, prelude::*, shop::shop_component_listeners};
+use crate::{commands::*, config::CONFIG, prelude::*, shop};
 use serenity::{
     all::{async_trait, ForumEmoji, Reaction, ReactionType},
     client::{Context, EventHandler},
@@ -29,12 +29,13 @@ impl EventHandler for Handler {
         project_commands(&ctx, guild_id).await;
         task_commands(&ctx, guild_id).await;
         save_commands(&ctx, guild_id).await;
+        tag_commands(&ctx, guild_id).await;
 
-        shop_component_listeners().await;
-
+        shop::shop_component_listeners().await;
         member::member_changer_listener().await;
         task::task_changer_listener().await;
         project::project_listen().await;
+        tag::tag_changer_listener().await;
 
         project::ProjectManager::start_update_stat(ctx).await;
 
@@ -102,6 +103,21 @@ impl EventHandler for Handler {
                         )
                         .await
                     }
+                }
+            }
+        }
+    }
+
+    #[allow(unused_variables)]
+    async fn thread_update(&self, ctx: Context, old: Option<GuildChannel>, new: GuildChannel) {
+        if let Some(old_channel) = old {
+            let old_id: Vec<u64> = old_channel.applied_tags.iter().map(|x| x.get()).collect();
+            let new_id: Vec<u64> = new.applied_tags.iter().map(|x| x.get()).collect();
+
+            if old_id != new_id {
+                let mut task_man = task::TASKMANAGER.write().await;
+                if let Some(task) = task_man.get_thread_mut(new.id) {
+                    task.fetch_tags(&new).await;
                 }
             }
         }
