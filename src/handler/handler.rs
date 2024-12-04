@@ -13,9 +13,15 @@ pub struct Handler;
 impl EventHandler for Handler {
     #[allow(unused_variables)]
     async fn ready(&self, ctx: Context, data_about_bot: Ready) {
-        if let Some(num) = CONFIG.try_read().unwrap().log {
+        let cfg = CONFIG.try_read().unwrap();
+        if let Some(num) = cfg.log {
             Logger::set_log_channel(&ctx, num).await;
         }
+
+        if let Some((notify_type, id)) = cfg.notify_on.clone() {
+            Logger::set_notify(&ctx, notify_type, id).await;
+        }
+        drop(cfg);
 
         let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
 

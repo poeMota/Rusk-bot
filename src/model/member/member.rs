@@ -219,7 +219,7 @@ impl ProjectMember {
         self.update();
 
         let dis_member = self.member().await.unwrap();
-        Logger::debug(
+        Logger::low(
             "member.change_score",
             &format!(
                 "score of member {} changed by {}",
@@ -262,7 +262,7 @@ impl ProjectMember {
         self.update();
 
         let dis_member = self.member().await.unwrap();
-        Logger::debug(
+        Logger::low(
             "member.change_folder",
             &format!(
                 "own folder of member {} changed from {:?} to {:?}",
@@ -365,7 +365,7 @@ impl ProjectMember {
         let member = self.member().await.unwrap();
 
         if let Some(tasks) = self.done_tasks.get_mut(project_name) {
-            Logger::debug(
+            Logger::high(
                 "member.remove_done_task",
                 &format!(
                     "task \"{}\" deleted from done tasks of member {} ({})",
@@ -421,7 +421,7 @@ impl ProjectMember {
         let member = self.member().await.unwrap();
 
         if let Some(tasks) = self.mentor_tasks.get_mut(project_name) {
-            Logger::debug(
+            Logger::high(
                 "member.remove_mentor_task",
                 &format!(
                     "task \"{}\" deleted from mentor tasks of member {} ({})",
@@ -494,7 +494,7 @@ impl ProjectMember {
         Logger::medium(
             "member.add_note",
             &format!(
-                "user {} issued a note **\"{}\"** to a user {}",
+                "user {} issued a note \"{}\" to a user {}",
                 user.get(),
                 &note,
                 self.id.get()
@@ -502,26 +502,42 @@ impl ProjectMember {
         )
         .await;
 
-        self.notes
-            .push(NotesHistory::Current((user, Timestamp::now(), note)));
+        self.notes.push(NotesHistory::Current((
+            user,
+            Timestamp::now(),
+            note.clone(),
+        )));
         self.update();
+
+        Logger::notify(
+            fetch_member(&user).await.unwrap().display_name(),
+            get_string(
+                "member-add-note-notify",
+                Some(HashMap::from([
+                    ("note", note.as_str()),
+                    ("member", self.id.get().to_string().as_str()),
+                ])),
+            )
+            .as_str(),
+        )
+        .await;
     }
 
     pub async fn remove_note(&mut self, user: UserId, index: usize) {
-        Logger::low(
+        let note = match self.notes.get(index) {
+            Some(note) => match note {
+                NotesHistory::Current((_, _, string)) => string.clone(),
+                NotesHistory::OldFormat(string) => string.clone(),
+            },
+            None => String::from("Not Found"),
+        };
+
+        Logger::high(
             "member.remove_note",
             &format!(
-                "user {} deleted a note **\"{}\"** to a user {}",
+                "user {} deleted a note \"{}\" to a user {}",
                 user.get(),
-                match self.notes.get(index) {
-                    Some(note) => {
-                        match note {
-                            NotesHistory::Current((_, _, string)) => string.clone(),
-                            NotesHistory::OldFormat(string) => string.clone(),
-                        }
-                    }
-                    None => String::from("Not Found"),
-                },
+                note.clone(),
                 self.id.get()
             ),
         )
@@ -529,13 +545,26 @@ impl ProjectMember {
 
         self.notes.remove(index);
         self.update();
+
+        Logger::notify(
+            fetch_member(&user).await.unwrap().display_name(),
+            get_string(
+                "member-remove-note-notify",
+                Some(HashMap::from([
+                    ("note", note.as_str()),
+                    ("member", self.id.get().to_string().as_str()),
+                ])),
+            )
+            .as_str(),
+        )
+        .await;
     }
 
     pub async fn add_warn(&mut self, user: UserId, warn: String) {
         Logger::high(
             "member.add_warn",
             &format!(
-                "user {} issued a warn **\"{}\"** to a user {}",
+                "user {} issued a warn \"{}\" to a user {}",
                 user.get(),
                 &warn,
                 self.id.get()
@@ -543,26 +572,42 @@ impl ProjectMember {
         )
         .await;
 
-        self.warns
-            .push(NotesHistory::Current((user, Timestamp::now(), warn)));
+        self.warns.push(NotesHistory::Current((
+            user,
+            Timestamp::now(),
+            warn.to_string(),
+        )));
         self.update();
+
+        Logger::notify(
+            fetch_member(&user).await.unwrap().display_name(),
+            get_string(
+                "member-add-warn-notify",
+                Some(HashMap::from([
+                    ("warn", warn.as_str()),
+                    ("member", self.id.get().to_string().as_str()),
+                ])),
+            )
+            .as_str(),
+        )
+        .await;
     }
 
     pub async fn remove_warn(&mut self, user: UserId, index: usize) {
-        Logger::low(
+        let warn = match self.warns.get(index) {
+            Some(warn) => match warn {
+                NotesHistory::Current((_, _, string)) => string.clone(),
+                NotesHistory::OldFormat(string) => string.clone(),
+            },
+            None => String::from("Not Found"),
+        };
+
+        Logger::high(
             "member.remove_warn",
             &format!(
-                "user {} deleted a warn **\"{}\"** to a user {}",
+                "user {} deleted a warn \"{}\" to a user {}",
                 user.get(),
-                match self.warns.get(index) {
-                    Some(warn) => {
-                        match warn {
-                            NotesHistory::Current((_, _, string)) => string.clone(),
-                            NotesHistory::OldFormat(string) => string.clone(),
-                        }
-                    }
-                    None => String::from("Not Found"),
-                },
+                warn.clone(),
                 self.id.get()
             ),
         )
@@ -570,6 +615,19 @@ impl ProjectMember {
 
         self.warns.remove(index);
         self.update();
+
+        Logger::notify(
+            fetch_member(&user).await.unwrap().display_name(),
+            get_string(
+                "member-remove-warn-notify",
+                Some(HashMap::from([
+                    ("warn", warn.as_str()),
+                    ("member", self.id.get().to_string().as_str()),
+                ])),
+            )
+            .as_str(),
+        )
+        .await;
     }
 
     pub async fn update_last_activity(&mut self, project_name: &String) {

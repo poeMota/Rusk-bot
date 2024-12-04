@@ -1,7 +1,4 @@
-use crate::{
-    bot::{get_guild, get_http},
-    config::{read_file, write_file, CONFIG, DATA_PATH},
-};
+use crate::prelude::*;
 use chrono::prelude::*;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -33,7 +30,6 @@ pub struct LoggingConfig {
 
 static LOGGER: Lazy<Arc<RwLock<Logger>>> = Lazy::new(|| {
     Arc::new(RwLock::new(Logger::new(
-        None,
         CONFIG
             .try_read()
             .expect("Cannot lock CONFIG for LOGGER")
@@ -45,13 +41,15 @@ static LOGGER: Lazy<Arc<RwLock<Logger>>> = Lazy::new(|| {
 pub struct Logger {
     settings: HashMap<LoggingLevels, bool>,
     log_channel: Arc<RwLock<Option<GuildChannel>>>,
+    notify: Arc<RwLock<Option<GuildChannel>>>,
 }
 
 impl Logger {
-    fn new(log: Option<GuildChannel>, settings: LoggingConfig) -> Self {
+    fn new(settings: LoggingConfig) -> Self {
         Self {
             settings: settings.levels,
-            log_channel: Arc::new(RwLock::new(log)),
+            log_channel: Arc::new(RwLock::new(None)),
+            notify: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -74,6 +72,48 @@ impl Logger {
                 )
                 .await;
             }
+        }
+    }
+
+    pub async fn set_notify(ctx: &Context, channel_type: String, channel: ChannelId) {
+        match channel_type.as_str() {
+            "thread" => match fetch_thread(&ctx, channel) {
+                Ok(channel) => {
+                    LOGGER.write().await.notify = Arc::new(RwLock::new(Some(channel.clone())));
+
+                    Self::debug(
+                        "logger.set_notify",
+                        &format!("the notify thread is set to {}", channel.id.get()),
+                    )
+                    .await;
+                }
+                Err(e) => {
+                    Self::error(
+                        "logger.set_notify",
+                        &format!("Error while setting notify thread: {}", e.to_string()),
+                    )
+                    .await;
+                }
+            },
+            "channel" => match fetch_channel(&ctx, channel) {
+                Ok(channel) => {
+                    LOGGER.write().await.notify = Arc::new(RwLock::new(Some(channel.clone())));
+
+                    Self::debug(
+                        "logger.set_notify",
+                        &format!("the notify channel is set to {}", channel.id.get()),
+                    )
+                    .await;
+                }
+                Err(e) => {
+                    Self::error(
+                        "logger.set_notify",
+                        &format!("Error while setting notify channel: {}", e.to_string()),
+                    )
+                    .await;
+                }
+            },
+            _ => panic!("wrong notify channel type: {}", channel_type),
         }
     }
 
@@ -107,7 +147,7 @@ impl Logger {
             None => true,
         };
 
-        let log_channel = self.log_channel.try_read().unwrap();
+        let log_channel = self.log_channel.read().await;
 
         if enabled {
             if let Some(channel) = &*log_channel {
@@ -168,7 +208,7 @@ impl Logger {
     }
 
     pub async fn low(author: &str, content: &str) {
-        let log = LOGGER.try_read().expect("Cannot lock LOGGER for low log");
+        let log = LOGGER.read().await;
         log.log(LoggingLevels::Low, author, content).await;
     }
 
@@ -180,17 +220,46 @@ impl Logger {
     }
 
     pub async fn high(author: &str, content: &str) {
-        let log = LOGGER.try_read().expect("Cannot lock LOGGER for high log");
+        let log = LOGGER.read().await;
         log.log(LoggingLevels::High, author, content).await;
     }
 
     pub async fn debug(author: &str, content: &str) {
-        let log = LOGGER.try_read().expect("Cannot lock LOGGER for debug log");
+        let log = LOGGER.read().await;
         log.log(LoggingLevels::Debug, author, content).await;
     }
 
     pub async fn error(author: &str, content: &str) {
-        let log = LOGGER.try_read().expect("Cannot lock LOGGER for error log");
+        let log = LOGGER.read().await;
         log.log(LoggingLevels::Error, author, content).await;
+    }
+
+    pub async fn notify(author: &str, content: &str) {
+        let log = LOGGER.read().await;
+
+        let utc: DateTime<Utc> = Utc::now();
+        let time_prefix = format!(
+            "{}-{}-{}, {}:{}:{}",
+            utc.year(),
+            utc.month(),
+            utc.day(),
+            utc.hour(),
+            utc.minute(),
+            utc.second()
+        );
+
+        let builder = CreateMessage::new().content(format!(
+            "**[{}]** ({}) <{}>: {}",
+            get_string("notify-prefix", None),
+            time_prefix,
+            author,
+            content
+        ));
+
+        let notify_channel = log.notify.read().await;
+
+        if let Some(notify) = &*notify_channel {
+            notify.send_message(get_http(), builder).await.unwrap();
+        }
     }
 }

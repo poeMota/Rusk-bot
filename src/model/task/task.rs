@@ -524,7 +524,7 @@ impl Task {
         self.mentor_id.set(mentor_id);
         self.update();
 
-        Logger::low(
+        Logger::medium(
             "task.set_mentor",
             &format!(
                 "task \"{}\" mentor now is {:?}",
@@ -652,7 +652,7 @@ impl Task {
         self.max_members.set(max_members);
         self.update();
 
-        Logger::low(
+        Logger::medium(
             "task.set_max_members",
             &format!(
                 "task \"{}\" max members changed to {}",
@@ -753,7 +753,7 @@ impl Task {
         self.score.set(score);
         self.update();
 
-        Logger::low(
+        Logger::medium(
             "task.set_score",
             &format!(
                 "task \"{}\" score changed from {} to {}",
@@ -876,7 +876,7 @@ impl Task {
 
         self.update();
 
-        Logger::low(
+        Logger::medium(
             "task.remove_member",
             &format!(
                 "member {} removed from task \"{}\" members",

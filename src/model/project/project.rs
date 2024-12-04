@@ -210,7 +210,7 @@ impl Project {
         self.max_tasks_per_user = max_tasks;
         self.update().await;
 
-        Logger::low(
+        Logger::high(
             "project.set_max_task_per_user",
             &format!(
                 "max tasks per user of project \"{}\" changed from {} to {}",
@@ -227,7 +227,7 @@ impl Project {
         self.tasks_forum = forum;
         self.update().await;
 
-        Logger::low(
+        Logger::high(
             "project.set_tasks_forum",
             &format!(
                 "task forum of project \"{}\" changed from {} to {}",
@@ -244,7 +244,7 @@ impl Project {
         self.waiter_role = waiter;
         self.update().await;
 
-        Logger::low(
+        Logger::high(
             "project.set_waiter_role",
             &format!(
                 "waiter role of project \"{}\" changed from {:?} to {:?}",
@@ -261,7 +261,7 @@ impl Project {
         self.stat_channel = channel;
         self.update().await;
 
-        Logger::low(
+        Logger::high(
             "project.set_stat_channel",
             &format!(
                 "stat channel of project \"{}\" changed from {:?} to {:?}",
@@ -287,7 +287,7 @@ impl Project {
             self.associated_roles.push(role);
             self.update().await;
 
-            Logger::low(
+            Logger::high(
                 "project.add_role",
                 &format!(
                     "added associated role {} to project \"{}\"",
@@ -312,7 +312,7 @@ impl Project {
 
             self.update().await;
 
-            Logger::low(
+            Logger::high(
                 "project.remove_role",
                 &format!(
                     "removed associated role {} from project \"{}\"",

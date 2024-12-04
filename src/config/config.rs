@@ -3,6 +3,7 @@ use crate::logger::{Logger, LoggingConfig};
 use dotenv;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
+use serenity::all::ChannelId;
 use std::env::current_dir;
 use std::fs;
 use std::fs::File;
@@ -33,6 +34,7 @@ pub struct Config {
     pub project_stat_update_duration: u64,
     pub brigadire_score_modifier: f64,
     pub userid_api_url: String,
+    pub notify_on: Option<(String, ChannelId)>,
     pub log: Option<u64>,
     pub guest_role: Option<u64>,
     pub shop_embed_color: Option<u32>,

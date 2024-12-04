@@ -101,6 +101,7 @@ pub async fn member_changer_listener() {
 
         let mut rows = Vec::new();
         let mut notes = Vec::new();
+        let mut index = 0;
 
         for note in member.notes.iter() {
             let value = match note {
@@ -108,7 +109,11 @@ pub async fn member_changer_listener() {
                 member::NotesHistory::OldFormat(string) => string,
             };
 
-            notes.push(CreateSelectMenuOption::new(value, value));
+            notes.push(CreateSelectMenuOption::new(
+                value,
+                format!("{}:::{}", index, value),
+            ));
+            index += 1;
         }
 
         if !notes.is_empty() {
@@ -156,6 +161,7 @@ pub async fn member_changer_listener() {
 
         let mut rows = Vec::new();
         let mut warns = Vec::new();
+        let mut index = 0;
 
         for warn in member.warns.iter() {
             let value = match warn {
@@ -163,7 +169,11 @@ pub async fn member_changer_listener() {
                 member::NotesHistory::OldFormat(string) => string,
             };
 
-            warns.push(CreateSelectMenuOption::new(value, value));
+            warns.push(CreateSelectMenuOption::new(
+                value,
+                format!("{}:::{}", index, value),
+            ));
+            index += 1;
         }
 
         if !warns.is_empty() {
@@ -1085,12 +1095,12 @@ pub async fn member_changer_listener() {
                 for note in member.notes.clone().iter() {
                     match note {
                         member::NotesHistory::Current((_, _, string)) => {
-                            if string == value {
+                            if string == value.split(":::").last().unwrap() {
                                 member.remove_note(author.id, index).await;
                             }
                         }
                         member::NotesHistory::OldFormat(string) => {
-                            if string == value {
+                            if string == value.split(":::").last().unwrap() {
                                 member.remove_note(author.id, index).await;
                             }
                         }
@@ -1130,12 +1140,12 @@ pub async fn member_changer_listener() {
                 for warn in member.warns.clone().iter() {
                     match warn {
                         member::NotesHistory::Current((_, _, string)) => {
-                            if string == value {
+                            if string == value.split(":::").last().unwrap() {
                                 member.remove_warn(author.id, index).await;
                             }
                         }
                         member::NotesHistory::OldFormat(string) => {
-                            if string == value {
+                            if string == value.split(":::").last().unwrap() {
                                 member.remove_warn(author.id, index).await;
                             }
                         }
