@@ -1,0 +1,8 @@
+member-ckey-command-name: сикей
+member-ckey-command-description: изменить сикей пользователя
+member-ckey-command-remark: команда используется чтобы быстро узнать сикей пользователя через просмотр статистики
+member-ckey-command-param-mem-name: пользователь
+member-ckey-command-param-mem-description: пользователь, которому нужно привязать ckey
+member-ckey-command-param-ckey-name: ckey
+member-ckey-command-param-ckey-description: ckey пользователя
+member-ckey-command-log-ckey-set: "Задан сикей пользователя {name}: {ckey}"

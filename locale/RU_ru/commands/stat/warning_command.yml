@@ -1,0 +1,8 @@
+warning-command-name: предупреждение
+warning-command-description: выдать пользователю предупреждение за нарушение правил
+warning-command-remark: предупреждения видны только при просмотре статистики в режиме модератора см. /статистика
+warning-command-param-member-name: пользователь
+warning-command-param-member-description: пользователь, которому нужно выдать предупреждение
+warning-command-param-text-name: нарушение
+warning-command-param-text-description: текст нарушения
+

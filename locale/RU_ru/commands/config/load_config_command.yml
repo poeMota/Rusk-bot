@@ -1,0 +1,9 @@
+load-config-command-name: загрузить-конфиг-файл
+load-config-command-description: загрузить файл в постоянное хранилище бота.
+load-config-command-remark: если загрузить файл, с названием которое уже существует, то файл будет перезаписан.
+load-config-command-param-file-name: файл
+load-config-command-param-file-description: файл, который нужно загрузить.
+load-config-command-param-path-name: путь
+load-config-command-param-path-description: путь, по которому будет загружен файл
+load-config-command-param-path-remark: если путь не указан, то файл будет загружен в корневую папке постоянного хранилища.
+

@@ -1,0 +1,8 @@
+note-command-name: заметка
+note-command-description: выдать пользователю заметку
+note-command-remark: заметки видны только при просмотре статистики в режиме модератора см. /статистика
+note-command-param-member-name: пользователь
+note-command-param-member-description: пользователь, которому нужно выдать заметку
+note-command-param-text-name: заметка
+note-command-param-text-description: текст заметки
+

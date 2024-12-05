@@ -1,0 +1,7 @@
+change-project-command-name: изменить-проект
+change-project-command-description: название проекта, конфиг которого нужно изменить.
+change-project-command-remark: команда изменяет конфиг проекта, который расположен в `projects.json`. Если оставить какой-либо параметр пустым, то он останется неизменным.
+change-project-command-param-project-name-name: проект
+change-project-command-param-project-name-description: название проекта, конфиг которого надо изменить.
+change-project-command-not-found: не найден проект с таким названием
+

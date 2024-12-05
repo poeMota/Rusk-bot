@@ -1,0 +1,11 @@
+member-statistics-command-name: статистика
+member-statistics-command-description: статистика пользователя
+member-statistics-command-remark: |
+
+  Показывает всю статистику пользователя, даже скрытые параметры.
+  Если какое-то из полей статистики будет больше 1024 символов, то её обрежет до последних 1024 символов.
+  Статистика пользователей храниться в `/data/databases/members/`, пожалуйста, никогда не трогайте её руками (вы всё равно ничего не поймёте), она очень большая обновляется в реально времени.
+member-statistics-command-param-dismember-name: пользователь
+member-statistics-command-param-dismember-description: пользователь, статистику которого нужно получить
+member-statistics-command-log-viewed: просмотрена статистика {username} в режиме модератора
+

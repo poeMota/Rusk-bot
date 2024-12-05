@@ -1,0 +1,5 @@
+change-member-command-name: изменить-пользователя
+change-member-command-description: изменить данные пользователя
+change-member-command-param-member-name: пользователь
+change-member-command-param-member-description: пользователь, данные которого нужно изменить.
+

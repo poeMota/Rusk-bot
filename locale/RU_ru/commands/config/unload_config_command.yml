@@ -1,0 +1,3 @@
+unload-config-command-name: скачать-конфиг-файл
+unload-config-command-description: скачать конфиг файл бота.
+unload-config-command-remark: выбор файла происходит через меню поиска, через команду нельзя скачать скрытые файлы, начинающиеся с "."

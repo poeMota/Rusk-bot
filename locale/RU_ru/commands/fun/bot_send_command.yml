@@ -1,0 +1,6 @@
+bot-send-command-name: отправить
+bot-send-command-description: Отправить текст от лица бота
+bot-send-command-param-message-name: текст
+bot-send-command-param-message-description: текст, который нужно отправить от лица бота
+bot-send-command-param-message-remark: для перевода строки используйте символ "\n"
+

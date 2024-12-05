@@ -1,0 +1,14 @@
+task-join-message: "<@{member}> присоединился к заказу"
+task-members-filled: "**Заказ достиг максимального количества участников**"
+task-members-unfilled: "**В заказе появились свободные места**"
+task-max-members-change: "Максимальное количество участников заказа теперь **{num}**"
+task-last-save: "### Последний сейв: ```{save}```"
+task-no-last-save: не указан
+task-mentor-changed: "**<@{mentor}> стал куратором заказа**"
+task-no-more-mentor: "**У заказа больше нет куратора**"
+task-closed: "**Заказ завершен** :white_check_mark:"
+task-opened: "**Заказ снова открыт**"
+task-score-changed: "Базовые очки заказа изменены с **{old}** на **{new}**"
+task-command-not-in-task: Вы не находитесь в ветке активного заказа для выполнения данной команды
+task-no-ping: Пинговать некого
+

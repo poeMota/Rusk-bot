@@ -1,0 +1,7 @@
+tag-config-command-name: конфиг-тега
+tag-config-command-description: отобразить конфиг тега заказа
+tag-config-command-param-channel-name: форум
+tag-config-command-param-channel-description: форум, где находится тег
+tag-config-command-param-tag-name-name: тег
+tag-config-command-param-tag-name-description: название тега с канала-форума
+

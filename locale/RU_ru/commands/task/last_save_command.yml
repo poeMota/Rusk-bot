@@ -1,0 +1,7 @@
+last-save-command-name: последний-сейв
+last-save-command-description: узнать или изменить последний сейв таска
+last-save-command-param-path-name: путь
+last-save-command-param-path-description: путь до файла последнего сейва
+last-save-command-param-path-remark: если не указать путь, то выведет его, если указать, то изменит его и выведет, при выводе пустого пути выедет "не указан".
+last-save-command-message: "**Последний сейв**: ```{last_save}```"
+last-save-command-done-log: "Последний сейв заказа {task_name} - {path}"

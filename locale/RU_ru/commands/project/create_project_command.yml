@@ -1,0 +1,20 @@
+create-project-command-name: создать-проект
+create-project-command-description: создать базу данных для подпроекта.
+create-project-command-remark: создаст новую базу данных в `projects.json`. При попытке создать проект с уже использующимся названием выдаст ошибку.
+create-project-command-param-name-name: проект
+create-project-command-param-name-description: название проекта.
+create-project-command-param-max-tasks-per-user-name: бригад
+create-project-command-param-max-tasks-per-user-description: максимальное количество бригад для одного пользователя.
+create-project-command-param-tasks-forum-name: форум
+create-project-command-param-tasks-forum-description: канал с заказами для проекта.
+create-project-command-param-tasks-forum-remark: в данном канале будут отслеживаться любые созданные публикации и они будут интрепретироваться как заказы. Все заказы записываются в статистику проекта в `projects.json`.
+create-project-command-param-waiter-role-name: ждун
+create-project-command-param-waiter-role-description: роль, которую будет пинговать при создании заказов.
+create-project-command-param-main-channel-name: канал
+create-project-command-param-main-channel-description: основной канал (рабочий чат) проекта.
+create-project-command-param-main-channel-remark: на данный момент этот параметр ни на что не влияет.
+create-project-command-param-stat-channel-name: статистика
+create-project-command-param-stat-channel-description: канал, куда будет отправлятся статистика рабочих.
+create-project-command-param-stat-channel-remark: в данном канале будет создан автообновляющий пост со статистикой всех, кто имеет роль, ассоциированную с проектом см. /изменить-роли-проекта
+create-project-command-project-exist-error: проект с таким названием уже существует.
+

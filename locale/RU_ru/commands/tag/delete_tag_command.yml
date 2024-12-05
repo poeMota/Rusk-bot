@@ -1,0 +1,7 @@
+delete-tag-command-name: удалить-тег
+delete-tag-command-description: удалить тег заказа
+delete-tag-command-param-channel-name: форум
+delete-tag-command-param-channel-description: форум, где находится тег
+delete-tag-command-param-tag-name-name: тег
+delete-tag-command-param-tag-name-description: название тега с канала-форума
+

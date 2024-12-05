@@ -1,0 +1,40 @@
+member-changer-embed-title: Изменить данные пользователя
+member-changer-embed-description: Здeсь вы можете изменить данные пользователя <@{member_id}>.
+member-changer-score-label: очки
+member-changer-own-folder-label: личная папка
+member-changer-tasks-label: заказы
+member-changer-notes-label: заметки
+member-changer-warns-label: предупреждения
+member-changer-modal-score-title: Изменить очки
+member-changer-modal-score-components-score-title: очки
+member-changer-modal-score-components-all-score-title: очки за всё время
+member-changer-modal-score-parse-error: Количество очков должно быть числом
+member-changer-modal-own-folder-title: Изменить личную папку
+member-changer-modal-own-folder-components-folder-title: папка
+member-changer-modal-tasks-title: Изменить заказы
+member-changer-modal-notes-title: Изменить заметки
+member-changer-modal-warns-title: Изменить предупреждения
+member-changer-tasks-project-placeholder: выберите проект
+member-changer-tasks-in-tasks-add: добавить в заказ
+member-changer-tasks-in-tasks-remove: удалить из заказа
+member-changer-tasks-done-tasks-add: добавить выпол. заказ
+member-changer-tasks-done-tasks-add-custom-button: добавить свой вып. заказ
+member-changer-tasks-done-tasks-remove: удалить выпол. заказ
+member-changer-tasks-mentor-tasks-add: добавить курир. заказа
+member-changer-tasks-mentor-tasks-add-custom-button: добавить своё кур. заказа
+member-changer-tasks-mentor-tasks-remove: удалить курир. заказа
+member-changer-tasks-done-tasks-add-custom-modal-label: добавить вручную
+member-changer-tasks-done-tasks-add-custom-input-label: текст нового заказа
+member-changer-tasks-done-tasks-add-project-input-label: проект
+member-changer-tasks-mentor-tasks-add-custom-modal-label: добавить вручную
+member-changer-tasks-mentor-tasks-add-custom-input-label: текст нового заказа
+member-changer-tasks-mentor-tasks-add-project-input-label: проект
+member-changer-notes-add-button: добавить заметку
+member-changer-notes-remove: удалить заметку
+member-changer-notes-note-add-modal: Добавить заметку
+member-changer-notes-note-add-label: текст заметки
+member-changer-warns-add-button: добавить предупреждение
+member-changer-warns-remove: удалить предупреждение
+member-changer-warns-warn-add-modal: Добавить предупреждение
+member-changer-warns-warn-add-label: текст предупреждения
+

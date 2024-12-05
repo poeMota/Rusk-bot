@@ -1,0 +1,5 @@
+tag-not-found: "не найден тег с названием \"{tag_name}\" в канале <#{channel}>"
+tag-types-base: обычный
+tag-types-closedtask: тег законченного заказа
+tag-types-inwork: тег активного заказа
+

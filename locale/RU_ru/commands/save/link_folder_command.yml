@@ -1,0 +1,11 @@
+link-folder-command-name: привязать-папку
+link-folder-command-description: привязать личную папку пользователя
+link-folder-command-remark: команда имеет защиту от привязывания пустой или чужой папки. При попытке привязать чужую папку бот сделает оповещение об этом
+link-folder-command-param-folder-name: папка
+link-folder-command-param-folder-description: название личной папки
+link-folder-command-success-response: "**Папка успешно привязана**"
+link-folder-command-log-folder-linked: Привязана папка {folder}
+link-folder-command-already-linked-response: '**Вы уже имеете привязанную папку "{folder}". Если вам нужно изменить папку, обратитесь к ведущему мапперу.**'
+link-folder-command-stranger-folder-response: "Вы пытаетесь привязать чужую папку, так нельзя делать!"
+link-folder-command-stranger-folder-log: '<@{member1}> пытался привязать папку "{folder}", которая принадлежит <@{member2}>'
+

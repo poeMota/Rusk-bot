@@ -1,0 +1,4 @@
+my-statistics-command-name: моя-статистика
+my-statistics-command-description: статистика пользователя
+my-statistics-command-remark: показывает только общие параметры статистики см. /статистика
+my-statistics-command-log-viewed: просмотрена статистика

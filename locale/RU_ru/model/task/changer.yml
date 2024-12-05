@@ -1,0 +1,15 @@
+task-changer-embed-title: Изменить параметры заказа
+task-changer-embed-description: Здeсь вы можете изменить параметры заказа \"{task}\".
+task-changer-score-label: очки
+task-changer-max-members-label: макс. участников
+task-changer-members-placeholder: участники заказа
+task-changer-mentor-placeholder: куратор заказа
+task-changer-close-button: завершить
+task-changer-open-button: возобновить
+task-changer-score-modal-label: изменить очки заказа
+task-changer-score-input-label: очки
+task-changer-score-parse-error: Поле "очки" должно быть числом
+task-changer-max-members-modal-label: изменить макс. участников
+task-changer-max-members-input-label: макс. участников
+task-changer-max-members-parse-error: Поле "макс. участников" должно быть числом
+

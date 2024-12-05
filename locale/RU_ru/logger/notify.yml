@@ -1,0 +1,6 @@
+notify-prefix: Оповещение
+member-add-note-notify: "выдана заметка **\"{note}\"** для <@{member}>"
+member-remove-note-notify: "удалена заметка **\"{note}\"** для <@{member}>"
+member-add-warn-notify: "выдано предупреждение **\"{warn}\"** для <@{member}>"
+member-remove-warn-notify: "удалено предупреждение **\"{warn}\"** для <@{member}>"
+

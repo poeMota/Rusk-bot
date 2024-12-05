@@ -1,0 +1,5 @@
+delete-project-command-name: удалить-проект
+delete-project-command-description: удалить проект заказов по названию
+delete-project-command-param-project-name-name: проект
+delete-project-command-param-project-name-description: название проекта, который нужно удалить
+

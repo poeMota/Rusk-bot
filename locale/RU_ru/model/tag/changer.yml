@@ -1,0 +1,12 @@
+tag-changer-max-members-label: макс. участников заказа
+tag-changer-score-modifier-label: очки заказа
+tag-changer-task-project-label: проект заказа
+tag-changer-ping-role-label: пингуемая роль
+tag-changer-embed-title: Изменить тег
+tag-changer-embed-description: "С помощью данного кастомизаторы вы можете изменить тег \"{tag}\" из форума <#{channel}>"
+tag-changer-tag-type-placeholder: тип тега
+tag-changer-max-members-modal-title: Изменить макc. пользователей
+tag-changer-max-members-input-label: макс. пользователей
+tag-changer-score-modifier-modal-title: Изменить очки тега
+tag-changer-score-modifier-input-label: модификатор очков
+

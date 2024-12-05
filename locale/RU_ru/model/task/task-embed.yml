@@ -1,0 +1,9 @@
+task-embed-title: "Заказ \"{task}\""
+task-embed-id-name: номер заказа
+task-embed-start-date-name: дата начала
+task-embed-score-name: очки за выполение
+task-embed-last-save-name: последнее сохранение
+task-embed-no-last-save: не указан
+task-embed-mentor-name: куратор
+task-embed-members-name: "участники заказа ({current}/{max})"
+

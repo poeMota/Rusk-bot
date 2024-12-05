@@ -1,0 +1,7 @@
+user-id-command-name: user-id
+user-id-command-description: получить USERID пользователя.
+user-id-command-remerk: userid получается из https://auth.spacestation14.com/api/query/name?name=..
+user-id-command-param-ckey-name: ckey
+user-id-command-param-ckey-description: ckey пользователя, USERID которого нужно получить.
+user-id-command-param-ckey-remark: регистр сикея не важен.
+

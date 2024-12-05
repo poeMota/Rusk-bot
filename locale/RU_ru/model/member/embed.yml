@@ -1,0 +1,11 @@
+member-stat-embed-title: "**Статистика {member}**"
+member-stat-embed-in-tasks-name: "**в заказах ({num}):**"
+member-stat-embed-done-tasks-name: "**выполненные заказы ({num}):**"
+member-stat-embed-mentor-tasks-name: "**курирование заказов ({num}):**"
+member-stat-embed-folder-name: "**личная папка**"
+member-stat-embed-score-name: "**очки**"
+member-stat-embed-all-time-score-name: "**очки за всё время**"
+member-stat-embed-last-activity-name: "**последняя активность:**"
+member-stat-embed-notes-name: "**заметки ({num}):**"
+member-stat-embed-warns-name: "**предупреждения ({num}):**"
+

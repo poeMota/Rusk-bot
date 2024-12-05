@@ -1,0 +1,7 @@
+create-tag-command-name: создать-тег
+create-tag-command-description: создать тег заказа
+create-tag-command-param-channel-name: форум
+create-tag-command-param-channel-description: форум, где находится тег
+create-tag-command-param-tag-name-name: тег
+create-tag-command-param-tag-name-description: название тега с канала-форума
+

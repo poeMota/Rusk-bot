@@ -8,7 +8,7 @@ pub async fn fun_commands(ctx: &Context, guild: GuildId) {
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(get_string("commands-done-response", None)),
+                        .content(get_string("command-done-response", None)),
                 ),
             )
             .await
@@ -31,6 +31,6 @@ pub async fn fun_commands(ctx: &Context, guild: GuildId) {
 
     #[slash_command([])]
     async fn when(ctx: &Context, inter: CommandInteraction) {
-        bot_send(ctx, inter, get_string("when-command-responce", None)).await;
+        bot_send(ctx, inter, get_string("when-command-response", None)).await;
     }
 }

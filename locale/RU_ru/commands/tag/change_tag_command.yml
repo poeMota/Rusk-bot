@@ -1,0 +1,7 @@
+change-tag-command-name: изменить-тег
+change-tag-command-description: изменить тег заказа
+change-tag-command-param-channel-name: форум
+change-tag-command-param-channel-description: форум, где находится тег
+change-tag-command-param-tag-name-name: тег
+change-tag-command-param-tag-name-description: название тега с канала-форума
+

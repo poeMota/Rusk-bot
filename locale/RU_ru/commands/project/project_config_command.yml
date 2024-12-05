@@ -1,0 +1,5 @@
+project-config-command-name: конфиг-проекта
+project-config-command-description: показать конфиг проекта.
+project-config-command-param-project-name-name: проект
+project-config-command-param-project-name-description: название проекта, конфиг которого нужно показать.
+

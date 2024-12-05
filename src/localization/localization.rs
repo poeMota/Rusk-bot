@@ -41,7 +41,7 @@ impl Localization {
     fn collect_all(&mut self) {
         self.locale_data = DashMap::new();
 
-        self.collect_locale(ROOT_PATH.join("locale/"));
+        self.collect_locale(ROOT_PATH.join("locale/").join(&self.culture));
         self.collect_locale(DATA_PATH.join(&self.locale_path).join(&self.culture));
     }
 

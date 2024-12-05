@@ -1,0 +1,12 @@
+project-changer-max-tasks-per-user-label: макс. заказов на пользователя
+project-changer-tasks-forum-placeholder: форум заказов
+project-changer-waiter-role-placeholder: роль оповещений
+project-changer-stat-channel-placeholder: канал статистики
+project-changer-associated-roles-placeholder: ассоциированные роли
+project-changer-delete-button-label: удалить
+project-changer-embed-title: Изменить проект
+project-changer-embed-description: "С помощью данного кастомизаторы можно изменить параметры проекта \"{project}\""
+project-changer-max-tasks-per-user-modal-title: Изменить макс. заказов
+project-changer-max-tasks-per-user-input-label: макс. заказов
+project-changer-max-tasks-per-user-parse-error: максимальное количество заказов на пользователя должно быть числом
+

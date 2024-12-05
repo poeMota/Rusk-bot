@@ -1,0 +1,5 @@
+task-close-command-name: закрыть
+task-close-command-description: закрыть заказ
+task-close-command-remark: команду нужно выполнять в ветке активного заказа
+task-close-command-rate-message: Оцените работу участников таска
+task-close-command-done-log: закрыт заказ {task_name}
