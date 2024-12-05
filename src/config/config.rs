@@ -1,5 +1,5 @@
 use crate::localization::LocalizationData;
-use crate::logger::{Logger, LoggingConfig};
+use crate::logger::LoggingConfig;
 use dotenv;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -11,7 +11,7 @@ use std::io::ErrorKind;
 use std::io::Write;
 use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
-use tokio::{runtime::Runtime, sync::RwLock};
+use tokio::sync::RwLock;
 
 pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let current_dir = current_dir().expect("Cannot find data folder");
@@ -72,18 +72,11 @@ pub fn read_file(path: &PathBuf) -> String {
                 );
                 String::new()
             }
-            other_error => Runtime::new().unwrap().block_on(async {
-                Logger::error(
-                    "config.read_file",
-                    &format!(
-                        "uexpected error while reading file from path {}: {:?}",
-                        path.to_str().unwrap(),
-                        other_error
-                    ),
-                )
-                .await;
-                String::new()
-            }),
+            other_error => panic!(
+                "uexpected error while reading file from path {}: {:?}",
+                path.to_str().unwrap(),
+                other_error
+            ),
         },
     };
     content
