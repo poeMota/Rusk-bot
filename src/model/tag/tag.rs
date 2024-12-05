@@ -6,6 +6,7 @@ use serenity::{
     all::{Colour, CreateEmbed},
     model::id::{ChannelId, ForumTagId, RoleId},
 };
+use std::fs;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
@@ -45,6 +46,11 @@ impl TagsManager {
     }
 
     pub async fn init(&mut self) {
+        if !fs::exists(DATA_PATH.join("databases/tags")).unwrap() {
+            fs::create_dir(DATA_PATH.join("databases/tags"))
+                .expect("error while creating folder data/databases/tags");
+        }
+
         for entry in WalkDir::new(DATA_PATH.join("databases/tags")) {
             let entry = match entry {
                 Ok(s) => s,

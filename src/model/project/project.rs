@@ -10,6 +10,7 @@ use serenity::{
         id::{ChannelId, MessageId, RoleId},
     },
 };
+use std::fs;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
@@ -31,6 +32,11 @@ impl ProjectManager {
     }
 
     pub async fn init(&mut self) {
+        if !fs::exists(DATA_PATH.join("databases/projects")).unwrap() {
+            fs::create_dir(DATA_PATH.join("databases/projects"))
+                .expect("error while creating folder data/databases/projects");
+        }
+
         for entry in WalkDir::new(DATA_PATH.join("databases/projects")) {
             let entry = match entry {
                 Ok(s) => s,

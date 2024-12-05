@@ -8,12 +8,13 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
-    all::ForumTagId,
+    all::{ForumTagId, MessageId},
     builder::CreateEmbed,
     client::Context,
     model::{colour::Colour, guild::Member, id::UserId, timestamp::Timestamp},
 };
 use std::collections::HashMap;
+use std::fs;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
@@ -34,6 +35,11 @@ impl MembersManager {
     }
 
     pub async fn init(&mut self) {
+        if !fs::exists(DATA_PATH.join("databases/members")).unwrap() {
+            fs::create_dir(DATA_PATH.join("databases/members"))
+                .expect("error while creating folder data/databases/members");
+        }
+
         for entry in WalkDir::new(DATA_PATH.join("databases/members")) {
             let entry = match entry {
                 Ok(s) => s,
@@ -168,6 +174,8 @@ pub struct ProjectMember {
     pub changed_project: Option<String>,
     #[serde(default, skip_serializing)]
     pub changed_tag: Option<ForumTagId>,
+    #[serde(default, skip_serializing)]
+    pub changed_sub_post: Option<MessageId>,
 }
 
 impl ProjectMember {
@@ -191,6 +199,7 @@ impl ProjectMember {
                 changed_task: None,
                 changed_project: None,
                 changed_tag: None,
+                changed_sub_post: None,
             },
             _ => serde_json::from_str(&content)?,
         })

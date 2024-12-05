@@ -136,7 +136,7 @@ pub async fn config_commands(ctx: &Context, guild: GuildId) {
 
                     Logger::high(
                         "commands.unload_config",
-                        &format!("unloaded config file {}", value),
+                        &format!("unloaded config file: {}", value),
                     )
                     .await;
                 }

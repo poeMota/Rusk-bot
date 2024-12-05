@@ -1,25 +1,18 @@
 use serenity::prelude::*;
 use std::env;
-use task_bot::{
-    config::load_env,
-    handler::Handler,
-    localization::LOCALIZATION,
-    model::{member::MEMBERSMANAGER, project::PROJECTMANAGER, tag::TAGSMANAGER, task::TASKMANAGER},
-    prelude::*,
-    shop::SHOPMANAGER,
-};
+use task_bot::{config::load_env, handler::Handler, localization, prelude::*, shop};
 use tokio;
 
 #[allow(unused_must_use)]
 #[tokio::main]
 async fn main() {
     CONFIG.read().await;
-    LOCALIZATION.read().unwrap();
-    SHOPMANAGER.write().await.init().await;
-    MEMBERSMANAGER.write().await.init().await;
-    TASKMANAGER.write().await.init().await;
-    TAGSMANAGER.write().await.init().await;
-    PROJECTMANAGER.write().await.init().await;
+    localization::LOCALIZATION.read().unwrap();
+    shop::SHOPMANAGER.write().await.init().await;
+    member::MEMBERSMANAGER.write().await.init().await;
+    task::TASKMANAGER.write().await.init().await;
+    tag::TAGSMANAGER.write().await.init().await;
+    project::PROJECTMANAGER.write().await.init().await;
     load_env();
 
     let token = env::var("TOKEN").unwrap();
