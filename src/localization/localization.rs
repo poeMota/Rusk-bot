@@ -1,9 +1,11 @@
-use crate::config::{read_file, CONFIG, DATA_PATH};
+use crate::config::{read_file, CONFIG, DATA_PATH, ROOT_PATH};
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_yaml;
 use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use walkdir::WalkDir;
 
@@ -32,14 +34,23 @@ impl Localization {
             culture: data.culture,
             locale_data: DashMap::new(),
         };
-        loc.collect_locale();
+        loc.collect_all();
         loc
     }
 
-    fn collect_locale(&mut self) {
+    fn collect_all(&mut self) {
         self.locale_data = DashMap::new();
 
-        for entry in WalkDir::new(DATA_PATH.join(&self.locale_path).join(&self.culture)) {
+        self.collect_locale(ROOT_PATH.join("locale/"));
+        self.collect_locale(DATA_PATH.join(&self.locale_path).join(&self.culture));
+    }
+
+    fn collect_locale(&mut self, path: PathBuf) {
+        if !fs::exists(&path).unwrap() {
+            fs::create_dir(&path).unwrap();
+        }
+
+        for entry in WalkDir::new(path) {
             let entry = match entry {
                 Ok(s) => s,
                 Err(error) => {

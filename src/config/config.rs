@@ -13,6 +13,8 @@ use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 use tokio::sync::RwLock;
 
+pub static ROOT_PATH: Lazy<PathBuf> = Lazy::new(|| current_dir().expect("Cannot find root folder"));
+
 pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let current_dir = current_dir().expect("Cannot find data folder");
     current_dir.join("data/")
