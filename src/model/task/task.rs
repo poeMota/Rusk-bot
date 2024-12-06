@@ -306,7 +306,7 @@ impl Task {
         .await;
     }
 
-    fn update(&self) {
+    pub fn update(&self) {
         self.serialize();
     }
 

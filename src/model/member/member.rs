@@ -216,7 +216,7 @@ impl ProjectMember {
         );
     }
 
-    fn update(&self) {
+    pub fn update(&self) {
         self.serialize();
     }
 

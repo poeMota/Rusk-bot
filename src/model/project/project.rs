@@ -86,7 +86,7 @@ impl ProjectManager {
         stat_channel: Option<ChannelId>,
     ) -> Result<(), String> {
         if !self.projects.contains_key(&name) {
-            let mut project = Project {
+            let project = Project {
                 name,
                 max_tasks_per_user,
                 tasks_forum,
@@ -175,7 +175,7 @@ impl ProjectManager {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Project {
-    name: String,
+    pub name: String,
     pub max_tasks_per_user: u32,
     pub tasks_forum: ChannelId,
     pub waiter_role: Option<RoleId>,
@@ -206,7 +206,7 @@ impl Project {
         );
     }
 
-    async fn update(&mut self) {
+    pub async fn update(&self) {
         self.write().await;
     }
 

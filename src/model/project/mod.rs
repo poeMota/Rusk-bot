@@ -3,4 +3,4 @@ mod project;
 mod project_changer;
 
 pub use changer_listen::*;
-pub use project::{ProjectManager, PROJECTMANAGER};
+pub use project::{Project, ProjectManager, PROJECTMANAGER};
