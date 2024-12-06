@@ -130,6 +130,28 @@ impl EventHandler for Handler {
         }
     }
 
+    #[allow(unused_variables)]
+    async fn guild_member_removal(
+        &self,
+        ctx: Context,
+        guild_id: GuildId,
+        user: User,
+        member_data_if_avaliable: Option<Member>,
+    ) {
+        let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let mut task_man = task::TASKMANAGER.write().await;
+
+        if let Ok(member) = mem_man.get_mut(user.id).await {
+            for (_, tasks) in member.in_tasks.iter() {
+                for id in tasks.iter() {
+                    if let Some(task) = task_man.get_mut(*id) {
+                        task.remove_member(&ctx, user.id).await;
+                    }
+                }
+            }
+        }
+    }
+
     async fn reaction_add(&self, ctx: Context, add_reaction: Reaction) {
         if let Some(user) = add_reaction.user_id {
             if let Ok(thread) = fetch_thread(&ctx, add_reaction.channel_id) {
