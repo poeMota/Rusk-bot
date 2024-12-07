@@ -27,7 +27,7 @@ async fn main() {
                 tag.forum_id = Some(project.tasks_forum.clone());
 
                 let new_tag: TaskTag = tag.into();
-                new_tag.update();
+                new_tag.update().await;
             }
 
             for (id, mut task) in project.tasks.clone() {
@@ -52,7 +52,7 @@ async fn main() {
                 }
 
                 let new_task: Task = task.into();
-                new_task.update();
+                new_task.update().await;
             }
 
             let new_project: Project = project.into();
@@ -78,11 +78,15 @@ async fn main() {
                 .unwrap_or(&HashMap::new())
                 .clone();
 
-            new_member.update();
+            new_member.update().await;
         }
 
         println!("Converted members_database.json");
     }
 
-    println!("Databases converted successfully!");
+    if fs::exists(DATA_PATH.join("subscribe_post.json")).unwrap() {
+        println!("WARNING!!! You used the reaction roles function in the old version of the bot, it is no longer supported in the current version, we recommend using carl bot for this, more details in: https://carl.gg/");
+    }
+
+    println!("Databases converted successfully! You can now delete old database files");
 }

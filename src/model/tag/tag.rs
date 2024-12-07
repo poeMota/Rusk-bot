@@ -145,7 +145,7 @@ impl TagsManager {
             .unwrap()
             .push(tag.id);
 
-        tag.update();
+        tag.update().await;
 
         Logger::low(
             "tag_man.new_tag",

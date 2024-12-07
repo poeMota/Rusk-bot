@@ -152,6 +152,10 @@ impl Into<ProjectMember> for OldProjectMember {
             warns.push(NotesHistory::Current((user, timestamp, text)));
         }
 
+        if let Some(ckey) = self.ckey {
+            notes.insert(0, NotesHistory::OldFormat(format!("ckey: {}", ckey)));
+        }
+
         ProjectMember {
             id: self.id.unwrap(),
             in_tasks: HashMap::new(),
