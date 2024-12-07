@@ -67,6 +67,10 @@ impl CommandManager {
         }
     }
 
+    pub fn contains_command(&self, command_name: &String) -> bool {
+        self.commands.contains_key(command_name)
+    }
+
     pub fn add_command(
         &mut self,
         name: &str,

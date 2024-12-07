@@ -25,9 +25,6 @@ impl EventHandler for Handler {
 
         let guild_id = GuildId::new(CONFIG.try_read().unwrap().guild);
 
-        // TODO: better commands sync
-        //_clear_guild_commands(&ctx.http, &guild_id).await;
-
         fun_commands(&ctx, guild_id).await;
         debug_commands(&ctx, guild_id).await;
         shop_commands(&ctx, guild_id).await;
@@ -37,6 +34,8 @@ impl EventHandler for Handler {
         save_commands(&ctx, guild_id).await;
         tag_commands(&ctx, guild_id).await;
         config_commands(&ctx, guild_id).await;
+
+        sync_guild_commands(&ctx.http, &guild_id).await;
 
         shop::shop_component_listeners().await;
         member::member_changer_listener().await;
@@ -231,29 +230,39 @@ impl EventHandler for Handler {
     }
 }
 
-async fn _clear_guild_commands(http: &Http, guild_id: &GuildId) {
+async fn sync_guild_commands(http: &Http, guild_id: &GuildId) {
     match http.get_guild_commands(guild_id.clone()).await {
         Ok(commands) => {
+            let commands_man = COMMANDMANAGER.read().await;
+
             for command in commands {
-                if Logger::if_ok(
-                    "handler.clear_guild_commands",
-                    &format!("error while clear guild command {}", command.name),
-                    http.delete_guild_command(guild_id.clone(), command.id)
-                        .await,
-                )
-                .await
-                {
-                    Logger::debug(
-                        "handler.clear_guild_commands",
-                        &format!("deleted interaction command: {}", command.name),
+                if !commands_man.contains_command(&command.name) {
+                    if Logger::if_ok(
+                        "handler.sync_guild_commands",
+                        &format!("error while clear guild command {}", command.name),
+                        http.delete_guild_command(guild_id.clone(), command.id)
+                            .await,
                     )
-                    .await;
+                    .await
+                    {
+                        Logger::debug(
+                            "handler.sync_guild_commands",
+                            &format!("deleted interaction command: {}", command.name),
+                        )
+                        .await;
+                    }
                 }
             }
+
+            Logger::debug(
+                "handler.sync_guild_commands",
+                "all commands synchronized successfully",
+            )
+            .await;
         }
         Err(e) => {
             Logger::error(
-                "handler.clear_guild_commands",
+                "handler.sync_guild_commands",
                 &format!("error while getting guild commands: {}", e.to_string()),
             )
             .await;
