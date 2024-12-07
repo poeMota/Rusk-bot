@@ -1,7 +1,4 @@
 task-change-command-name: изменить-таск
 task-change-command-description: изменить параметры таска
-task-change-command-remark: команду нужно выполнять в ветке активного заказа
-task-change-command-param-id-name: номер
-task-change-command-param-id-description: номер заказа, который нужно изменить
-task-change-command-not-found: Заказ с таким номером не найден, узнать номер заказа вы можете с помощью команды /таск-инфо
+task-change-command-remark: команду нужно выполнять в ветке заказа
 

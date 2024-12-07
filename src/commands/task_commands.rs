@@ -146,14 +146,14 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
     }
 
     #[slash_command([])]
-    async fn task_change(ctx: &Context, inter: CommandInteraction, id: i64) {
+    async fn task_change(ctx: &Context, inter: CommandInteraction) {
         inter.defer_ephemeral(&ctx.http).await.unwrap();
 
         let task_man = task::TASKMANAGER.read().await;
 
-        if let Some(task) = task_man.get(id as u32) {
+        if let Some(task) = task_man.get_thread(inter.channel_id) {
             let mut mem_man = member::MEMBERSMANAGER.write().await;
-            mem_man.get_mut(inter.user.id).await.unwrap().changed_task = Some(id as u32);
+            mem_man.get_mut(inter.user.id).await.unwrap().changed_task = Some(task.id as u32);
 
             inter
                 .edit_response(
@@ -177,7 +177,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                 .edit_response(
                     &ctx.http,
                     EditInteractionResponse::new()
-                        .content(get_string("task-change-command-not-found", None)),
+                        .content(get_string("task-command-not-in-task", None)),
                 )
                 .await
                 .unwrap();
