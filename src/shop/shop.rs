@@ -366,10 +366,7 @@ impl Page {
         CreateEmbed::new()
             .title(get_string("shop-embed-title", None))
             .description(get_string("shop-embed-description", None))
-            .color(match CONFIG.try_read().unwrap().shop_embed_color {
-                Some(color) => color,
-                None => Colour::ORANGE.0,
-            })
+            .color(Colour::ORANGE)
             .field(
                 get_string(
                     "shop-embed-item",

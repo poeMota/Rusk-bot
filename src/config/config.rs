@@ -39,7 +39,6 @@ pub struct Config {
     pub notify_on: Option<(String, ChannelId)>,
     pub log: Option<u64>,
     pub guest_role: Option<u64>,
-    pub shop_embed_color: Option<u32>,
     #[serde(rename = "Localization")]
     pub localization: LocalizationData,
     #[serde(rename = "TaskEndRating")]
