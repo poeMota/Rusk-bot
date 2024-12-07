@@ -179,22 +179,32 @@ impl TaskTag {
         }
     }
 
-    fn serialize(&self) {
+    async fn serialize(&self) {
         write_file(
             &DATA_PATH.join(format!("databases/tags/{}", self.id)),
-            serde_json::to_string(&self).unwrap(),
+            match serde_json::to_string(&self) {
+                Ok(content) => content,
+                Err(e) => {
+                    Logger::error(
+                        "tag.serialize",
+                        &format!("cannot serialize tag {}: {}", self.id.get(), e.to_string()),
+                    )
+                    .await;
+                    return;
+                }
+            },
         );
     }
 
-    pub fn update(&self) {
-        self.serialize();
+    pub async fn update(&self) {
+        self.serialize().await;
     }
 
     pub async fn set_tag_type(&mut self, tag_type: Option<TageTypes>) {
         let old = self.tag_type;
 
         self.tag_type = tag_type;
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "tag.set_tag_type",
@@ -212,7 +222,7 @@ impl TaskTag {
         let old = self.max_members;
 
         self.max_members = max_members;
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "tag.set_max_members",
@@ -230,7 +240,7 @@ impl TaskTag {
         let old = self.score_modifier;
 
         self.score_modifier = score_modifier;
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "tag.set_score_modifier",
@@ -248,7 +258,7 @@ impl TaskTag {
         let old = self.task_project.clone();
 
         self.task_project = task_project;
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "tag.set_task_project",
@@ -266,7 +276,7 @@ impl TaskTag {
         let old = self.ping_role;
 
         self.ping_role = ping_role;
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "tag.set_ping_role",

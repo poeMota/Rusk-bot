@@ -264,14 +264,29 @@ impl Task {
         }
 
         instance.fetch_tags(&thread).await;
-        instance.serialize();
+        instance.serialize().await;
         Ok(instance)
     }
 
-    fn serialize(&self) {
+    async fn serialize(&self) {
         write_file(
             &DATA_PATH.join(format!("databases/tasks/{}", self.id)),
-            serde_json::to_string(&self).unwrap(),
+            match serde_json::to_string(&self) {
+                Ok(content) => content,
+                Err(e) => {
+                    Logger::error(
+                        "task.serialize",
+                        &format!(
+                            "cannot serialize task {} \"{}\": {}",
+                            self.id,
+                            self.name.get(),
+                            e.to_string()
+                        ),
+                    )
+                    .await;
+                    return;
+                }
+            },
         );
     }
 
@@ -306,8 +321,8 @@ impl Task {
         .await;
     }
 
-    pub fn update(&self) {
-        self.serialize();
+    pub async fn update(&self) {
+        self.serialize().await;
     }
 
     pub async fn close(&mut self, ctx: &Context) {
@@ -324,21 +339,21 @@ impl Task {
         };
 
         for member_id in self.members.get().iter() {
-            let member = mem_man.get_mut(member_id.clone()).await.unwrap();
+            if let Ok(member) = mem_man.get_mut(member_id.clone()).await {
+                member.leave_task(&self).await;
 
-            member.leave_task(&self).await;
+                let end_score = (*self.score.get() as f64
+                    * self.ending_results.get(member_id).unwrap_or(&1.0))
+                .round() as i64;
 
-            let end_score = (*self.score.get() as f64
-                * self.ending_results.get(member_id).unwrap_or(&1.0))
-            .round() as i64;
+                member.change_score(*self.score.get()).await;
 
-            member.change_score(*self.score.get()).await;
-
-            if end_score > 0 {
-                if &Some(member_id.clone()) != self.mentor_id.get() {
-                    member.add_done_task(&self.project, self.id).await;
-                } else {
-                    member.add_mentor_task(&self.project, self.id).await;
+                if end_score > 0 {
+                    if &Some(member_id.clone()) != self.mentor_id.get() {
+                        member.add_done_task(&self.project, self.id).await;
+                    } else {
+                        member.add_mentor_task(&self.project, self.id).await;
+                    }
                 }
             }
         }
@@ -348,7 +363,7 @@ impl Task {
         self.members.get_mut().clear();
         self.mentor_id.set(None);
         self.end_date.set(Some(Timestamp::now()));
-        self.update();
+        self.update().await;
 
         Logger::low(
             "task.close",
@@ -429,7 +444,7 @@ impl Task {
 
         self.finished = false;
         self.end_date.set(None);
-        self.update();
+        self.update().await;
 
         Logger::low(
             "task.open",
@@ -528,7 +543,7 @@ impl Task {
         }
 
         self.mentor_id.set(mentor_id);
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "task.set_mentor",
@@ -588,7 +603,7 @@ impl Task {
 
     pub async fn set_last_save(&mut self, ctx: &Context, last_save: Option<String>) {
         self.last_save.set(last_save);
-        self.update();
+        self.update().await;
 
         Logger::low(
             "task.set_last_save",
@@ -656,7 +671,7 @@ impl Task {
         let old_max_members = *self.max_members.get();
 
         self.max_members.set(max_members);
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "task.set_max_members",
@@ -757,7 +772,7 @@ impl Task {
         }
 
         self.score.set(score);
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "task.set_score",
@@ -880,7 +895,7 @@ impl Task {
             }
         };
 
-        self.update();
+        self.update().await;
 
         Logger::medium(
             "task.remove_member",
@@ -964,7 +979,7 @@ impl Task {
             };
 
             self.members.get_mut().push(member);
-            self.update();
+            self.update().await;
 
             Logger::low(
                 "task.add_member",

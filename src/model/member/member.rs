@@ -128,7 +128,10 @@ impl TaskHistory {
                         "{}<t:{}:D> <#{}>\n",
                         value_2,
                         time.timestamp(),
-                        task_man.get(*id).unwrap().thread_id.get()
+                        match task_man.get(*id) {
+                            Some(task) => task.thread_id.get(),
+                            None => continue,
+                        }
                     );
                 }
                 value_2
@@ -209,15 +212,21 @@ impl ProjectMember {
         Ok(fetch_member(&self.id).await?)
     }
 
-    fn serialize(&self) {
+    async fn serialize(&self) {
         write_file(
             &DATA_PATH.join(format!("databases/members/{}", self.id.get())),
-            serde_json::to_string(&self).unwrap(),
+            match serde_json::to_string(&self) {
+                Ok(c) => c,
+                Err(e) => {
+                    Logger::error("members.serialize", e.to_string().as_str()).await;
+                    return;
+                }
+            },
         );
     }
 
-    pub fn update(&self) {
-        self.serialize();
+    pub async fn update(&self) {
+        self.serialize().await;
     }
 
     pub async fn change_score(&mut self, score: i64) {
@@ -225,18 +234,19 @@ impl ProjectMember {
         if score > 0 {
             self.all_time_score += score;
         }
-        self.update();
+        self.update().await;
 
-        let dis_member = self.member().await.unwrap();
-        Logger::low(
-            "member.change_score",
-            &format!(
-                "score of member {} changed by {}",
-                dis_member.display_name(),
-                score.to_string()
-            ),
-        )
-        .await;
+        if let Ok(dis_member) = self.member().await {
+            Logger::low(
+                "member.change_score",
+                &format!(
+                    "score of member {} changed by {}",
+                    dis_member.display_name(),
+                    score.to_string()
+                ),
+            )
+            .await;
+        }
     }
 
     pub async fn change_folder(&mut self, folder: Option<String>) -> Result<(), ConnectionError> {
@@ -268,19 +278,20 @@ impl ProjectMember {
         }
 
         self.own_folder = folder;
-        self.update();
+        self.update().await;
 
-        let dis_member = self.member().await.unwrap();
-        Logger::low(
-            "member.change_folder",
-            &format!(
-                "own folder of member {} changed from {:?} to {:?}",
-                dis_member.display_name(),
-                old_folder,
-                self.own_folder
-            ),
-        )
-        .await;
+        if let Ok(dis_member) = self.member().await {
+            Logger::low(
+                "member.change_folder",
+                &format!(
+                    "own folder of member {} changed from {:?} to {:?}",
+                    dis_member.display_name(),
+                    old_folder,
+                    self.own_folder
+                ),
+            )
+            .await;
+        }
 
         Ok(())
     }
@@ -299,19 +310,20 @@ impl ProjectMember {
                     self.in_tasks.remove(&task.project);
                 }
 
-                self.update();
+                self.update().await;
 
-                let dis_member = self.member().await.unwrap();
-                Logger::debug(
-                    "members.leave_task",
-                    &format!(
-                        "{} ({}) leaved form task \"{}\"",
-                        dis_member.display_name(),
-                        self.id.get(),
-                        task.id
-                    ),
-                )
-                .await;
+                if let Ok(dis_member) = self.member().await {
+                    Logger::debug(
+                        "members.leave_task",
+                        &format!(
+                            "{} ({}) leaved form task \"{}\"",
+                            dis_member.display_name(),
+                            self.id.get(),
+                            task.id
+                        ),
+                    )
+                    .await;
+                }
             }
         }
     }
@@ -320,25 +332,26 @@ impl ProjectMember {
         if let Some(tasks) = self.in_tasks.get_mut(&task.project) {
             if !tasks.contains(&task.id) {
                 tasks.push(task.id);
-                self.update();
+                self.update().await;
             }
         } else {
             self.in_tasks
                 .insert(task.project.clone(), Vec::from([task.id]));
-            self.update();
+            self.update().await;
         }
 
-        let dis_member = self.member().await.unwrap();
-        Logger::debug(
-            "member.join_task",
-            &format!(
-                "{} ({}) joined to task \"{}\"",
-                dis_member.display_name(),
-                self.id.get(),
-                task.id
-            ),
-        )
-        .await;
+        if let Ok(dis_member) = self.member().await {
+            Logger::debug(
+                "member.join_task",
+                &format!(
+                    "{} ({}) joined to task \"{}\"",
+                    dis_member.display_name(),
+                    self.id.get(),
+                    task.id
+                ),
+            )
+            .await;
+        }
     }
 
     pub async fn add_done_task(&mut self, project_name: &String, task: u32) {
@@ -355,45 +368,48 @@ impl ProjectMember {
             )])));
 
         self.update_last_activity(&project_name).await;
-        self.update();
+        self.update().await;
 
-        let dis_member = self.member().await.unwrap();
-        Logger::debug(
-            "member.add_done_task",
-            &format!(
-                "{} ({}) added done task {}",
-                dis_member.display_name(),
-                self.id.get(),
-                task
-            ),
-        )
-        .await;
-    }
-
-    pub async fn remove_done_task(&mut self, project_name: &String, task_index: usize) {
-        let member = self.member().await.unwrap();
-
-        if let Some(tasks) = self.done_tasks.get_mut(project_name) {
-            Logger::high(
-                "member.remove_done_task",
+        if let Ok(dis_member) = self.member().await {
+            Logger::debug(
+                "member.add_done_task",
                 &format!(
-                    "task \"{}\" deleted from done tasks of member {} ({})",
-                    match tasks.get(task_index) {
-                        Some(task) => task.get().await,
-                        None => String::from("Not Found"),
-                    },
-                    member.display_name(),
-                    self.id.get().to_string()
+                    "{} ({}) added done task {}",
+                    dis_member.display_name(),
+                    self.id.get(),
+                    task
                 ),
             )
             .await;
+        }
+    }
+
+    pub async fn remove_done_task(&mut self, project_name: &String, task_index: usize) {
+        let dis_member = self.member().await;
+
+        if let Some(tasks) = self.done_tasks.get_mut(project_name) {
+            if let Ok(member) = dis_member {
+                Logger::high(
+                    "member.remove_done_task",
+                    &format!(
+                        "task \"{}\" deleted from done tasks of member {} ({})",
+                        match tasks.get(task_index) {
+                            Some(task) => task.get().await,
+                            None => String::from("Not Found"),
+                        },
+                        member.display_name(),
+                        self.id.get().to_string()
+                    ),
+                )
+                .await;
+            }
 
             tasks.remove(task_index);
             if tasks.is_empty() {
                 self.done_tasks.remove(project_name);
             }
 
-            self.update();
+            self.update().await;
         }
     }
 
@@ -411,45 +427,48 @@ impl ProjectMember {
             )])));
 
         self.update_last_activity(&project_name).await;
-        self.update();
+        self.update().await;
 
-        let member = self.member().await.unwrap();
-        Logger::debug(
-            "member.add_mentor_task",
-            &format!(
-                "added mentor task {} to member {} ({})",
-                task,
-                member.display_name(),
-                self.id.get()
-            ),
-        )
-        .await;
-    }
-
-    pub async fn remove_mentor_task(&mut self, project_name: &String, task_index: usize) {
-        let member = self.member().await.unwrap();
-
-        if let Some(tasks) = self.mentor_tasks.get_mut(project_name) {
-            Logger::high(
-                "member.remove_mentor_task",
+        if let Ok(dis_member) = self.member().await {
+            Logger::debug(
+                "member.add_mentor_task",
                 &format!(
-                    "task \"{}\" deleted from mentor tasks of member {} ({})",
-                    match tasks.get(task_index) {
-                        Some(task) => task.get().await,
-                        None => String::from("Not Found"),
-                    },
-                    member.display_name(),
-                    self.id.get().to_string()
+                    "added mentor task {} to member {} ({})",
+                    task,
+                    dis_member.display_name(),
+                    self.id.get()
                 ),
             )
             .await;
+        }
+    }
+
+    pub async fn remove_mentor_task(&mut self, project_name: &String, task_index: usize) {
+        let dis_member = self.member().await;
+
+        if let Some(tasks) = self.mentor_tasks.get_mut(project_name) {
+            if let Ok(member) = dis_member {
+                Logger::high(
+                    "member.remove_mentor_task",
+                    &format!(
+                        "task \"{}\" deleted from mentor tasks of member {} ({})",
+                        match tasks.get(task_index) {
+                            Some(task) => task.get().await,
+                            None => String::from("Not Found"),
+                        },
+                        member.display_name(),
+                        self.id.get().to_string()
+                    ),
+                )
+                .await;
+            }
 
             tasks.remove(task_index);
             if tasks.is_empty() {
                 self.mentor_tasks.remove(project_name);
             }
 
-            self.update();
+            self.update().await;
         }
     }
 
@@ -472,30 +491,31 @@ impl ProjectMember {
             }
 
             self.done_tasks.get_mut(project).unwrap().push(task);
-            self.update();
+            self.update().await;
         }
     }
 
     pub async fn add_custom_mentor_task(&mut self, project: &String, task: TaskHistory) {
         if let TaskHistory::OldFormat(ref string) = task {
-            let member = self.member().await.unwrap();
-            Logger::medium(
-                "member.add_custom_mentor_task",
-                &format!(
-                    "added custom task \"{}\" to mentor tasks of member {} ({})",
-                    string,
-                    member.display_name(),
-                    self.id.get()
-                ),
-            )
-            .await;
+            if let Ok(dis_member) = self.member().await {
+                Logger::medium(
+                    "member.add_custom_mentor_task",
+                    &format!(
+                        "added custom task \"{}\" to mentor tasks of member {} ({})",
+                        string,
+                        dis_member.display_name(),
+                        self.id.get()
+                    ),
+                )
+                .await;
+            }
 
             if let None = self.mentor_tasks.get(project) {
                 self.mentor_tasks.insert(project.clone(), Vec::new());
             }
 
             self.mentor_tasks.get_mut(project).unwrap().push(task);
-            self.update();
+            self.update().await;
         }
     }
 
@@ -516,7 +536,7 @@ impl ProjectMember {
             Timestamp::now(),
             note.clone(),
         )));
-        self.update();
+        self.update().await;
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
@@ -553,7 +573,7 @@ impl ProjectMember {
         .await;
 
         self.notes.remove(index);
-        self.update();
+        self.update().await;
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
@@ -586,7 +606,7 @@ impl ProjectMember {
             Timestamp::now(),
             warn.to_string(),
         )));
-        self.update();
+        self.update().await;
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
@@ -623,7 +643,7 @@ impl ProjectMember {
         .await;
 
         self.warns.remove(index);
-        self.update();
+        self.update().await;
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
@@ -642,7 +662,7 @@ impl ProjectMember {
     pub async fn update_last_activity(&mut self, project_name: &String) {
         self.last_activity
             .insert(project_name.clone(), Timestamp::now());
-        self.update();
+        self.update().await;
 
         Logger::debug(
             &format!("members.{}", self.id.get().to_string().as_str()),
@@ -744,7 +764,7 @@ impl ProjectMember {
                                     value = format!(
                                         "{}{} <#{}>\n",
                                         value,
-                                        match id == tasks.last().unwrap() {
+                                        match id == tasks.last().unwrap_or(&0) {
                                             false => "╠︎",
                                             true => "╚",
                                         },

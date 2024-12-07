@@ -332,7 +332,23 @@ impl Project {
 
     async fn update_stat_post(&mut self, ctx: &Context) {
         if let Some(stat_channel) = self.stat_channel {
-            let stat_channel = fetch_channel(&ctx, stat_channel).unwrap();
+            let stat_channel = match fetch_channel(&ctx, stat_channel) {
+                Ok(channel) => channel,
+                Err(e) => {
+                    Logger::error(
+                        "project.update_stat_post",
+                        &format!(
+                            "cannot fetch stat channel {} of project \"{}\": {}",
+                            stat_channel.get(),
+                            self.name(),
+                            e
+                        ),
+                    )
+                    .await;
+                    return;
+                }
+            };
+
             let embeds = self.get_stat_embeds(&ctx).await;
 
             for (role, embed) in embeds.iter() {
