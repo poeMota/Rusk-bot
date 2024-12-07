@@ -723,18 +723,7 @@ impl ProjectMember {
                 None => Colour::LIGHT_GREY,
             });
 
-        let task_man = match TASKMANAGER.try_read() {
-            Ok(man) => man,
-            Err(_) => {
-                Logger::error(
-                    "member.to_embed",
-                    "error while try_read TASKMANAGER, maybe deadlock, trying await...",
-                )
-                .await;
-                TASKMANAGER.read().await
-            }
-        };
-
+        let task_man = TASKMANAGER.read().await;
         if !self.in_tasks.is_empty() {
             embed = embed.field(
                 get_string(
@@ -765,7 +754,15 @@ impl ProjectMember {
                             }
                         }
                     }
+
                     value
+                        .chars()
+                        .rev()
+                        .take(2000)
+                        .collect::<String>()
+                        .chars()
+                        .rev()
+                        .collect::<String>()
                 },
                 false,
             );
@@ -813,7 +810,15 @@ impl ProjectMember {
                             }
                         }
                     }
+
                     value
+                        .chars()
+                        .rev()
+                        .take(2000)
+                        .collect::<String>()
+                        .chars()
+                        .rev()
+                        .collect::<String>()
                 },
                 false,
             );
@@ -861,7 +866,15 @@ impl ProjectMember {
                             }
                         }
                     }
+
                     value
+                        .chars()
+                        .rev()
+                        .take(2000)
+                        .collect::<String>()
+                        .chars()
+                        .rev()
+                        .collect::<String>()
                 },
                 false,
             );
@@ -908,7 +921,15 @@ impl ProjectMember {
                                 time.timestamp()
                             );
                         }
+
                         value
+                            .chars()
+                            .rev()
+                            .take(2000)
+                            .collect::<String>()
+                            .chars()
+                            .rev()
+                            .collect::<String>()
                     },
                     false,
                 );
@@ -947,7 +968,15 @@ impl ProjectMember {
                                 }
                             );
                         }
+
                         value
+                            .chars()
+                            .rev()
+                            .take(2000)
+                            .collect::<String>()
+                            .chars()
+                            .rev()
+                            .collect::<String>()
                     },
                     false,
                 );
@@ -986,7 +1015,15 @@ impl ProjectMember {
                                 }
                             );
                         }
+
                         value
+                            .chars()
+                            .rev()
+                            .take(2000)
+                            .collect::<String>()
+                            .chars()
+                            .rev()
+                            .collect::<String>()
                     },
                     false,
                 );
