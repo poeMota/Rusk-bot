@@ -4,6 +4,7 @@ use dotenv;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::all::ChannelId;
+use serenity::all::RoleId;
 use std::env::current_dir;
 use std::fs;
 use std::fs::File;
@@ -38,7 +39,7 @@ pub struct Config {
     pub userid_api_url: String,
     pub notify_on: Option<(String, ChannelId)>,
     pub log: Option<u64>,
-    pub guest_role: Option<u64>,
+    pub guest_role: Option<RoleId>,
     #[serde(rename = "Localization")]
     pub localization: LocalizationData,
     #[serde(rename = "TaskEndRating")]

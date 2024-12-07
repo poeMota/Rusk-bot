@@ -130,6 +130,24 @@ impl EventHandler for Handler {
         }
     }
 
+    async fn guild_member_addition(&self, ctx: Context, new_member: Member) {
+        if let Some(guest_role) = CONFIG.read().await.guest_role {
+            if let Err(e) = new_member.add_role(&ctx.http, guest_role).await {
+                Logger::error(
+                    "handler.guild_member_addition",
+                    &format!(
+                        "cannot give role {} for new guild member {} ({}): {}",
+                        guest_role.get(),
+                        new_member.display_name(),
+                        new_member.user.id.get(),
+                        e.to_string()
+                    ),
+                )
+                .await;
+            }
+        }
+    }
+
     #[allow(unused_variables)]
     async fn guild_member_removal(
         &self,
