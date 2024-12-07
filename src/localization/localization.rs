@@ -47,7 +47,7 @@ impl Localization {
 
     fn collect_locale(&mut self, path: PathBuf) {
         if !fs::exists(&path).unwrap() {
-            fs::create_dir(&path).unwrap();
+            fs::create_dir_all(&path).unwrap();
         }
 
         for entry in WalkDir::new(path) {

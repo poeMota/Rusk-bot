@@ -33,7 +33,7 @@ impl ProjectManager {
 
     pub async fn init(&mut self) {
         if !fs::exists(DATA_PATH.join("databases/projects")).unwrap() {
-            fs::create_dir(DATA_PATH.join("databases/projects"))
+            fs::create_dir_all(DATA_PATH.join("databases/projects"))
                 .expect("error while creating folder data/databases/projects");
         }
 

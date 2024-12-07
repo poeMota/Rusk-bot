@@ -47,7 +47,7 @@ impl TagsManager {
 
     pub async fn init(&mut self) {
         if !fs::exists(DATA_PATH.join("databases/tags")).unwrap() {
-            fs::create_dir(DATA_PATH.join("databases/tags"))
+            fs::create_dir_all(DATA_PATH.join("databases/tags"))
                 .expect("error while creating folder data/databases/tags");
         }
 

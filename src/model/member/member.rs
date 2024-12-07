@@ -36,7 +36,7 @@ impl MembersManager {
 
     pub async fn init(&mut self) {
         if !fs::exists(DATA_PATH.join("databases/members")).unwrap() {
-            fs::create_dir(DATA_PATH.join("databases/members"))
+            fs::create_dir_all(DATA_PATH.join("databases/members"))
                 .expect("error while creating folder data/databases/members");
         }
 
