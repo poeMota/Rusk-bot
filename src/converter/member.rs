@@ -154,7 +154,7 @@ impl Into<ProjectMember> for OldProjectMember {
 
         if let Some(ckey) = self.ckey {
             if ckey != String::new() {
-                notes.insert(0, NotesHistory::OldFormat(format!("ckey: {}", ckey)));
+                notes.insert(0, NotesHistory::OldFormat(format!("**ckey:** {}", ckey)));
             }
         }
 
@@ -163,7 +163,19 @@ impl Into<ProjectMember> for OldProjectMember {
             in_tasks: HashMap::new(),
             done_tasks,
             mentor_tasks,
-            own_folder: self.own_folder,
+            own_folder: match self.own_folder {
+                Some(folder) => {
+                    if folder == String::new()
+                        || folder == String::from("\"\"")
+                        || folder == String::from("\'\'")
+                    {
+                        None
+                    } else {
+                        Some(folder)
+                    }
+                }
+                None => None,
+            },
             score: self.score.unwrap_or(0),
             all_time_score: self.all_time_score.unwrap_or(0),
             last_activity,
