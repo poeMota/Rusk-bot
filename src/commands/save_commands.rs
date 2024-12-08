@@ -48,6 +48,18 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                 )
                                 .await
                                 .unwrap();
+
+                            Logger::low(
+                                "commands.save",
+                                &format!(
+                                    "unloaded save {}/{} by {} ({}",
+                                    folder,
+                                    p,
+                                    inter.user.display_name(),
+                                    inter.user.id.get()
+                                ),
+                            )
+                            .await;
                         }
                         Err(e) => match e {
                             ConnectionError::InvalidUrl(url) => {
@@ -148,6 +160,17 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                             )
                             .await
                             .unwrap();
+
+                        Logger::low(
+                            "commands.save_plus",
+                            &format!(
+                                "unloaded save {} by {} ({}",
+                                p,
+                                inter.user.display_name(),
+                                inter.user.id.get()
+                            ),
+                        )
+                        .await;
                     }
                     Err(e) => match e {
                         ConnectionError::InvalidUrl(url) => {
@@ -307,6 +330,17 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                         )
                         .await
                         .unwrap();
+
+                    Logger::low(
+                        "components.save-menu-option",
+                        &format!(
+                            "unloaded save {} by {} ({}",
+                            path,
+                            inter.user.display_name(),
+                            inter.user.id.get()
+                        ),
+                    )
+                    .await;
                 }
             }
         }
