@@ -778,7 +778,7 @@ impl ProjectMember {
                     value
                         .chars()
                         .rev()
-                        .take(2000)
+                        .take(1024)
                         .collect::<String>()
                         .chars()
                         .rev()
@@ -834,7 +834,7 @@ impl ProjectMember {
                     value
                         .chars()
                         .rev()
-                        .take(2000)
+                        .take(1024)
                         .collect::<String>()
                         .chars()
                         .rev()
@@ -890,7 +890,7 @@ impl ProjectMember {
                     value
                         .chars()
                         .rev()
-                        .take(2000)
+                        .take(1024)
                         .collect::<String>()
                         .chars()
                         .rev()
@@ -945,7 +945,7 @@ impl ProjectMember {
                         value
                             .chars()
                             .rev()
-                            .take(2000)
+                            .take(1024)
                             .collect::<String>()
                             .chars()
                             .rev()
@@ -992,7 +992,7 @@ impl ProjectMember {
                         value
                             .chars()
                             .rev()
-                            .take(2000)
+                            .take(1024)
                             .collect::<String>()
                             .chars()
                             .rev()
@@ -1039,7 +1039,7 @@ impl ProjectMember {
                         value
                             .chars()
                             .rev()
-                            .take(2000)
+                            .take(1024)
                             .collect::<String>()
                             .chars()
                             .rev()
