@@ -16,7 +16,7 @@ pub async fn debug_commands(ctx: &Context, guild: GuildId) {
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(get_string("commands-done-response", None))
+                        .content(get_string("command-done-response", None))
                         .ephemeral(true),
                 ),
             )
