@@ -153,7 +153,9 @@ impl Into<ProjectMember> for OldProjectMember {
         }
 
         if let Some(ckey) = self.ckey {
-            notes.insert(0, NotesHistory::OldFormat(format!("ckey: {}", ckey)));
+            if ckey != String::new() {
+                notes.insert(0, NotesHistory::OldFormat(format!("ckey: {}", ckey)));
+            }
         }
 
         ProjectMember {
