@@ -28,7 +28,7 @@ pub async fn debug_commands(ctx: &Context, guild: GuildId) {
                 Some(ref mem) => mem.display_name(),
                 None => "Unknown",
             },
-            "shutdown bot...",
+            "shutdowning bot...",
         )
         .await;
         std::process::exit(0);
