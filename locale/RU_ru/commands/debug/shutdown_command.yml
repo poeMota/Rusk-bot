@@ -1,0 +1,3 @@
+shutdown-command-name: shutdown
+shutdown-command-description: выключить бота для перезагрузки
+
