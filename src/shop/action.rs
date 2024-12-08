@@ -12,7 +12,7 @@ use serenity::{
         id::{ChannelId, RoleId},
     },
 };
-use std::{collections::HashMap, future::Future};
+use std::{collections::HashMap, fmt::format, future::Future};
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -291,7 +291,26 @@ async fn get_channel(content: &Replacement) -> Result<GuildChannel, String> {
                 .get(&ChannelId::new(*num as u64))
             {
                 Some(channel) => Ok(channel.clone()),
-                None => Err(format!("channel with {} id not found", num)),
+                None => match guild.get_active_threads(&http).await {
+                    Ok(threads) => {
+                        for thread in threads.threads {
+                            if thread.id.get() == *num as u64 {
+                                return Ok(thread);
+                            }
+                        }
+                        return Err(format!(
+                            "cannot found channel or active thread with id {}",
+                            num
+                        ));
+                    }
+                    Err(e) => {
+                        return Err(format!(
+                            "cannot get channel by id {} and guild active threads: {}",
+                            num,
+                            e.to_string()
+                        ))
+                    }
+                },
             }
         }
         Replacement::Channel(channel) => Ok(channel.clone()),
