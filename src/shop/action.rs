@@ -12,7 +12,7 @@ use serenity::{
         id::{ChannelId, RoleId},
     },
 };
-use std::{collections::HashMap, fmt::format, future::Future};
+use std::{collections::HashMap, future::Future};
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
