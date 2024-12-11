@@ -440,8 +440,6 @@ impl Project {
                                 .await;
                             }
                         }
-
-                        break;
                     }
                 }
                 Err(e) => {
