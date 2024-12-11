@@ -108,7 +108,7 @@ pub async fn get_highest_role_in(
         if member.roles.contains(&role_id) {
             if let Some(role) = guild.roles.get(&role_id) {
                 if let Some(highest) = &highest_role {
-                    if role.position < highest.position {
+                    if role.position > highest.position {
                         highest_role = Some(role)
                     }
                 } else {
