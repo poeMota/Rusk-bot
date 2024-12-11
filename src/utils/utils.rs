@@ -1,4 +1,5 @@
 use serenity::{
+    all::RoleId,
     builder::{CreateActionRow, CreateButton},
     client::Context,
     http::Http,
@@ -86,4 +87,39 @@ pub fn get_params_buttons(name: &str, params: Vec<&str>) -> Vec<CreateActionRow>
         ])));
     }
     buttons
+}
+
+pub async fn get_highest_role_in(
+    ctx: &Context,
+    user: UserId,
+    roles: &Vec<RoleId>,
+) -> Result<Option<RoleId>, String> {
+    let mut highest_role: Option<&Role> = None;
+    let member = fetch_member(&user).await.map_err(|e| e.to_string())?;
+
+    let guild = match get_guild().to_guild_cached(&ctx.cache) {
+        Some(g) => g,
+        None => {
+            return Err("cannot get guild from id".to_string());
+        }
+    };
+
+    for role_id in roles.iter() {
+        if member.roles.contains(&role_id) {
+            if let Some(role) = guild.roles.get(&role_id) {
+                if let Some(highest) = &highest_role {
+                    if role.position < highest.position {
+                        highest_role = Some(role)
+                    }
+                } else {
+                    highest_role = Some(role);
+                }
+            }
+        }
+    }
+
+    Ok(match highest_role {
+        Some(role) => Some(role.id),
+        None => None,
+    })
 }

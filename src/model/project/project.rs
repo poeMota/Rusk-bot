@@ -412,35 +412,50 @@ impl Project {
         let roles = guild.roles(&ctx.http).await.unwrap();
 
         for member in guild.members(&ctx.http, None, None).await.unwrap() {
-            for role in member.roles.iter().rev() {
-                if self.associated_roles.contains(&role) {
-                    if !fields.contains_key(role) {
-                        fields.insert(role.clone(), Vec::new());
-                    }
+            match get_highest_role_in(&ctx, member.user.id, &self.associated_roles).await {
+                Ok(highest) => {
+                    if let Some(role) = highest {
+                        match mem_man
+                            .get(member.user.id)
+                            .await
+                            .unwrap()
+                            .to_project_stat(member.display_name().to_string(), &self.name)
+                        {
+                            Ok((name, value, inline)) => {
+                                if !fields.contains_key(&role) {
+                                    fields.insert(role, Vec::new());
+                                }
 
-                    match mem_man
-                        .get(member.user.id)
-                        .await
-                        .unwrap()
-                        .to_project_stat(member.display_name().to_string(), &self.name)
-                    {
-                        Ok((name, value, inline)) => {
-                            fields.get_mut(&role).unwrap().push((name, value, inline));
+                                fields.get_mut(&role).unwrap().push((name, value, inline));
+                            }
+                            Err(e) => {
+                                Logger::error(
+                                    "project.get_stat_embeds",
+                                    &format!(
+                                        "cannot get member {} stat post, {}",
+                                        member.display_name(),
+                                        e
+                                    ),
+                                )
+                                .await;
+                            }
                         }
-                        Err(e) => {
-                            Logger::error(
-                                "project.get_stat_embeds",
-                                &format!(
-                                    "cannot get member {} stat post, {}",
-                                    member.display_name(),
-                                    e
-                                ),
-                            )
-                            .await;
-                        }
-                    }
 
-                    break;
+                        break;
+                    }
+                }
+                Err(e) => {
+                    Logger::error(
+                        "project.get_stat_embeds",
+                        &format!(
+                            "cannot get highest role of member {} ({}) in project \"{}\": {}",
+                            member.display_name(),
+                            member.user.id.get(),
+                            self.name,
+                            e
+                        ),
+                    )
+                    .await
                 }
             }
         }
