@@ -242,7 +242,11 @@ impl Task {
             .get_by_type(&thread.parent_id.unwrap(), TageTypes::InWork)
         {
             let mut new_tags = thread.applied_tags.clone();
-            new_tags.extend(tags.iter());
+            for tag in tags {
+                if !new_tags.contains(&tag) {
+                    new_tags.push(tag);
+                }
+            }
 
             thread
                 .edit_thread(&ctx.http, EditThread::new().applied_tags(new_tags))

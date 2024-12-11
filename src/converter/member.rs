@@ -22,7 +22,7 @@ pub struct OldProjectMember {
     own_folder: Option<String>,
     #[serde(rename = "очки")]
     score: Option<i64>,
-    #[serde(rename = "очки за всё время")]
+    #[serde(rename = "очков за всё время")]
     all_time_score: Option<i64>,
     #[serde(rename = "@предупреждения")]
     warns: Option<Vec<String>>,
