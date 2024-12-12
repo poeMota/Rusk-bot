@@ -969,27 +969,40 @@ impl Task {
                 return false;
             }
 
-            match MEMBERSMANAGER.try_write().as_mut() {
-                Ok(man) => {
-                    if let Ok(mem) = man.get_mut(member.clone()).await {
-                        if (mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
-                            < match project::PROJECTMANAGER.read().await.get(&self.project) {
-                                Some(project) => project.max_tasks_per_user as usize,
-                                None => usize::max_value(),
-                            })
-                            || ignore_limits
-                        {
-                            mem.join_task(&self).await;
-                        } else {
-                            return false;
-                        }
+            if let Some(project) = project::PROJECTMANAGER.read().await.get(&self.project) {
+                if !project.member_in_project(&match fetch_member(&member).await {
+                    Ok(m) => m,
+                    Err(e) => {
+                        Logger::error(
+                            "task.add_member",
+                            &format!(
+                                "cannot fetch member by id {}: {}",
+                                member.get(),
+                                e.to_string()
+                            ),
+                        )
+                        .await;
+                        return false;
                     }
-                }
-                Err(_) => {
-                    Logger::error("task.add_member", "cannot lock MEMBERSMANAGER for write").await;
+                }) {
                     return false;
                 }
-            };
+            }
+
+            let mut mem_man = MEMBERSMANAGER.write().await;
+            if let Ok(mem) = mem_man.get_mut(member.clone()).await {
+                if (mem.in_tasks.get(&self.project).unwrap_or(&Vec::new()).len()
+                    < match project::PROJECTMANAGER.read().await.get(&self.project) {
+                        Some(project) => project.max_tasks_per_user as usize,
+                        None => usize::max_value(),
+                    })
+                    || ignore_limits
+                {
+                    mem.join_task(&self).await;
+                } else {
+                    return false;
+                }
+            }
 
             self.members.get_mut().push(member);
             self.update().await;

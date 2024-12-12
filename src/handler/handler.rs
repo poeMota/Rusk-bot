@@ -179,53 +179,45 @@ impl EventHandler for Handler {
             if let Ok(thread) = fetch_thread(&ctx, add_reaction.channel_id) {
                 if let Some(parent_id) = thread.parent_id {
                     if let Ok(parent) = fetch_channel(&ctx, parent_id) {
-                        if let Some(default_react) = parent.default_reaction_emoji {
-                            match default_react {
-                                ForumEmoji::Id(emoji) => {
-                                    if let ReactionType::Custom { id, .. } = add_reaction.emoji {
-                                        if emoji == id {
-                                            let mut task_man = task::TASKMANAGER.write().await;
-                                            if let Some(task) = task_man.get_thread_mut(parent_id) {
-                                                if !task.add_member(&ctx, user, false).await {
-                                                    if let Err(e) =
-                                                        add_reaction.delete(&ctx.http).await
-                                                    {
-                                                        Logger::error(
-                                                            "handler.reaction_add",
-                                                            &format!("cannot delete reaction on task \"{}\": {}",
-                                                                task.name.get(),
-                                                                e.to_string()
-                                                            )
-                                                        ).await;
-                                                    }
+                        let mut task_man = task::TASKMANAGER.write().await;
+                        if let Some(task) = task_man.get_thread_mut(parent_id) {
+                            if let Some(default_react) = parent.default_reaction_emoji {
+                                match default_react {
+                                    ForumEmoji::Id(emoji) => {
+                                        if let ReactionType::Custom { id, .. } = add_reaction.emoji
+                                        {
+                                            if emoji == id {
+                                                if task.add_member(&ctx, user, false).await {
+                                                    return;
                                                 }
                                             }
                                         }
                                     }
-                                }
-                                ForumEmoji::Name(emoji) => {
-                                    if let ReactionType::Unicode(ref string) = add_reaction.emoji {
-                                        if &emoji == string {
-                                            let mut task_man = task::TASKMANAGER.write().await;
-                                            if let Some(task) = task_man.get_thread_mut(thread.id) {
-                                                if !task.add_member(&ctx, user, false).await {
-                                                    if let Err(e) =
-                                                        add_reaction.delete(&ctx.http).await
-                                                    {
-                                                        Logger::error(
-                                                            "handler.reaction_add",
-                                                            &format!("cannot delete reaction on task \"{}\": {}",
-                                                                task.name.get(),
-                                                                e.to_string()
-                                                            )
-                                                        ).await;
-                                                    }
+                                    ForumEmoji::Name(emoji) => {
+                                        if let ReactionType::Unicode(ref string) =
+                                            add_reaction.emoji
+                                        {
+                                            if &emoji == string {
+                                                if task.add_member(&ctx, user, false).await {
+                                                    return;
                                                 }
                                             }
                                         }
                                     }
+                                    _ => (),
                                 }
-                                _ => (),
+                            }
+
+                            if let Err(e) = add_reaction.delete(&ctx.http).await {
+                                Logger::error(
+                                    "handler.reaction_add",
+                                    &format!(
+                                        "cannot delete reaction on task \"{}\": {}",
+                                        task.name.get(),
+                                        e.to_string()
+                                    ),
+                                )
+                                .await;
                             }
                         }
                     }
