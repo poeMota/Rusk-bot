@@ -93,7 +93,12 @@ impl EventHandler for Handler {
         if let Some(ref parent) = thread.parent_id {
             if let Some(project) = proj_man.get_from_forum(parent) {
                 match task_man
-                    .new_task(&ctx, &mut thread, project.name().clone())
+                    .new_task(
+                        &ctx,
+                        &mut thread,
+                        project.name().clone(),
+                        project.waiter_role.clone(),
+                    )
                     .await
                 {
                     Ok(_) => (),

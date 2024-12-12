@@ -144,8 +144,16 @@ impl TaskManager {
         ctx: &Context,
         thread: &mut GuildChannel,
         project: String,
+        waiter_role: Option<RoleId>,
     ) -> Result<u32, String> {
-        let task = Task::new(&ctx, self.last_task_id + 1, project.clone(), thread).await?;
+        let task = Task::new(
+            &ctx,
+            self.last_task_id + 1,
+            project.clone(),
+            waiter_role,
+            thread,
+        )
+        .await?;
         self.last_task_id += 1;
 
         Logger::low(
@@ -213,6 +221,7 @@ impl Task {
         ctx: &Context,
         id: u32,
         project: String,
+        waiter_role: Option<RoleId>,
         thread: &mut GuildChannel,
     ) -> Result<Self, String> {
         let mut instance = Self {
@@ -254,7 +263,7 @@ impl Task {
                 .map_err(|e| format!("cannot change thread tags, {}", e.to_string()))?
         }
 
-        if let Some(ping_msg) = instance.get_roles_ping(&thread, None) {
+        if let Some(ping_msg) = instance.get_roles_ping(&thread, waiter_role) {
             thread
                 .send_message(&ctx.http, CreateMessage::new().content(ping_msg))
                 .await
