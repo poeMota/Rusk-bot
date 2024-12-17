@@ -51,19 +51,17 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content(get_string(
-                                "last-save-command-message",
-                                Some(HashMap::from([(
-                                    "last_save",
-                                    match task.last_save.get() {
-                                        Some(task_save) => task_save.clone(),
-                                        None => get_string("task-no-last-save", None),
-                                    }
-                                    .as_str(),
-                                )])),
-                            ))
-                            .ephemeral(true),
+                        CreateInteractionResponseMessage::new().content(get_string(
+                            "last-save-command-message",
+                            Some(HashMap::from([(
+                                "last_save",
+                                match task.last_save.get() {
+                                    Some(task_save) => task_save.clone(),
+                                    None => get_string("task-no-last-save", None),
+                                }
+                                .as_str(),
+                            )])),
+                        )),
                     ),
                 )
                 .await
