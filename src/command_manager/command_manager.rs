@@ -1,7 +1,9 @@
 use crate::logger::Logger;
 use once_cell::sync::Lazy;
 use serenity::{
-    model::application::{CommandInteraction, ComponentInteraction, ModalInteraction},
+    model::application::{
+        CommandInteraction, ComponentInteraction, ComponentInteractionDataKind, ModalInteraction,
+    },
     prelude::*,
 };
 use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
@@ -192,7 +194,51 @@ impl CommandManager {
 
                     Logger::debug(
                         &format!("components.{}", component_id),
-                        &format!("component triggered by {} ({})", display_name, id),
+                        &format!(
+                            "component triggered by {} ({}) with value: `{}`",
+                            display_name,
+                            id,
+                            match &component.data.kind {
+                                ComponentInteractionDataKind::Button => String::from("Button"),
+                                ComponentInteractionDataKind::Unknown(num) =>
+                                    format!("Unknown({})", num),
+                                ComponentInteractionDataKind::UserSelect { values } => {
+                                    let mut text_values = Vec::new();
+                                    for value in values {
+                                        text_values.push(value.get().to_string());
+                                    }
+
+                                    format!("UserSelect([{}])", text_values.join(", "))
+                                }
+                                ComponentInteractionDataKind::RoleSelect { values } => {
+                                    let mut text_values = Vec::new();
+                                    for value in values {
+                                        text_values.push(value.get().to_string());
+                                    }
+
+                                    format!("RoleSelect([{}])", text_values.join(", "))
+                                }
+                                ComponentInteractionDataKind::StringSelect { values } => {
+                                    format!("StringSelect([{}])", values.join(", "))
+                                }
+                                ComponentInteractionDataKind::ChannelSelect { values } => {
+                                    let mut text_values = Vec::new();
+                                    for value in values {
+                                        text_values.push(value.get().to_string());
+                                    }
+
+                                    format!("RoleSelect([{}])", text_values.join(", "))
+                                }
+                                ComponentInteractionDataKind::MentionableSelect { values } => {
+                                    let mut text_values = Vec::new();
+                                    for value in values {
+                                        text_values.push(value.get().to_string());
+                                    }
+
+                                    format!("RoleSelect([{}])", text_values.join(", "))
+                                }
+                            }
+                        ),
                     )
                     .await;
                 }
