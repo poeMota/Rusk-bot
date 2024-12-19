@@ -59,56 +59,83 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
     async fn link_folder(ctx: &Context, inter: CommandInteraction, folder: String) {
         inter.defer_ephemeral(&ctx.http).await.unwrap();
 
-        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let mut mem_man = MEMBERSMANAGER.write().await;
+        let other_folder = mem_man.get_by_folder(&folder).cloned();
         let member = mem_man.get_mut(inter.user.id).await.unwrap();
 
         if let None = member.own_folder {
-            match member.change_folder(Some(folder)).await {
-                Ok(_) => inter
+            if let Some(id) = other_folder {
+                inter
                     .edit_response(
                         &ctx.http,
-                        EditInteractionResponse::new()
-                            .content(get_string("command-done-response", None)),
+                        EditInteractionResponse::new().content(get_string(
+                            "link-folder-command-stranger-folder-response",
+                            None,
+                        )),
                     )
                     .await
-                    .unwrap(),
-                Err(e) => match e {
-                    ConnectionError::InvalidUrl(url) => inter
-                        .edit_response(
-                            &ctx.http,
-                            EditInteractionResponse::new().content(get_string(
-                                "invalid-url",
-                                Some(HashMap::from([("path", url.as_str())])),
-                            )),
-                        )
-                        .await
-                        .unwrap(),
-                    ConnectionError::NotAllowedUrl(_) => inter
+                    .unwrap();
+
+                Logger::notify(
+                    inter.user.display_name(),
+                    &get_string(
+                        "link-folder-command-stranger-folder-notify",
+                        Some(HashMap::from([
+                            ("member1", inter.user.id.get().to_string().as_str()),
+                            ("folder", folder.as_str()),
+                            ("member2", id.get().to_string().as_str()),
+                        ])),
+                    ),
+                )
+                .await;
+            } else {
+                match member.change_folder(Some(folder)).await {
+                    Ok(_) => inter
                         .edit_response(
                             &ctx.http,
                             EditInteractionResponse::new()
-                                .content(get_string("not-allowed-url", None)),
+                                .content(get_string("command-done-response", None)),
                         )
                         .await
                         .unwrap(),
-                    _ => {
-                        Logger::error(
-                            "commands.link_folder",
-                            &format!("error while connecting: {:?}", e),
-                        )
-                        .await;
-
-                        inter
+                    Err(e) => match e {
+                        ConnectionError::InvalidUrl(url) => inter
+                            .edit_response(
+                                &ctx.http,
+                                EditInteractionResponse::new().content(get_string(
+                                    "invalid-url",
+                                    Some(HashMap::from([("path", url.as_str())])),
+                                )),
+                            )
+                            .await
+                            .unwrap(),
+                        ConnectionError::NotAllowedUrl(_) => inter
                             .edit_response(
                                 &ctx.http,
                                 EditInteractionResponse::new()
-                                    .content(get_string("link-folder-error", None)),
+                                    .content(get_string("not-allowed-url", None)),
                             )
                             .await
-                            .unwrap()
-                    }
-                },
-            };
+                            .unwrap(),
+                        _ => {
+                            Logger::error(
+                                "commands.link_folder",
+                                &format!("error while connecting: {:?}", e),
+                            )
+                            .await;
+
+                            inter
+                                .edit_response(
+                                    &ctx.http,
+                                    EditInteractionResponse::new()
+                                        .content(get_string("link-folder-error", None)),
+                                )
+                                .await
+                                .unwrap()
+                        }
+                    },
+                };
+            }
         } else {
             inter
                 .edit_response(

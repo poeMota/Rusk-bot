@@ -98,6 +98,16 @@ impl MembersManager {
             || member
         }))
     }
+
+    pub fn get_by_folder(&mut self, folder: &String) -> Option<&UserId> {
+        for (id, member) in self.members.iter() {
+            if member.own_folder == Some(folder.clone()) {
+                return Some(id);
+            }
+        }
+
+        None
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]

@@ -81,7 +81,8 @@ pub async fn member_changer_listener() {
                             ),
                             "member-changer:own-folder:folder",
                         )
-                        .value(member.own_folder.clone().unwrap_or(String::new())),
+                        .value(member.own_folder.clone().unwrap_or(String::new()))
+                        .min_length(0),
                     )])),
                 ),
             )
