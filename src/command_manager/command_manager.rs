@@ -219,7 +219,12 @@ impl CommandManager {
                                     format!("RoleSelect([{}])", text_values.join(", "))
                                 }
                                 ComponentInteractionDataKind::StringSelect { values } => {
-                                    format!("StringSelect([{}])", values.join(", "))
+                                    let mut text_values = Vec::new();
+                                    for value in values {
+                                        text_values.push(format!("\"{}\"", value));
+                                    }
+
+                                    format!("StringSelect([{}])", text_values.join(", "))
                                 }
                                 ComponentInteractionDataKind::ChannelSelect { values } => {
                                     let mut text_values = Vec::new();

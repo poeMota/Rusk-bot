@@ -280,6 +280,10 @@ impl Project {
     }
 
     pub fn member_in_project(&self, member: &Member) -> bool {
+        if self.associated_roles.is_empty() {
+            return true;
+        }
+
         for role in member.roles.iter() {
             if self.associated_roles.contains(&role) {
                 return true;

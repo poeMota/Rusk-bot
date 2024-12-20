@@ -105,8 +105,6 @@ pub async fn project_listen() {
 
     #[listen_component("project-changer:tasks-forum")]
     async fn task_forum_response(ctx: &Context, inter: ComponentInteraction) {
-        inter.defer_ephemeral(&ctx.http).await.unwrap();
-
         let mut proj_man = project::PROJECTMANAGER.write().await;
         let mut mem_man = member::MEMBERSMANAGER.write().await;
 

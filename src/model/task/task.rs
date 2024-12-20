@@ -75,7 +75,6 @@ impl<T: Clone> TaskOption<T> {
 #[derive(Deserialize, Debug)]
 pub struct TaskManager {
     tasks: HashMap<u32, Task>,
-    tasks_by_thread: HashMap<ChannelId, u32>,
     last_task_id: u32,
 }
 
@@ -83,7 +82,6 @@ impl TaskManager {
     fn new() -> Self {
         Self {
             tasks: HashMap::new(),
-            tasks_by_thread: HashMap::new(),
             last_task_id: 0,
         }
     }
@@ -132,8 +130,7 @@ impl TaskManager {
                 self.last_task_id = task.id;
             }
 
-            self.tasks.insert(task.id, task.clone());
-            self.tasks_by_thread.insert(task.thread_id, task.id);
+            self.tasks.insert(task.id, task);
         }
 
         Logger::debug("tasks_man.init", "initialized from databases/tasks/*").await;
@@ -166,8 +163,6 @@ impl TaskManager {
         )
         .await;
 
-        self.tasks_by_thread
-            .insert(task.thread_id.clone(), self.last_task_id);
         self.tasks.insert(self.last_task_id, task);
 
         Ok(self.last_task_id)
@@ -182,12 +177,23 @@ impl TaskManager {
     }
 
     pub fn get_thread(&self, thread_id: ChannelId) -> Option<&Task> {
-        self.tasks.get(self.tasks_by_thread.get(&thread_id)?)
+        for task in self.tasks.values() {
+            if task.thread_id == thread_id {
+                return Some(task);
+            }
+        }
+
+        None
     }
 
     pub fn get_thread_mut(&mut self, thread_id: ChannelId) -> Option<&mut Task> {
-        self.tasks
-            .get_mut(self.tasks_by_thread.get_mut(&thread_id)?)
+        for task in self.tasks.values_mut() {
+            if task.thread_id == thread_id {
+                return Some(task);
+            }
+        }
+
+        None
     }
 
     pub fn get_by_project(&self, project: &String) -> Vec<&Task> {
@@ -359,7 +365,7 @@ impl Task {
                     * self.ending_results.get(member_id).unwrap_or(&1.0))
                 .round() as i64;
 
-                member.change_score(*self.score.get()).await;
+                member.change_score(end_score).await;
 
                 if end_score > 0 {
                     if &Some(member_id.clone()) != self.mentor_id.get() {

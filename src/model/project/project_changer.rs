@@ -65,7 +65,7 @@ impl Project {
                 None,
             ))
             .min_values(0)
-            .max_values(u8::max_value()),
+            .max_values(25),
         ));
 
         rows
