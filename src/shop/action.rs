@@ -54,8 +54,6 @@ impl Action for GiveRoles {
                         role.name,
                         e.to_string()
                     ));
-                } else {
-                    return Err("kys".to_string());
                 }
             }
         }
@@ -108,8 +106,6 @@ impl Action for RemoveRoles {
                         role.name,
                         e.to_string()
                     ));
-                } else {
-                    return Err("kys".to_string());
                 }
             }
         }
