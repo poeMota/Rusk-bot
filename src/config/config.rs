@@ -42,8 +42,7 @@ pub struct Config {
     pub guest_role: Option<RoleId>,
     #[serde(rename = "Localization")]
     pub localization: LocalizationData,
-    #[serde(rename = "TaskEndRating")]
-    pub task_retings: HashMap<String, f64>,
+    pub task_ratings: (Vec<String>, Vec<f64>),
     #[serde(rename = "Commands")]
     pub commands: HashMap<String, bool>,
     #[serde(rename = "Logging")]

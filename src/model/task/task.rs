@@ -1090,14 +1090,19 @@ impl Task {
 
         let mut options = Vec::new();
         let mut index = 0;
-        for (opt, num) in cfg.task_retings.iter() {
+
+        for opt in cfg.task_ratings.0.iter() {
             options.push(CreateSelectMenuOption::new(
-                format!("{} (x{})", get_string(opt, None), num),
+                format!(
+                    "{} (x{})",
+                    get_string(opt, None),
+                    cfg.task_ratings.1.get(index).unwrap()
+                ),
                 format!(
                     "{}:::{}:::{}",
                     member.get(),
                     index,
-                    *self.score.get() as f64 * num
+                    *self.score.get() as f64 * cfg.task_ratings.1.get(index).unwrap()
                 ),
             ));
             index += 1;
