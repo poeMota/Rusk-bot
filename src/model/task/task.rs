@@ -361,9 +361,7 @@ impl Task {
             if let Ok(member) = mem_man.get_mut(member_id.clone()).await {
                 member.leave_task(&self).await;
 
-                let end_score = (*self.score.get() as f64
-                    * self.ending_results.get(member_id).unwrap_or(&1.0))
-                .round() as i64;
+                let end_score = self.ending_results.get(member_id).unwrap_or(&1.0).round() as i64;
 
                 member.change_score(end_score).await;
 
