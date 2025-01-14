@@ -180,7 +180,7 @@ impl EventHandler for Handler {
                 if let Some(parent_id) = thread.parent_id {
                     if let Ok(parent) = fetch_channel(&ctx, parent_id) {
                         let mut task_man = task::TASKMANAGER.write().await;
-                        if let Some(task) = task_man.get_thread_mut(parent_id) {
+                        if let Some(task) = task_man.get_thread_mut(add_reaction.channel_id) {
                             if let Some(default_react) = parent.default_reaction_emoji {
                                 match default_react {
                                     ForumEmoji::Id(emoji) => {
