@@ -121,11 +121,11 @@ impl Logger {
 
     async fn log(&self, level: LoggingLevels, author: &str, content: &str) {
         let prefix = match level {
-            LoggingLevels::Low => "[Low]",
-            LoggingLevels::Medium => "**[Medium]**",
-            LoggingLevels::High => "**[High]**",
-            LoggingLevels::Debug => "[Debug]",
-            LoggingLevels::Error => "**[Error]**",
+            LoggingLevels::Low => "Low",
+            LoggingLevels::Medium => "**Medium**",
+            LoggingLevels::High => "**High**",
+            LoggingLevels::Debug => "Debug",
+            LoggingLevels::Error => "**Error**",
         };
 
         let utc: DateTime<Utc> = Utc::now();
@@ -169,6 +169,7 @@ impl Logger {
                             .replace("%time%", time_prefix)
                             .replace("%author%", "logger.log")
                             .replace("%content%", e.to_string().as_str())
+                            .replace("**", "")
                             .as_str(),
                     ),
                 }
