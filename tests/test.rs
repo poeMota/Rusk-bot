@@ -24,7 +24,7 @@ use tokio;
 
 #[test]
 fn read_config_test() {
-    let config = CONFIG.try_read();
+    let _ = CONFIG.try_read().unwrap();
 }
 
 #[test]
@@ -207,7 +207,7 @@ async fn shop_test() {
         .to_string(),
     );
 
-    let shop_man = SHOPMANAGER.try_write().unwrap();
+    let _shop_man = SHOPMANAGER.try_write().unwrap();
     //TODO: shop_man.init().await;
 
     fs::remove_file(DATA_PATH.join("shop/test_shop.yml")).expect("Cannot delete test shop file");
