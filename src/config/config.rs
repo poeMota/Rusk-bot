@@ -38,7 +38,8 @@ pub struct Config {
     pub brigadire_score_modifier: f64,
     pub userid_api_url: String,
     pub notify_on: Option<(String, ChannelId)>,
-    pub log: Option<u64>,
+    pub log: Option<ChannelId>,
+    pub logging_template: String,
     pub guest_role: Option<RoleId>,
     #[serde(rename = "Localization")]
     pub localization: LocalizationData,

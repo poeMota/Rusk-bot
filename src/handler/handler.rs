@@ -14,8 +14,8 @@ impl EventHandler for Handler {
     #[allow(unused_variables)]
     async fn ready(&self, ctx: Context, data_about_bot: Ready) {
         let cfg = CONFIG.try_read().unwrap();
-        if let Some(num) = cfg.log {
-            Logger::set_log_channel(&ctx, num).await;
+        if let Some(channel) = cfg.log {
+            Logger::set_log_channel(&ctx, &channel).await;
         }
 
         if let Some((notify_type, id)) = cfg.notify_on.clone() {

@@ -25,8 +25,6 @@ use tokio;
 #[test]
 fn read_config_test() {
     let config = CONFIG.try_read();
-
-    println!("{:#?}", config);
 }
 
 #[test]
@@ -212,8 +210,6 @@ async fn shop_test() {
     let shop_man = SHOPMANAGER.try_write().unwrap();
     //TODO: shop_man.init().await;
 
-    println!("{:#?}", shop_man);
-
     fs::remove_file(DATA_PATH.join("shop/test_shop.yml")).expect("Cannot delete test shop file");
 }
 
@@ -225,14 +221,6 @@ fn logger_test() {
 
 #[tokio::test]
 async fn connect_test() {
-    println!(
-        "{:#?}",
-        file_dates("/".to_string())
-            .await
-            .unwrap()
-            .get("../")
-            .unwrap()
-    );
     assert_eq!(
         get_user_id("dfhshfehwifhewhj2h1h2jbfnewbjehfjdhskjkhejhfdkjsh".to_string()).await,
         "Not Found".to_string()
@@ -263,7 +251,6 @@ async fn members_manager_test() {
 
     let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
     mem_man.init().await;
-    println!("{:#?}", mem_man);
 
     fs::remove_file(DATA_PATH.join("databases/members/test.json"))
         .expect("Cannot delete test members database");
@@ -274,13 +261,6 @@ async fn tasks_manager_test() {
     let mut task_man = TASKMANAGER.try_write().unwrap();
 
     task_man.init().await;
-
-    println!("{:#?}", task_man);
-
-    /*
-    fs::remove_file(DATA_PATH.join("databases/tasks/test.json"))
-        .expect("Cannot delete test task file");
-    */
 }
 
 #[tokio::test]
@@ -299,7 +279,6 @@ async fn tags_manager_test() {
 
     let mut tags_man = TAGSMANAGER.try_write().unwrap();
     tags_man.init().await;
-    println!("{:#?}", tags_man);
 
     fs::remove_file(DATA_PATH.join("databases/tags/test.json"))
         .expect("Cannot delete test tag file");
@@ -329,8 +308,6 @@ async fn projects_manager_test() {
 
     let mut proj_man = PROJECTMANAGER.try_write().unwrap();
     proj_man.init().await;
-
-    println!("{:#?}", proj_man);
 
     fs::remove_file(DATA_PATH.join("databases/projects/test_project.yml"))
         .expect("Cannot delete test project file");

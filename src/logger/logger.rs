@@ -7,6 +7,7 @@ use serenity::{
     client::Context,
     model::{channel::GuildChannel, id::ChannelId},
 };
+use std::backtrace::Backtrace;
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,12 +30,11 @@ pub struct LoggingConfig {
 }
 
 static LOGGER: Lazy<Arc<RwLock<Logger>>> = Lazy::new(|| {
+    let cfg = CONFIG.try_read().expect("Cannot lock CONFIG for LOGGER");
+
     Arc::new(RwLock::new(Logger::new(
-        CONFIG
-            .try_read()
-            .expect("Cannot lock CONFIG for LOGGER")
-            .logging
-            .clone(),
+        cfg.logging.clone(),
+        cfg.logging_template.clone(),
     )))
 });
 
@@ -42,22 +42,24 @@ pub struct Logger {
     settings: HashMap<LoggingLevels, bool>,
     log_channel: Arc<RwLock<Option<GuildChannel>>>,
     notify: Arc<RwLock<Option<GuildChannel>>>,
+    loggig_template: String,
 }
 
 impl Logger {
-    fn new(settings: LoggingConfig) -> Self {
+    fn new(settings: LoggingConfig, loggig_template: String) -> Self {
         Self {
             settings: settings.levels,
             log_channel: Arc::new(RwLock::new(None)),
             notify: Arc::new(RwLock::new(None)),
+            loggig_template,
         }
     }
 
-    pub async fn set_log_channel(ctx: &Context, channel: u64) {
+    pub async fn set_log_channel(ctx: &Context, channel: &ChannelId) {
         match get_guild().channels(&ctx.http).await {
             Ok(channels) => {
                 LOGGER.write().await.log_channel =
-                    Arc::new(RwLock::new(channels.get(&ChannelId::new(channel)).cloned()));
+                    Arc::new(RwLock::new(channels.get(channel).cloned()));
 
                 Self::debug(
                     "logger.set_log_channel",
@@ -127,7 +129,7 @@ impl Logger {
         };
 
         let utc: DateTime<Utc> = Utc::now();
-        let time_prefix = format!(
+        let time_prefix = &format!(
             "{}-{}-{}, {}:{}:{}",
             utc.year(),
             utc.month(),
@@ -137,10 +139,12 @@ impl Logger {
             utc.second()
         );
 
-        let message = CreateMessage::new().content(format!(
-            "{} ({}) <{}>: {}",
-            prefix, time_prefix, author, content
-        ));
+        let logging_text = self
+            .loggig_template
+            .replace("%prefix%", prefix)
+            .replace("%time%", time_prefix)
+            .replace("%author%", author)
+            .replace("%content%", content);
 
         let enabled = match self.settings.get(&level) {
             Some(enable) => *enable,
@@ -151,26 +155,35 @@ impl Logger {
 
         if enabled {
             if let Some(channel) = &*log_channel {
-                match channel.send_message(get_http(), message).await {
+                match channel
+                    .send_message(
+                        get_http(),
+                        CreateMessage::new().content(logging_text.clone()),
+                    )
+                    .await
+                {
                     Ok(_) => (),
                     Err(e) => Self::file_logging(
-                        format!("[Error] ({}) <logger.log>: {}", time_prefix, e.to_string())
+                        self.loggig_template
+                            .replace("%prefix%", "Error")
+                            .replace("%time%", time_prefix)
+                            .replace("%author%", "logger.log")
+                            .replace("%content%", e.to_string().as_str())
                             .as_str(),
                     ),
                 }
             }
         }
 
-        Self::file_logging(
-            format!(
-                "{} ({}) <{}>: {}",
-                prefix.replace("**", ""),
-                time_prefix,
-                author,
-                content
-            )
-            .as_str(),
-        );
+        Self::file_logging(logging_text.replace("**", "").as_str());
+
+        if level == LoggingLevels::Error {
+            if cfg!(debug_assertions) {
+                panic!("{}\nat {}", logging_text, Backtrace::capture())
+            } else {
+                println!("{}", Backtrace::capture());
+            }
+        }
     }
 
     pub fn file_logging(content: &str) {
