@@ -189,11 +189,11 @@ impl EventHandler for Handler {
                                             if emoji == id {
                                                 if task.add_member(&ctx, user, false).await {
                                                     return;
-                                                }
-                                            } else {
-                                                if let Err(e) = add_reaction.delete(&ctx.http).await
-                                                {
-                                                    Logger::error(
+                                                } else {
+                                                    if let Err(e) =
+                                                        add_reaction.delete(&ctx.http).await
+                                                    {
+                                                        Logger::error(
                                                         "handler.reaction_add",
                                                         &format!(
                                                             "cannot delete reaction on task \"{}\": {}",
@@ -202,6 +202,7 @@ impl EventHandler for Handler {
                                                         ),
                                                     )
                                                     .await;
+                                                    }
                                                 }
                                             }
                                         }
@@ -213,11 +214,11 @@ impl EventHandler for Handler {
                                             if &emoji == string {
                                                 if task.add_member(&ctx, user, false).await {
                                                     return;
-                                                }
-                                            } else {
-                                                if let Err(e) = add_reaction.delete(&ctx.http).await
-                                                {
-                                                    Logger::error(
+                                                } else {
+                                                    if let Err(e) =
+                                                        add_reaction.delete(&ctx.http).await
+                                                    {
+                                                        Logger::error(
                                                         "handler.reaction_add",
                                                         &format!(
                                                             "cannot delete reaction on task \"{}\": {}",
@@ -226,6 +227,7 @@ impl EventHandler for Handler {
                                                         ),
                                                     )
                                                     .await;
+                                                    }
                                                 }
                                             }
                                         }
