@@ -206,18 +206,18 @@ impl EventHandler for Handler {
                                     }
                                     _ => (),
                                 }
-                            }
 
-                            if let Err(e) = add_reaction.delete(&ctx.http).await {
-                                Logger::error(
-                                    "handler.reaction_add",
-                                    &format!(
-                                        "cannot delete reaction on task \"{}\": {}",
-                                        task.name.get(),
-                                        e.to_string()
-                                    ),
-                                )
-                                .await;
+                                if let Err(e) = add_reaction.delete(&ctx.http).await {
+                                    Logger::error(
+                                        "handler.reaction_add",
+                                        &format!(
+                                            "cannot delete reaction on task \"{}\": {}",
+                                            task.name.get(),
+                                            e.to_string()
+                                        ),
+                                    )
+                                    .await;
+                                }
                             }
                         }
                     }
