@@ -62,7 +62,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                             .await;
                         }
                         Err(e) => match e {
-                            ConnectionError::InvalidUrl(url) => {
+                            ConnectionError::StatusCodeError(url, error) => {
                                 inter
                                     .edit_response(
                                         &ctx.http,
@@ -73,6 +73,16 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                     )
                                     .await
                                     .unwrap();
+
+                                Logger::error(
+                                    "commands.save",
+                                    &format!(
+                                        "status code while unloading save bu url \"{}\": {}",
+                                        url,
+                                        error.to_string()
+                                    ),
+                                )
+                                .await;
                             }
                             ConnectionError::NotAllowedUrl(_) => {
                                 inter
@@ -173,7 +183,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                         .await;
                     }
                     Err(e) => match e {
-                        ConnectionError::InvalidUrl(url) => {
+                        ConnectionError::StatusCodeError(url, error) => {
                             inter
                                 .edit_response(
                                     &ctx.http,
@@ -184,6 +194,16 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                 )
                                 .await
                                 .unwrap();
+
+                            Logger::error(
+                                "commands.save_plus",
+                                &format!(
+                                    "status code while unloading save bu url \"{}\": {}",
+                                    url,
+                                    error.to_string()
+                                ),
+                            )
+                            .await;
                         }
                         ConnectionError::NotAllowedUrl(_) => {
                             inter

@@ -99,7 +99,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                         .await
                         .unwrap(),
                     Err(e) => match e {
-                        ConnectionError::InvalidUrl(url) => inter
+                        ConnectionError::StatusCodeError(url, _) => inter
                             .edit_response(
                                 &ctx.http,
                                 EditInteractionResponse::new().content(get_string(

@@ -6,10 +6,10 @@ use std::{collections::HashMap, env, path::PathBuf};
 #[derive(Debug)]
 pub enum ConnectionError {
     NotAllowedUrl(String),
-    InvalidUrl(String),
     ReqwestError(Error),
     UnexpetedOtherError(String),
     AuthError(String),
+    StatusCodeError(String, Error),
 }
 
 pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
@@ -50,18 +50,14 @@ pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
     }
 
     match response.send().await {
-        Ok(content) => match content.text().await {
-            Ok(content) => {
-                for error in ["404 Not Found"].iter() {
-                    if content.contains(error) {
-                        return Err(ConnectionError::InvalidUrl(url));
-                    }
-                }
-                return Ok(content);
-            }
-            Err(e) => return Err(ConnectionError::ReqwestError(e)),
+        Ok(content) => match content.error_for_status() {
+            Ok(content) => match content.text().await {
+                Ok(content) => return Ok(content),
+                Err(e) => return Err(ConnectionError::ReqwestError(e)),
+            },
+            Err(e) => Err(ConnectionError::ReqwestError(e)),
         },
-        Err(e) => return Err(ConnectionError::ReqwestError(e)),
+        Err(e) => return Err(ConnectionError::StatusCodeError(url, e)),
     }
 }
 

@@ -296,7 +296,7 @@ pub async fn member_changer_listener() {
                                     .await
                                     .unwrap(),
                                 Err(e) => match e {
-                                    ConnectionError::InvalidUrl(url) => inter
+                                    ConnectionError::StatusCodeError(url, _) => inter
                                         .edit_response(
                                             &ctx.http,
                                             EditInteractionResponse::new().content(get_string(
