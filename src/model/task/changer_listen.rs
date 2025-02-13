@@ -46,13 +46,13 @@ pub async fn task_changer_listener() {
                     CreateInteractionResponse::Modal(
                         CreateModal::new(
                             "task-changer:score",
-                            get_string("task-changer-score-modal-label", None),
+                            loc!("task-changer-score-modal-label"),
                         )
                         .components(Vec::from([
                             CreateActionRow::InputText(
                                 CreateInputText::new(
                                     serenity::all::InputTextStyle::Short,
-                                    get_string("task-changer-score-input-label", None),
+                                    loc!("task-changer-score-input-label"),
                                     "task-changer:score:input",
                                 )
                                 .value(task.score.get().to_string()),
@@ -86,12 +86,9 @@ pub async fn task_changer_listener() {
                                             inter
                                                 .edit_response(
                                                     &ctx.http,
-                                                    EditInteractionResponse::new().content(
-                                                        get_string(
-                                                            "task-changer-score-parse-error",
-                                                            None,
-                                                        ),
-                                                    ),
+                                                    EditInteractionResponse::new().content(loc!(
+                                                        "task-changer-score-parse-error"
+                                                    )),
                                                 )
                                                 .await
                                                 .unwrap();
@@ -130,13 +127,13 @@ pub async fn task_changer_listener() {
                     CreateInteractionResponse::Modal(
                         CreateModal::new(
                             "task-changer:max-members",
-                            get_string("task-changer-max-members-modal-label", None),
+                            loc!("task-changer-max-members-modal-label"),
                         )
                         .components(Vec::from([
                             CreateActionRow::InputText(
                                 CreateInputText::new(
                                     serenity::all::InputTextStyle::Short,
-                                    get_string("task-changer-max-members-input-label", None),
+                                    loc!("task-changer-max-members-input-label"),
                                     "task-changer:max-members:input",
                                 )
                                 .value(task.max_members.get().to_string()),
@@ -170,12 +167,9 @@ pub async fn task_changer_listener() {
                                             inter
                                                 .edit_response(
                                                     &ctx.http,
-                                                    EditInteractionResponse::new().content(
-                                                        get_string(
-                                                            "task-changer-max-members-parse-error",
-                                                            None,
-                                                        ),
-                                                    ),
+                                                    EditInteractionResponse::new().content(loc!(
+                                                        "task-changer-max-members-parse-error"
+                                                    )),
                                                 )
                                                 .await
                                                 .unwrap();
@@ -295,7 +289,7 @@ pub async fn task_changer_listener() {
                                                 CreateActionRow::Buttons(Vec::from([
                                                     CreateButton::new("task-changer")
                                                         .style(serenity::all::ButtonStyle::Success)
-                                                        .label(get_string("back-button", None)),
+                                                        .label(loc!("back-button")),
                                                 ])),
                                             ]),
                                         ),

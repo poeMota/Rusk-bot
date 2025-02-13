@@ -34,7 +34,7 @@ pub async fn config_commands(ctx: &Context, guild: GuildId) {
         inter
             .edit_response(
                 &ctx.http,
-                EditInteractionResponse::new().content(get_string("command-done-response", None)),
+                EditInteractionResponse::new().content(loc!("command-done-response")),
             )
             .await
             .unwrap();
@@ -96,7 +96,7 @@ pub async fn config_commands(ctx: &Context, guild: GuildId) {
                 "unload-config:file",
                 serenity::all::CreateSelectMenuKind::String { options },
             )
-            .placeholder(get_string("unload-config-select-placeholder", None)),
+            .placeholder(loc!("unload-config-select-placeholder")),
         )
     }
 

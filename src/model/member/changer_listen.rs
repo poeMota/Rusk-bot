@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serenity::all::{
     ActionRowComponent, ComponentInteractionDataKind, CreateActionRow, CreateButton,
     CreateInputText, CreateModal, CreateSelectMenu, CreateSelectMenuOption, InputTextStyle,
@@ -38,12 +36,12 @@ pub async fn member_changer_listener() {
                 CreateInteractionResponse::Modal(
                     CreateModal::new(
                         "member-changer:score",
-                        get_string("member-changer-modal-score-title", None),
+                        loc!("member-changer-modal-score-title"),
                     )
                     .components(Vec::from([CreateActionRow::InputText(
                         CreateInputText::new(
                             InputTextStyle::Short,
-                            get_string("member-changer-modal-score-components-score-title", None),
+                            loc!("member-changer-modal-score-components-score-title"),
                             "member-changer:score:score",
                         )
                         .value(member.score.to_string()),
@@ -70,15 +68,12 @@ pub async fn member_changer_listener() {
                 CreateInteractionResponse::Modal(
                     CreateModal::new(
                         "member-changer:own-folder",
-                        get_string("member-changer-modal-own-folder-title", None),
+                        loc!("member-changer-modal-own-folder-title"),
                     )
                     .components(Vec::from([CreateActionRow::InputText(
                         CreateInputText::new(
                             InputTextStyle::Short,
-                            get_string(
-                                "member-changer-modal-own-folder-components-folder-title",
-                                None,
-                            ),
+                            loc!("member-changer-modal-own-folder-components-folder-title"),
                             "member-changer:own-folder:folder",
                         )
                         .value(member.own_folder.clone().unwrap_or(String::new()))
@@ -123,20 +118,20 @@ pub async fn member_changer_listener() {
                     "member-changer:notes:note-remove",
                     serenity::all::CreateSelectMenuKind::String { options: notes },
                 )
-                .placeholder(get_string("member-changer-notes-remove", None)),
+                .placeholder(loc!("member-changer-notes-remove")),
             ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer:notes:note-add",
         )
-        .label(get_string("member-changer-notes-add-button", None))
+        .label(loc!("member-changer-notes-add-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer",
         )
-        .label(get_string("back-button", None))
+        .label(loc!("back-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         inter
@@ -183,20 +178,20 @@ pub async fn member_changer_listener() {
                     "member-changer:warns:warn-remove",
                     serenity::all::CreateSelectMenuKind::String { options: warns },
                 )
-                .placeholder(get_string("member-changer-warns-remove", None)),
+                .placeholder(loc!("member-changer-warns-remove")),
             ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer:warns:warn-add",
         )
-        .label(get_string("member-changer-warns-add-button", None))
+        .label(loc!("member-changer-warns-add-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer",
         )
-        .label(get_string("back-button", None))
+        .label(loc!("back-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         inter
@@ -234,9 +229,8 @@ pub async fn member_changer_listener() {
                                                 &ctx.http,
                                                 CreateInteractionResponse::Message(
                                                     CreateInteractionResponseMessage::new()
-                                                        .content(get_string(
-                                                            "member-changer-score-parse-error",
-                                                            None,
+                                                        .content(loc!(
+                                                            "member-changer-score-parse-error"
                                                         )),
                                                 ),
                                             )
@@ -299,10 +293,8 @@ pub async fn member_changer_listener() {
                                     ConnectionError::StatusCodeError(url, _) => inter
                                         .edit_response(
                                             &ctx.http,
-                                            EditInteractionResponse::new().content(get_string(
-                                                "invalid-url",
-                                                Some(HashMap::from([("path", url.as_str())])),
-                                            )),
+                                            EditInteractionResponse::new()
+                                                .content(loc!("invalid-url", "path" = url)),
                                         )
                                         .await
                                         .unwrap(),
@@ -319,10 +311,8 @@ pub async fn member_changer_listener() {
                                         inter
                                             .edit_response(
                                                 &ctx.http,
-                                                EditInteractionResponse::new().content(get_string(
-                                                    "link-folder-reqwest-error",
-                                                    None,
-                                                )),
+                                                EditInteractionResponse::new()
+                                                    .content(loc!("link-folder-reqwest-error")),
                                             )
                                             .await
                                             .unwrap()
@@ -330,12 +320,9 @@ pub async fn member_changer_listener() {
                                     _ => inter
                                         .edit_response(
                                             &ctx.http,
-                                            EditInteractionResponse::new().content(get_string(
+                                            EditInteractionResponse::new().content(loc!(
                                                 "link-folder-error",
-                                                Some(HashMap::from([(
-                                                    "error",
-                                                    format!("{:#?}", e).as_str(),
-                                                )])),
+                                                "error" = format!("{:#?}", e)
                                             )),
                                         )
                                         .await
@@ -379,7 +366,7 @@ pub async fn member_changer_listener() {
                     "member-changer:tasks:done-tasks-remove-project",
                     serenity::all::CreateSelectMenuKind::String { options: projs },
                 )
-                .placeholder(get_string("member-changer-tasks-done-tasks-remove", None)),
+                .placeholder(loc!("member-changer-tasks-done-tasks-remove")),
             ));
         }
 
@@ -391,7 +378,7 @@ pub async fn member_changer_listener() {
                         options: projects.clone(),
                     },
                 )
-                .placeholder(get_string("member-changer-tasks-done-tasks-add", None)),
+                .placeholder(loc!("member-changer-tasks-done-tasks-add")),
             ));
         }
 
@@ -406,7 +393,7 @@ pub async fn member_changer_listener() {
                     "member-changer:tasks:mentor-tasks-remove-project",
                     serenity::all::CreateSelectMenuKind::String { options: projs },
                 )
-                .placeholder(get_string("member-changer-tasks-mentor-tasks-remove", None)),
+                .placeholder(loc!("member-changer-tasks-mentor-tasks-remove")),
             ));
         }
 
@@ -418,14 +405,14 @@ pub async fn member_changer_listener() {
                         options: projects.clone(),
                     },
                 )
-                .placeholder(get_string("member-changer-tasks-mentor-tasks-add", None)),
+                .placeholder(loc!("member-changer-tasks-mentor-tasks-add")),
             ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer",
         )
-        .label(get_string("back-button", None))
+        .label(loc!("back-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         inter
@@ -506,14 +493,14 @@ pub async fn member_changer_listener() {
                         options: done_tasks_remove,
                     },
                 )
-                .placeholder(get_string("member-changer-tasks-done-tasks-remove", None)),
+                .placeholder(loc!("member-changer-tasks-done-tasks-remove")),
             ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer:tasks",
         )
-        .label(get_string("back-button", None))
+        .label(loc!("back-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         inter
@@ -594,14 +581,14 @@ pub async fn member_changer_listener() {
                         options: mentor_tasks_remove,
                     },
                 )
-                .placeholder(get_string("member-changer-tasks-mentor-tasks-remove", None)),
+                .placeholder(loc!("member-changer-tasks-mentor-tasks-remove")),
             ));
         }
 
         rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
             "member-changer:tasks",
         )
-        .label(get_string("back-button", None))
+        .label(loc!("back-button"))
         .style(serenity::all::ButtonStyle::Success)])));
 
         inter
@@ -630,29 +617,20 @@ pub async fn member_changer_listener() {
                 CreateInteractionResponse::Modal(
                     CreateModal::new(
                         "member-changer:tasks:done-tasks-add-custom",
-                        get_string(
-                            "member-changer-tasks-done-tasks-add-custom-modal-label",
-                            None,
-                        ),
+                        loc!("member-changer-tasks-done-tasks-add-custom-modal-label"),
                     )
                     .components(Vec::from([
                         CreateActionRow::InputText(
                             CreateInputText::new(
                                 InputTextStyle::Short,
-                                get_string(
-                                    "member-changer-tasks-done-tasks-add-project-input-label",
-                                    None,
-                                ),
+                                loc!("member-changer-tasks-done-tasks-add-project-input-label"),
                                 "member-changer:tasks:done-tasks-add-project-input",
                             )
                             .value(project),
                         ),
                         CreateActionRow::InputText(CreateInputText::new(
                             InputTextStyle::Short,
-                            get_string(
-                                "member-changer-tasks-done-tasks-add-custom-input-label",
-                                None,
-                            ),
+                            loc!("member-changer-tasks-done-tasks-add-custom-input-label"),
                             "member-changer:tasks:done-tasks-add-custom-input",
                         )),
                     ])),
@@ -677,29 +655,20 @@ pub async fn member_changer_listener() {
                 CreateInteractionResponse::Modal(
                     CreateModal::new(
                         "member-changer:tasks:mentor-tasks-add-custom",
-                        get_string(
-                            "member-changer-tasks-mentor-tasks-add-custom-modal-label",
-                            None,
-                        ),
+                        loc!("member-changer-tasks-mentor-tasks-add-custom-modal-label"),
                     )
                     .components(Vec::from([
                         CreateActionRow::InputText(
                             CreateInputText::new(
                                 InputTextStyle::Short,
-                                get_string(
-                                    "member-changer-tasks-mentor-tasks-add-project-input-label",
-                                    None,
-                                ),
+                                loc!("member-changer-tasks-mentor-tasks-add-project-input-label"),
                                 "member-changer:tasks:mentor-tasks-add-project-input",
                             )
                             .value(project),
                         ),
                         CreateActionRow::InputText(CreateInputText::new(
                             InputTextStyle::Short,
-                            get_string(
-                                "member-changer-tasks-mentor-tasks-add-custom-input-label",
-                                None,
-                            ),
+                            loc!("member-changer-tasks-mentor-tasks-add-custom-input-label"),
                             "member-changer:tasks:mentor-tasks-add-custom-input",
                         )),
                     ])),
@@ -968,12 +937,12 @@ pub async fn member_changer_listener() {
                 CreateInteractionResponse::Modal(
                     CreateModal::new(
                         "member-changer:notes:note-add",
-                        get_string("member-changer-notes-note-add-modal", None),
+                        loc!("member-changer-notes-note-add-modal"),
                     )
                     .components(Vec::from([CreateActionRow::InputText(
                         CreateInputText::new(
                             InputTextStyle::Short,
-                            get_string("member-changer-notes-note-add-label", None),
+                            loc!("member-changer-notes-note-add-label"),
                             "member-changer:notes:note-add-input",
                         ),
                     )])),
@@ -991,12 +960,12 @@ pub async fn member_changer_listener() {
                 CreateInteractionResponse::Modal(
                     CreateModal::new(
                         "member-changer:warns:warn-add",
-                        get_string("member-changer-warns-warn-add-modal", None),
+                        loc!("member-changer-warns-warn-add-modal"),
                     )
                     .components(Vec::from([CreateActionRow::InputText(
                         CreateInputText::new(
                             InputTextStyle::Short,
-                            get_string("member-changer-warns-warn-add-label", None),
+                            loc!("member-changer-warns-warn-add-label"),
                             "member-changer:warns:warn-add-input",
                         ),
                     )])),

@@ -405,10 +405,7 @@ impl Task {
         };
 
         match thread
-            .send_message(
-                &ctx.http,
-                CreateMessage::new().content(get_string("task-closed", None)),
-            )
+            .send_message(&ctx.http, CreateMessage::new().content(loc!("task-closed")))
             .await
         {
             Ok(_) => (),
@@ -486,10 +483,7 @@ impl Task {
         };
 
         match thread
-            .send_message(
-                &ctx.http,
-                CreateMessage::new().content(get_string("task-opened", None)),
-            )
+            .send_message(&ctx.http, CreateMessage::new().content(loc!("task-opened")))
             .await
         {
             Ok(_) => (),
@@ -592,11 +586,8 @@ impl Task {
             .send_message(
                 &ctx.http,
                 CreateMessage::new().content(match self.mentor_id.get() {
-                    Some(id) => get_string(
-                        "task-mentor-changed",
-                        Some(HashMap::from([("mentor", id.get().to_string().as_str())])),
-                    ),
-                    None => get_string("task-no-more-mentor", None),
+                    Some(id) => loc!("task-mentor-changed", "mentor" = id.get()),
+                    None => loc!("task-no-more-mentor"),
                 }),
             )
             .await
@@ -653,16 +644,10 @@ impl Task {
                 .send_message(
                     &ctx.http,
                     CreateMessage::new().content(match self.last_save.get() {
-                        Some(ref save) => get_string(
+                        Some(ref save) => loc!("task-last-save", "save" = save),
+                        None => loc!(
                             "task-last-save",
-                            Some(HashMap::from([("save", save.as_str())])),
-                        ),
-                        None => get_string(
-                            "task-last-save",
-                            Some(HashMap::from([(
-                                "save",
-                                get_string("task-lask-save-not-specified", None).as_str(),
-                            )])),
+                            "save" = loc!("task-lask-save-not-specified")
                         ),
                     }),
                 )
@@ -720,7 +705,7 @@ impl Task {
             match thread
                 .send_message(
                     &ctx.http,
-                    CreateMessage::new().content(get_string("task-members-filled", None)),
+                    CreateMessage::new().content(loc!("task-members-filled")),
                 )
                 .await
             {
@@ -739,7 +724,7 @@ impl Task {
             match thread
                 .send_message(
                     &ctx.http,
-                    CreateMessage::new().content(get_string("task-members-unfilled", None)),
+                    CreateMessage::new().content(loc!("task-members-unfilled")),
                 )
                 .await
             {
@@ -760,10 +745,7 @@ impl Task {
         match thread
             .send_message(
                 &ctx.http,
-                CreateMessage::new().content(get_string(
-                    "task-max-members-change",
-                    Some(HashMap::from([("num", max_members.to_string().as_str())])),
-                )),
+                CreateMessage::new().content(loc!("task-max-members-change", "num" = max_members)),
             )
             .await
         {
@@ -821,12 +803,10 @@ impl Task {
         match thread
             .send_message(
                 &ctx.http,
-                CreateMessage::new().content(get_string(
+                CreateMessage::new().content(loc!(
                     "task-score-changed",
-                    Some(HashMap::from([
-                        ("old", old_score.to_string().as_str()),
-                        ("new", self.score.get().to_string().as_str()),
-                    ])),
+                    "old" = old_score,
+                    "new" = self.score.get()
                 )),
             )
             .await
@@ -878,7 +858,7 @@ impl Task {
         }
 
         if ping == String::new() {
-            ping = get_string("task-no-ping", None);
+            ping = loc!("task-no-ping");
         }
 
         ping
@@ -944,7 +924,7 @@ impl Task {
             match thread
                 .send_message(
                     &ctx.http,
-                    CreateMessage::new().content(get_string("task-members-unfilled", None)),
+                    CreateMessage::new().content(loc!("task-members-unfilled")),
                 )
                 .await
             {
@@ -1040,13 +1020,8 @@ impl Task {
             match thread
                 .send_message(
                     &ctx.http,
-                    CreateMessage::new().content(get_string(
-                        "task-join-message",
-                        Some(HashMap::from([(
-                            "member",
-                            member.get().to_string().as_str(),
-                        )])),
-                    )),
+                    CreateMessage::new()
+                        .content(loc!("task-join-message", "member" = member.get())),
                 )
                 .await
             {
@@ -1064,7 +1039,7 @@ impl Task {
                 match thread
                     .send_message(
                         &ctx.http,
-                        CreateMessage::new().content(get_string("task-members-filled", None)),
+                        CreateMessage::new().content(loc!("task-members-filled")),
                     )
                     .await
                 {
@@ -1093,7 +1068,7 @@ impl Task {
 
         for (opt, ratio) in cfg.task_ratings.iter() {
             options.push(CreateSelectMenuOption::new(
-                format!("{} (x{})", get_string(opt, None), ratio),
+                format!("{} (x{})", loc!(opt), ratio),
                 format!(
                     "{}:::{}:::{}",
                     member.get(),
@@ -1121,33 +1096,29 @@ impl Task {
     pub fn to_embed(&self) -> CreateEmbed {
         let mut fields = Vec::new();
 
-        fields.push((
-            get_string("task-embed-id-name", None),
-            format!("`{}`", self.id),
-            false,
-        ));
+        fields.push((loc!("task-embed-id-name"), format!("`{}`", self.id), false));
 
         if let Some(date) = self.start_date {
             fields.push((
-                get_string("task-embed-start-date-name", None),
+                loc!("task-embed-start-date-name"),
                 format!("<t:{}:f>", date.timestamp()),
                 false,
             ));
         }
 
         fields.push((
-            get_string("task-embed-score-name", None),
+            loc!("task-embed-score-name"),
             format!("`{}`", self.score.get()),
             false,
         ));
 
         fields.push((
-            get_string("task-embed-last-save-name", None),
+            loc!("task-embed-last-save-name"),
             format!(
                 "`{}`",
                 match self.last_save.get() {
                     Some(save) => save.clone(),
-                    None => get_string("task-embed-no-last-save", None),
+                    None => loc!("task-embed-no-last-save"),
                 }
             ),
             false,
@@ -1155,7 +1126,7 @@ impl Task {
 
         if let Some(mentor) = self.mentor_id.get() {
             fields.push((
-                get_string("task-embed-mentor-name", None),
+                loc!("task-embed-mentor-name"),
                 format!("- <@{}>", mentor.get()),
                 false,
             ));
@@ -1167,22 +1138,17 @@ impl Task {
         }
 
         fields.push((
-            get_string(
+            loc!(
                 "task-embed-members-name",
-                Some(HashMap::from([
-                    ("current", self.members.get().len().to_string().as_str()),
-                    ("max", self.max_members.get().to_string().as_str()),
-                ])),
+                "current" = self.members.get().len(),
+                "max" = self.max_members.get()
             ),
             members_text,
             false,
         ));
 
         CreateEmbed::new()
-            .title(get_string(
-                "task-embed-title",
-                Some(HashMap::from([("task", self.name.get().as_str())])),
-            ))
+            .title(loc!("task-embed-title", "task" = self.name.get()))
             .color(Colour::ORANGE)
             .fields(fields)
     }

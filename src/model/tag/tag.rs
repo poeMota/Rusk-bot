@@ -293,29 +293,29 @@ impl TaskTag {
     pub fn to_embed(&self) -> CreateEmbed {
         let mut embed = CreateEmbed::new()
             .colour(Colour::DARK_GREY)
-            .title(get_string("tag-embed-title", None))
+            .title(loc!("tag-embed-title"))
             .field(
-                get_string("tag-embed-id-name", None),
+                loc!("tag-embed-id-name"),
                 format!("`{}`", self.id.get()),
                 false,
             )
             .field(
-                get_string("tag-embed-forum-id-name", None),
+                loc!("tag-embed-forum-id-name"),
                 format!("<#{}>", self.forum_id.get()),
                 false,
             );
 
         if let Some(tag_type) = self.tag_type {
             embed = embed.field(
-                get_string("tag-embed-tag-type-name", None),
-                get_string(&format!("tag-types-{}", tag_type.to_string()), None),
+                loc!("tag-embed-tag-type-name"),
+                loc!(&format!("tag-types-{}", tag_type.to_string())),
                 false,
             );
         }
 
         if let Some(max_members) = self.max_members {
             embed = embed.field(
-                get_string("tag-embed-max-members-name", None),
+                loc!("tag-embed-max-members-name"),
                 format!("`{}`", max_members),
                 false,
             );
@@ -323,7 +323,7 @@ impl TaskTag {
 
         if let Some(score_modifier) = self.score_modifier {
             embed = embed.field(
-                get_string("tag-embed-score-modifier-name", None),
+                loc!("tag-embed-score-modifier-name"),
                 format!("`{}`", score_modifier),
                 false,
             );
@@ -331,7 +331,7 @@ impl TaskTag {
 
         if let Some(task_project) = &self.task_project {
             embed = embed.field(
-                get_string("tag-embed-task-project-name", None),
+                loc!("tag-embed-task-project-name"),
                 format!("`{}`", task_project),
                 false,
             );
@@ -339,7 +339,7 @@ impl TaskTag {
 
         if let Some(ping_role) = self.ping_role {
             embed = embed.field(
-                get_string("tag-embed-ping-role-name", None),
+                loc!("tag-embed-ping-role-name"),
                 format!("<@&{}>", ping_role),
                 false,
             );

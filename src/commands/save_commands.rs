@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{connect::*, prelude::*};
 use serenity::{
     self,
@@ -24,7 +22,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                         .edit_response(
                             &ctx.http,
                             EditInteractionResponse::new()
-                                .content(get_string("unload-save-menu-title", None))
+                                .content(loc!("unload-save-menu-title"))
                                 .components(Vec::from([save_menu_component(
                                     format!("{}/{}", folder, p),
                                     format!("{}/{}", folder, p),
@@ -66,10 +64,8 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                 inter
                                     .edit_response(
                                         &ctx.http,
-                                        EditInteractionResponse::new().content(get_string(
-                                            "invalid-url",
-                                            Some(HashMap::from([("path", url.as_str())])),
-                                        )),
+                                        EditInteractionResponse::new()
+                                            .content(loc!("invalid-url", "path" = url)),
                                     )
                                     .await
                                     .unwrap();
@@ -89,7 +85,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                     .edit_response(
                                         &ctx.http,
                                         EditInteractionResponse::new()
-                                            .content(get_string("not-allowed-url", None)),
+                                            .content(loc!("not-allowed-url")),
                                     )
                                     .await
                                     .unwrap();
@@ -105,7 +101,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                     .edit_response(
                                         &ctx.http,
                                         EditInteractionResponse::new()
-                                            .content(get_string("save-unload-error", None)),
+                                            .content(loc!("save-unload-error")),
                                     )
                                     .await
                                     .unwrap();
@@ -118,7 +114,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                     .edit_response(
                         &ctx.http,
                         EditInteractionResponse::new()
-                            .content(get_string("unload-save-menu-title", None))
+                            .content(loc!("unload-save-menu-title"))
                             .components(Vec::from([save_menu_component(
                                 format!("{}/", folder),
                                 format!("{}/", folder),
@@ -132,8 +128,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new()
-                        .content(get_string("save-command-folder-not-linked", None)),
+                    EditInteractionResponse::new().content(loc!("save-command-folder-not-linked")),
                 )
                 .await
                 .unwrap();
@@ -150,7 +145,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                     .edit_response(
                         &ctx.http,
                         EditInteractionResponse::new()
-                            .content(get_string("unload-save-menu-title", None))
+                            .content(loc!("unload-save-menu-title"))
                             .components(Vec::from([save_menu_component(p.clone(), p).await])),
                     )
                     .await
@@ -187,10 +182,8 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                             inter
                                 .edit_response(
                                     &ctx.http,
-                                    EditInteractionResponse::new().content(get_string(
-                                        "invalid-url",
-                                        Some(HashMap::from([("path", url.as_str())])),
-                                    )),
+                                    EditInteractionResponse::new()
+                                        .content(loc!("invalid-url", "path" = url)),
                                 )
                                 .await
                                 .unwrap();
@@ -209,8 +202,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                             inter
                                 .edit_response(
                                     &ctx.http,
-                                    EditInteractionResponse::new()
-                                        .content(get_string("not-allowed-url", None)),
+                                    EditInteractionResponse::new().content(loc!("not-allowed-url")),
                                 )
                                 .await
                                 .unwrap();
@@ -226,7 +218,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                                 .edit_response(
                                     &ctx.http,
                                     EditInteractionResponse::new()
-                                        .content(get_string("save-unload-error", None)),
+                                        .content(loc!("save-unload-error")),
                                 )
                                 .await
                                 .unwrap();
@@ -239,7 +231,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                 .edit_response(
                     &ctx.http,
                     EditInteractionResponse::new()
-                        .content(get_string("unload-save-menu-title", None))
+                        .content(loc!("unload-save-menu-title"))
                         .components(Vec::from([save_menu_component(
                             String::new(),
                             String::new(),

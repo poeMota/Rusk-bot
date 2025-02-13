@@ -21,16 +21,13 @@ pub async fn project_listen() {
                     CreateInteractionResponse::Modal(
                         CreateModal::new(
                             "project-changer:max-tasks-per-user",
-                            get_string("project-changer-max-tasks-per-user-modal-title", None),
+                            loc!("project-changer-max-tasks-per-user-modal-title"),
                         )
                         .components(Vec::from([
                             CreateActionRow::InputText(
                                 CreateInputText::new(
                                     serenity::all::InputTextStyle::Short,
-                                    get_string(
-                                        "project-changer-max-tasks-per-user-input-label",
-                                        None,
-                                    ),
+                                    loc!("project-changer-max-tasks-per-user-input-label"),
                                     "project-changer:max-tasks-per-user:input",
                                 )
                                 .value(project.max_tasks_per_user.to_string()),
@@ -63,26 +60,27 @@ pub async fn project_listen() {
                 for comp in row.components.iter() {
                     match comp {
                         ActionRowComponent::InputText(text) => {
-                            let max_tasks: u32 =
-                                match text.value.clone().unwrap_or(String::new()).parse() {
-                                    Ok(num) => num,
-                                    Err(_) => {
-                                        inter
-                                    .create_response(
-                                        &ctx.http,
-                                        CreateInteractionResponse::Message(
-                                            CreateInteractionResponseMessage::new()
-                                                .content(get_string(
-                                                "project-changer-max-tasks-per-user-parse-error",
-                                                None,
-                                            )),
-                                        ),
-                                    )
-                                    .await
-                                    .unwrap();
-                                        return;
-                                    }
-                                };
+                            let max_tasks: u32 = match text
+                                .value
+                                .clone()
+                                .unwrap_or(String::new())
+                                .parse()
+                            {
+                                Ok(num) => num,
+                                Err(_) => {
+                                    inter
+                                            .create_response(
+                                                &ctx.http,
+                                                CreateInteractionResponse::Message(
+                                                    CreateInteractionResponseMessage::new()
+                                                        .content(loc!("project-changer-max-tasks-per-user-parse-error")),
+                                                ),
+                                            )
+                                            .await
+                                            .unwrap();
+                                    return;
+                                }
+                            };
 
                             project.set_max_task_per_user(max_tasks).await;
                         }

@@ -264,7 +264,7 @@ impl Logger {
 
         let builder = CreateMessage::new().content(format!(
             "**[{}]** ({}) <{}>: {}",
-            get_string("notify-prefix", None),
+            loc!("notify-prefix"),
             time_prefix,
             author,
             content

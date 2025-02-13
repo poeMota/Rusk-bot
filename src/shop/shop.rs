@@ -100,9 +100,7 @@ impl ShopManager {
                         self.replacements.insert(
                             repl.name.clone(),
                             match repl.value {
-                                Replacement::Str(ref string) => {
-                                    Replacement::Str(get_string(string.as_str(), None))
-                                }
+                                Replacement::Str(ref string) => Replacement::Str(loc!(string)),
                                 _ => repl.value.clone(),
                             },
                         );
@@ -129,7 +127,7 @@ impl ShopManager {
     }
 
     pub fn convert_string(&self, string: String) -> Replacement {
-        let mut out = Replacement::Str(get_string(string.as_str(), None));
+        let mut out = Replacement::Str(loc!(&string));
 
         for (replacement, value) in self.replacements.iter() {
             if string.contains(&format!("<{}>", replacement)) {
@@ -256,8 +254,8 @@ pub struct Page {
 
 impl Page {
     async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
-        self.name = get_string(self.name.as_str(), None);
-        self.description = get_string(self.description.as_str(), None);
+        self.name = loc!(&self.name);
+        self.description = loc!(&self.description);
 
         for action in self.on_buy.iter_mut() {
             match action {
@@ -364,37 +362,34 @@ impl Page {
 
     pub fn to_embed(&self, member: &ProjectMember, max_pages: i32) -> CreateEmbed {
         CreateEmbed::new()
-            .title(get_string("shop-embed-title", None))
-            .description(get_string("shop-embed-description", None))
+            .title(loc!("shop-embed-title"))
+            .description(loc!("shop-embed-description"))
             .color(Colour::ORANGE)
             .field(
-                get_string(
+                loc!(
                     "shop-embed-item",
-                    Some(HashMap::from([(
-                        "num",
-                        format!("{}", member.shop_data.current_page + 1).as_str(),
-                    )])),
+                    "num" = format!("{}", member.shop_data.current_page + 1)
                 ),
                 &self.name,
                 false,
             )
             .field(
-                get_string("shop-embed-description-field", None),
+                loc!("shop-embed-description-field"),
                 &self.description,
                 false,
             )
             .field(
-                get_string("shop-embed-price", None),
+                loc!("shop-embed-price"),
                 format!("```{}```", self.price),
                 true,
             )
             .field(
-                get_string("shop-embed-page", None),
+                loc!("shop-embed-page"),
                 format!("```{}/{}```", member.shop_data.current_page + 1, max_pages),
                 true,
             )
             .field(
-                get_string("shop-embed-balance", None),
+                loc!("shop-embed-balance"),
                 format!("```{}```", member.score),
                 true,
             )

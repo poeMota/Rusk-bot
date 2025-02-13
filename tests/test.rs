@@ -9,7 +9,6 @@ use serenity::{
         user::User,
     },
 };
-use std::collections::HashMap;
 use std::fs;
 use task_bot::{
     command_manager::*,
@@ -39,17 +38,11 @@ fn locale_test() {
         .to_string(),
     );
 
-    assert_eq!(String::from("test"), get_string("test", None));
-    assert_ne!(
-        String::from("test-string-1"),
-        get_string("test-string-1", None)
-    );
+    assert_eq!(String::from("test"), loc!("test"));
+    assert_ne!(String::from("test-string-1"), loc!("test-string-1"));
     assert_eq!(
         String::from("test output - test test"),
-        get_string(
-            "test-string-2",
-            Some(HashMap::from([("output", "test test")]))
-        )
+        loc!("test-string-2", "output" = "test test")
     );
 
     fs::remove_file(DATA_PATH.join("locale/RU_ru/test.yml"))

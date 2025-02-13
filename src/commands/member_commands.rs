@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     connect::{get_user_id, ConnectionError},
     model::member::MEMBERSMANAGER,
@@ -68,23 +66,19 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                 inter
                     .edit_response(
                         &ctx.http,
-                        EditInteractionResponse::new().content(get_string(
-                            "link-folder-command-stranger-folder-response",
-                            None,
-                        )),
+                        EditInteractionResponse::new()
+                            .content(loc!("link-folder-command-stranger-folder-response")),
                     )
                     .await
                     .unwrap();
 
                 Logger::notify(
                     inter.user.display_name(),
-                    &get_string(
+                    &loc!(
                         "link-folder-command-stranger-folder-notify",
-                        Some(HashMap::from([
-                            ("member1", inter.user.id.get().to_string().as_str()),
-                            ("folder", folder.as_str()),
-                            ("member2", id.get().to_string().as_str()),
-                        ])),
+                        "member1" = inter.user.id.get(),
+                        "folder" = folder,
+                        "member2" = id.get(),
                     ),
                 )
                 .await;
@@ -93,8 +87,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                     Ok(_) => inter
                         .edit_response(
                             &ctx.http,
-                            EditInteractionResponse::new()
-                                .content(get_string("command-done-response", None)),
+                            EditInteractionResponse::new().content(loc!("command-done-response")),
                         )
                         .await
                         .unwrap(),
@@ -102,18 +95,15 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                         ConnectionError::StatusCodeError(url, _) => inter
                             .edit_response(
                                 &ctx.http,
-                                EditInteractionResponse::new().content(get_string(
-                                    "invalid-url",
-                                    Some(HashMap::from([("path", url.as_str())])),
-                                )),
+                                EditInteractionResponse::new()
+                                    .content(loc!("invalid-url", "path" = url)),
                             )
                             .await
                             .unwrap(),
                         ConnectionError::NotAllowedUrl(_) => inter
                             .edit_response(
                                 &ctx.http,
-                                EditInteractionResponse::new()
-                                    .content(get_string("not-allowed-url", None)),
+                                EditInteractionResponse::new().content(loc!("not-allowed-url")),
                             )
                             .await
                             .unwrap(),
@@ -128,7 +118,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                                 .edit_response(
                                     &ctx.http,
                                     EditInteractionResponse::new()
-                                        .content(get_string("link-folder-error", None)),
+                                        .content(loc!("link-folder-error")),
                                 )
                                 .await
                                 .unwrap()
@@ -140,10 +130,8 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new().content(get_string(
-                        "link-folder-command-already-linked-response",
-                        None,
-                    )),
+                    EditInteractionResponse::new()
+                        .content(loc!("link-folder-command-already-linked-response")),
                 )
                 .await
                 .unwrap();
@@ -176,7 +164,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(get_string("command-done-response", None))
+                        .content(loc!("command-done-response"))
                         .ephemeral(true),
                 ),
             )
@@ -196,7 +184,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(get_string("command-done-response", None))
+                        .content(loc!("command-done-response"))
                         .ephemeral(true),
                 ),
             )

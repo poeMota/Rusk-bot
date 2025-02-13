@@ -151,10 +151,10 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
                                                 command_choices_code = quote! {
                                                     #command_choices_code
                                                     let #choice_name_ident: std::collections::HashMap<String, String> =
-                                                        get_string(#choice_locale_key, None)
+                                                        loc!(#choice_locale_key)
                                                         .trim()
                                                         .split("\n")
-                                                        .map(|e| (get_string(e, None), e.to_string()))
+                                                        .map(|e| (loc!(e), e.to_string()))
                                                         .collect();
                                                 };
 
@@ -302,8 +302,8 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
     let command_declaration = quote! {
         #command_choices_code
         guild.create_command(&ctx.http, serenity::builder::CreateCommand::new(
-                get_string(format!("{}-name", #command_locale_key).as_str(), None).chars().take(32).collect::<String>().as_str())
-                .description(get_string(format!("{}-description", #command_locale_key).as_str(), None).as_str())
+                loc!(&format!("{}-name", #command_locale_key)).chars().take(32).collect::<String>().as_str())
+                .description(&loc!(&format!("{}-description", #command_locale_key)))
                 #(#command_parameters)*
         )
         .await
@@ -336,7 +336,7 @@ pub fn slash_command(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             let mut command_manager = COMMANDMANAGER.write().await;
             command_manager.add_command(
-                get_string(format!("{}-name", #command_locale_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
+                loc!(&format!("{}-name", #command_locale_key)).chars().take(32).collect::<String>().as_str(),
                 #function_call_code
             );
             drop(command_manager);
@@ -370,8 +370,8 @@ fn generate_option_token_stream(
             token_stream = quote! {
                 #choice_ident.iter().fold(serenity::builder::CreateCommandOption::new(
                     serenity::model::application::CommandOptionType::#option_type_ident,
-                    get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
-                    get_string(format!("{}-param-{}-description", #command_key, #option_key).as_str(), None).as_str(),
+                    loc!(&format!("{}-param-{}-name", #command_key, #option_key)).chars().take(32).collect::<String>().as_str(),
+                    &loc!(&format!("{}-param-{}-description", #command_key, #option_key)),
                 ), |acc, (name, value)| acc.#choice_builder)
                     .required(#is_required)
             }
@@ -381,8 +381,8 @@ fn generate_option_token_stream(
             token_stream = quote! {
                 serenity::builder::CreateCommandOption::new(
                     serenity::model::application::CommandOptionType::#option_type_ident,
-                    get_string(format!("{}-param-{}-name", #command_key, #option_key).as_str(), None).chars().take(32).collect::<String>().as_str(),
-                    get_string(format!("{}-param-{}-description", #command_key, #option_key).as_str(), None).as_str(),
+                    loc!(&format!("{}-param-{}-name", #command_key, #option_key)).chars().take(32).collect::<String>().as_str(),
+                    &loc!(&format!("{}-param-{}-description", #command_key, #option_key)),
                 )
                     .required(#is_required)
             };

@@ -17,7 +17,7 @@ impl Project {
                     default_channels: Some(Vec::from([self.tasks_forum])),
                 },
             )
-            .placeholder(get_string("project-changer-tasks-forum-placeholder", None))
+            .placeholder(loc!("project-changer-tasks-forum-placeholder"))
             .min_values(0)
             .max_values(1),
         ));
@@ -32,7 +32,7 @@ impl Project {
                     },
                 },
             )
-            .placeholder(get_string("project-changer-waiter-role-placeholder", None))
+            .placeholder(loc!("project-changer-waiter-role-placeholder"))
             .min_values(0)
             .max_values(1),
         ));
@@ -48,7 +48,7 @@ impl Project {
                     },
                 },
             )
-            .placeholder(get_string("project-changer-stat-channel-placeholder", None))
+            .placeholder(loc!("project-changer-stat-channel-placeholder"))
             .min_values(0)
             .max_values(1),
         ));
@@ -60,10 +60,7 @@ impl Project {
                     default_roles: Some(self.associated_roles.clone()),
                 },
             )
-            .placeholder(get_string(
-                "project-changer-associated-roles-placeholder",
-                None,
-            ))
+            .placeholder(loc!("project-changer-associated-roles-placeholder"))
             .min_values(0)
             .max_values(25),
         ));

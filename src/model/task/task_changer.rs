@@ -21,7 +21,7 @@ impl task::Task {
                     )
                     .min_values(0)
                     .max_values(*self.max_members.get() as u8)
-                    .placeholder(get_string("task-changer-members-placeholder", None)),
+                    .placeholder(loc!("task-changer-members-placeholder")),
                 ),
             );
 
@@ -38,7 +38,7 @@ impl task::Task {
                         },
                     )
                     .min_values(0)
-                    .placeholder(get_string("task-changer-mentor-placeholder", None)),
+                    .placeholder(loc!("task-changer-mentor-placeholder")),
                 ),
             );
         }
@@ -47,13 +47,13 @@ impl task::Task {
             rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
                 "task-changer:open",
             )
-            .label(get_string("task-changer-open-button", None))
+            .label(loc!("task-changer-open-button"))
             .style(serenity::all::ButtonStyle::Success)])));
         } else {
             rows.push(CreateActionRow::Buttons(Vec::from([CreateButton::new(
                 "task-changer:close",
             )
-            .label(get_string("task-changer-close-button", None))
+            .label(loc!("task-changer-close-button"))
             .style(serenity::all::ButtonStyle::Danger)])));
         }
 

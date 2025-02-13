@@ -1,8 +1,9 @@
 pub use crate::converter;
+pub use crate::loc;
 pub use crate::{
     command_manager::COMMANDMANAGER,
     config::{read_file, write_file, CONFIG, DATA_PATH},
-    localization::get_string,
+    localization::LOCALIZATION,
     logger::Logger,
     model::*,
     shop::SHOPMANAGER,

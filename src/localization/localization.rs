@@ -6,7 +6,8 @@ use serde_yaml;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use walkdir::WalkDir;
 
 pub static LOCALIZATION: Lazy<Arc<RwLock<Localization>>> = Lazy::new(|| {
@@ -76,16 +77,14 @@ impl Localization {
         }
     }
 
-    pub fn get_string<'a>(
+    pub fn try_get_string<'a>(
         &'a self,
         string: &'a str,
-        replacements: Option<HashMap<&str, &str>>,
-    ) -> String {
+        replacements: Option<HashMap<String, String>>,
+    ) -> Option<String> {
         let mut text = match self.locale_data.get(string) {
             Some(s) => s.clone(),
-            None => {
-                return String::from(string);
-            }
+            None => return None,
         };
 
         match replacements {
@@ -99,12 +98,17 @@ impl Localization {
             }
             None => {}
         }
-        text
+        Some(text)
     }
-}
 
-pub fn get_string(key: &str, replacements: Option<HashMap<&str, &str>>) -> String {
-    let loc = LOCALIZATION.read().unwrap();
-    let result = loc.get_string(key, replacements);
-    result
+    pub fn get_string<'a>(
+        &'a self,
+        string: &'a str,
+        replacements: Option<HashMap<String, String>>,
+    ) -> String {
+        match self.try_get_string(string, replacements) {
+            Some(s) => s,
+            None => String::from(string),
+        }
+    }
 }

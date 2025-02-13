@@ -15,7 +15,7 @@ pub async fn debug_commands(ctx: &Context, guild: GuildId) {
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(get_string("command-done-response", None))
+                        .content(loc!("command-done-response"))
                         .ephemeral(true),
                 ),
             )
@@ -58,7 +58,7 @@ pub async fn debug_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("task-command-not-in-task", None))
+                            .content(loc!("task-command-not-in-task"))
                             .ephemeral(true),
                     ),
                 )

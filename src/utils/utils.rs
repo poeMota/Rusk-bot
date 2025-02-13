@@ -78,7 +78,7 @@ pub fn get_params_buttons(name: &str, params: Vec<&str>) -> Vec<CreateActionRow>
     for param in params.iter() {
         buttons.push(CreateActionRow::Buttons(Vec::from([
             CreateButton::new(format!("{}:{}-label", name, param))
-                .label(get_string(&format!("{}-{}-label", name, param), None))
+                .label(loc!(&format!("{}-{}-label", name, param)))
                 .style(ButtonStyle::Secondary)
                 .disabled(true),
             CreateButton::new(format!("{}:{}", name, param))

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::prelude::*;
 use serenity::{
     self,
@@ -25,8 +23,7 @@ pub async fn tag_commands(ctx: &Context, guild: GuildId) {
                 inter
                     .edit_response(
                         &ctx.http,
-                        EditInteractionResponse::new()
-                            .content(get_string("command-done-response", None)),
+                        EditInteractionResponse::new().content(loc!("command-done-response")),
                     )
                     .await
                     .unwrap();
@@ -37,12 +34,10 @@ pub async fn tag_commands(ctx: &Context, guild: GuildId) {
         inter
             .edit_response(
                 &ctx.http,
-                EditInteractionResponse::new().content(get_string(
+                EditInteractionResponse::new().content(loc!(
                     "tag-not-found",
-                    Some(HashMap::from([
-                        ("tag_name", tag_name.as_str()),
-                        ("channel", channel.id.get().to_string().as_str()),
-                    ])),
+                    "tag_name" = tag_name,
+                    "channel" = channel.id.get()
                 )),
             )
             .await
@@ -74,13 +69,11 @@ pub async fn tag_commands(ctx: &Context, guild: GuildId) {
                                 .embed(
                                     CreateEmbed::new()
                                         .colour(Colour::DARK_GREY)
-                                        .title(get_string("tag-changer-embed-title", None))
-                                        .description(get_string(
+                                        .title(loc!("tag-changer-embed-title"))
+                                        .description(loc!(
                                             "tag-changer-embed-description",
-                                            Some(HashMap::from([
-                                                ("tag", tag.name.as_str()),
-                                                ("channel", channel.id.get().to_string().as_str()),
-                                            ])),
+                                            "tag" = tag.name,
+                                            "channel" = channel.id.get()
                                         )),
                                 )
                                 .components(task_tag.main_changer().await),
@@ -95,12 +88,10 @@ pub async fn tag_commands(ctx: &Context, guild: GuildId) {
         inter
             .edit_response(
                 &ctx.http,
-                EditInteractionResponse::new().content(get_string(
+                EditInteractionResponse::new().content(loc!(
                     "tag-not-found",
-                    Some(HashMap::from([
-                        ("tag_name", tag_name.as_str()),
-                        ("channel", channel.id.get().to_string().as_str()),
-                    ])),
+                    "tag_name" = tag_name,
+                    "channel" = channel.id.get()
                 )),
             )
             .await
@@ -137,12 +128,10 @@ pub async fn tag_commands(ctx: &Context, guild: GuildId) {
         inter
             .edit_response(
                 &ctx.http,
-                EditInteractionResponse::new().content(get_string(
+                EditInteractionResponse::new().content(loc!(
                     "tag-not-found",
-                    Some(HashMap::from([
-                        ("tag_name", tag_name.as_str()),
-                        ("channel", channel.id.get().to_string().as_str()),
-                    ])),
+                    "tag_name" = tag_name,
+                    "channel" = channel.id.get()
                 )),
             )
             .await

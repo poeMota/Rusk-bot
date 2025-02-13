@@ -550,14 +550,11 @@ impl ProjectMember {
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
-            get_string(
+            &loc!(
                 "member-add-note-notify",
-                Some(HashMap::from([
-                    ("note", note.as_str()),
-                    ("member", self.id.get().to_string().as_str()),
-                ])),
-            )
-            .as_str(),
+                "note" = note,
+                "member" = self.id.get(),
+            ),
         )
         .await;
     }
@@ -587,14 +584,11 @@ impl ProjectMember {
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
-            get_string(
+            &loc!(
                 "member-remove-note-notify",
-                Some(HashMap::from([
-                    ("note", note.as_str()),
-                    ("member", self.id.get().to_string().as_str()),
-                ])),
-            )
-            .as_str(),
+                "note" = note,
+                "member" = self.id.get()
+            ),
         )
         .await;
     }
@@ -620,14 +614,11 @@ impl ProjectMember {
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
-            get_string(
+            &loc!(
                 "member-add-warn-notify",
-                Some(HashMap::from([
-                    ("warn", warn.as_str()),
-                    ("member", self.id.get().to_string().as_str()),
-                ])),
-            )
-            .as_str(),
+                "warn" = warn,
+                "member" = self.id.get()
+            ),
         )
         .await;
     }
@@ -657,14 +648,11 @@ impl ProjectMember {
 
         Logger::notify(
             fetch_member(&user).await.unwrap().display_name(),
-            get_string(
+            &loc!(
                 "member-remove-warn-notify",
-                Some(HashMap::from([
-                    ("warn", warn.as_str()),
-                    ("member", self.id.get().to_string().as_str()),
-                ])),
-            )
-            .as_str(),
+                "warn" = warn,
+                "member" = self.id.get()
+            ),
         )
         .await;
     }
@@ -696,17 +684,17 @@ impl ProjectMember {
                 ╠︎ **{}:** {}
                 ╚ **{}:** {}
                 "#,
-                get_string("member-project-stat-done-tasks-name", None),
+                loc!("member-project-stat-done-tasks-name"),
                 match self.done_tasks.get(project_name) {
                     Some(tasks) => tasks.len(),
                     None => 0,
                 },
-                get_string("member-project-stat-mentor-tasks-name", None),
+                loc!("member-project-stat-mentor-tasks-name"),
                 match self.mentor_tasks.get(project_name) {
                     Some(tasks) => tasks.len(),
                     None => 0,
                 },
-                get_string("member-project-stat-in-tasks-name", None),
+                loc!("member-project-stat-in-tasks-name"),
                 match self.in_tasks.get(project_name) {
                     Some(tasks) => {
                         let mut value = String::new();
@@ -723,14 +711,14 @@ impl ProjectMember {
                         }
                         value
                     }
-                    None => get_string("member-project-stat-no-in-tasks", None),
+                    None => loc!("member-project-stat-no-in-tasks"),
                 },
-                get_string("member-project-stat-last-activity-name", None),
+                loc!("member-project-stat-last-activity-name"),
                 match self.last_activity.get(project_name) {
                     Some(activity) => format!("<t:{}:R>", activity.timestamp()),
-                    None => get_string("member-project-stat-no-last-activity", None),
+                    None => loc!("member-project-stat-no-last-activity"),
                 },
-                get_string("member-project-stat-score-name", None),
+                loc!("member-project-stat-score-name"),
                 self.score,
             ),
             true,
@@ -741,9 +729,9 @@ impl ProjectMember {
         let dis_member = self.member().await.unwrap();
 
         let mut embed = CreateEmbed::new()
-            .title(get_string(
+            .title(loc!(
                 "member-stat-embed-title",
-                Some(HashMap::from([("member", dis_member.display_name())])),
+                "member" = dis_member.display_name()
             ))
             .color(match get_guild().to_guild_cached(&ctx.cache) {
                 Some(guild) => match guild.member_highest_role(&dis_member) {
@@ -756,12 +744,9 @@ impl ProjectMember {
         let task_man = TASKMANAGER.read().await;
         if !self.in_tasks.is_empty() {
             embed = embed.field(
-                get_string(
+                loc!(
                     "member-stat-embed-in-tasks-name",
-                    Some(HashMap::from([(
-                        "num",
-                        self.in_tasks.len().to_string().as_str(),
-                    )])),
+                    "num" = self.in_tasks.len()
                 ),
                 {
                     let mut value = String::new();
@@ -800,12 +785,9 @@ impl ProjectMember {
 
         if !self.done_tasks.is_empty() {
             embed = embed.field(
-                get_string(
+                loc!(
                     "member-stat-embed-done-tasks-name",
-                    Some(HashMap::from([(
-                        "num",
-                        self.done_tasks.len().to_string().as_str(),
-                    )])),
+                    "num" = self.done_tasks.len()
                 ),
                 {
                     let mut value = String::new();
@@ -856,12 +838,9 @@ impl ProjectMember {
 
         if !self.mentor_tasks.is_empty() {
             embed = embed.field(
-                get_string(
+                loc!(
                     "member-stat-embed-mentor-tasks-name",
-                    Some(HashMap::from([(
-                        "num",
-                        self.mentor_tasks.len().to_string().as_str(),
-                    )])),
+                    "num" = self.mentor_tasks.len()
                 ),
                 {
                     let mut value = String::new();
@@ -912,7 +891,7 @@ impl ProjectMember {
 
         if let Some(ref folder) = self.own_folder {
             embed = embed.field(
-                get_string("member-stat-embed-folder-name", None),
+                loc!("member-stat-embed-folder-name"),
                 format!("`{}`", folder),
                 false,
             );
@@ -920,12 +899,12 @@ impl ProjectMember {
 
         embed = embed
             .field(
-                get_string("member-stat-embed-score-name", None),
+                loc!("member-stat-embed-score-name"),
                 format!("`{}`", self.score),
                 false,
             )
             .field(
-                get_string("member-stat-embed-all-time-score-name", None),
+                loc!("member-stat-embed-all-time-score-name"),
                 format!("`{}`", self.all_time_score),
                 false,
             );
@@ -933,7 +912,7 @@ impl ProjectMember {
         if show_secret {
             if !self.last_activity.is_empty() {
                 embed = embed.field(
-                    get_string("member-stat-embed-last-activity-name", None),
+                    loc!("member-stat-embed-last-activity-name"),
                     {
                         let mut value = String::new();
                         let mut i = 0;
@@ -967,13 +946,7 @@ impl ProjectMember {
 
             if !self.notes.is_empty() {
                 embed = embed.field(
-                    get_string(
-                        "member-stat-embed-notes-name",
-                        Some(HashMap::from([(
-                            "num",
-                            self.notes.len().to_string().as_str(),
-                        )])),
-                    ),
+                    loc!("member-stat-embed-notes-name", "num" = self.notes.len()),
                     {
                         let mut value = String::new();
 
@@ -1014,13 +987,7 @@ impl ProjectMember {
 
             if !self.warns.is_empty() {
                 embed = embed.field(
-                    get_string(
-                        "member-stat-embed-warns-name",
-                        Some(HashMap::from([(
-                            "num",
-                            self.warns.len().to_string().as_str(),
-                        )])),
-                    ),
+                    loc!("member-stat-embed-warns-name", "num" = self.warns.len()),
                     {
                         let mut value = String::new();
 

@@ -480,35 +480,32 @@ impl Project {
 
     pub async fn to_embed(&self) -> CreateEmbed {
         let mut embed = CreateEmbed::new()
-            .title(get_string(
-                "project-embed-title",
-                Some(HashMap::from([("project", self.name().as_str())])),
-            ))
+            .title(loc!("project-embed-title", "project" = self.name()))
             .colour(Colour::MAGENTA);
 
         embed = embed.field(
-            get_string("project-embed-max-tasks-per-user-name", None),
+            loc!("project-embed-max-tasks-per-user-name"),
             self.max_tasks_per_user.to_string(),
             false,
         );
 
         if let Some(role) = &self.waiter_role {
             embed = embed.field(
-                get_string("project-embed-waiter-role-name", None),
+                loc!("project-embed-waiter-role-name"),
                 &format!("<@&{}>", role.get()),
                 false,
             );
         }
 
         embed = embed.field(
-            get_string("project-embed-task-forum-name", None),
+            loc!("project-embed-task-forum-name"),
             &format!("<#{}>", self.tasks_forum.get()),
             false,
         );
 
         if let Some(channel) = &self.stat_channel {
             embed = embed.field(
-                get_string("project-embed-stat-channel-name", None),
+                loc!("project-embed-stat-channel-name"),
                 &format!("<#{}>", channel.get()),
                 false,
             );
@@ -516,12 +513,9 @@ impl Project {
 
         if !self.associated_roles.is_empty() {
             embed = embed.field(
-                get_string(
+                loc!(
                     "project-embed-associated-roles-name",
-                    Some(HashMap::from([(
-                        "num",
-                        self.associated_roles.len().to_string().as_str(),
-                    )])),
+                    "num" = self.associated_roles.len()
                 ),
                 {
                     let mut value = String::new();

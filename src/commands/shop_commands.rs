@@ -52,7 +52,7 @@ pub async fn shop_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("shop-command-no-pages-response", None))
+                            .content(loc!("shop-command-no-pages-response"))
                             .ephemeral(true),
                     ),
                 )

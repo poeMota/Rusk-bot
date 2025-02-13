@@ -115,13 +115,13 @@ pub async fn tag_changer_listener() {
                     CreateInteractionResponse::Modal(
                         CreateModal::new(
                             "tag-changer:max-members",
-                            get_string("tag-changer-max-members-modal-title", None),
+                            loc!("tag-changer-max-members-modal-title"),
                         )
                         .components(Vec::from([
                             CreateActionRow::InputText(
                                 CreateInputText::new(
                                     serenity::all::InputTextStyle::Short,
-                                    get_string("tag-changer-max-members-input-label", None),
+                                    loc!("tag-changer-max-members-input-label"),
                                     "tag-changer:max-members:input",
                                 )
                                 .value(match tag.max_members {
@@ -150,13 +150,13 @@ pub async fn tag_changer_listener() {
                     CreateInteractionResponse::Modal(
                         CreateModal::new(
                             "tag-changer:score-modifier",
-                            get_string("tag-changer-score-modifier-modal-title", None),
+                            loc!("tag-changer-score-modifier-modal-title"),
                         )
                         .components(Vec::from([
                             CreateActionRow::InputText(
                                 CreateInputText::new(
                                     serenity::all::InputTextStyle::Short,
-                                    get_string("tag-changer-score-modifier-input-label", None),
+                                    loc!("tag-changer-score-modifier-input-label"),
                                     "tag-changer:score-modifier:input",
                                 )
                                 .value(match tag.max_members {

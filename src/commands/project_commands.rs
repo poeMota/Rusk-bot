@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{model::project::PROJECTMANAGER, prelude::*};
 use serenity::{
     self,
@@ -40,8 +38,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
                 inter
                     .edit_response(
                         &ctx.http,
-                        EditInteractionResponse::new()
-                            .content(get_string("command-done-response", None)),
+                        EditInteractionResponse::new().content(loc!("command-done-response")),
                     )
                     .await
                     .unwrap();
@@ -51,7 +48,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
                     .edit_response(
                         &ctx.http,
                         EditInteractionResponse::new()
-                            .content(get_string("command-create-project-error", None)),
+                            .content(loc!("command-create-project-error")),
                     )
                     .await
                     .unwrap();
@@ -83,10 +80,10 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
                     EditInteractionResponse::new()
                         .embed(
                             CreateEmbed::new()
-                                .title(get_string("project-changer-embed-title", None))
-                                .description(get_string(
+                                .title(loc!("project-changer-embed-title"))
+                                .description(loc!(
                                     "project-changer-embed-description",
-                                    Some(HashMap::from([("project", proj.name().as_str())])),
+                                    "project" = proj.name()
                                 ))
                                 .color(Colour::MAGENTA),
                         )
@@ -98,7 +95,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new().content(get_string("project-not-found", None)),
+                    EditInteractionResponse::new().content(loc!("project-not-found")),
                 )
                 .await
                 .unwrap();
@@ -123,7 +120,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new().content(get_string("project-not-found", None)),
+                    EditInteractionResponse::new().content(loc!("project-not-found")),
                 )
                 .await
                 .unwrap();
@@ -139,8 +136,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new()
-                        .content(get_string("command-done-response", None)),
+                    EditInteractionResponse::new().content(loc!("command-done-response")),
                 )
                 .await
                 .unwrap();
@@ -148,7 +144,7 @@ pub async fn project_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new().content(get_string("project-not-found", None)),
+                    EditInteractionResponse::new().content(loc!("project-not-found")),
                 )
                 .await
                 .unwrap();

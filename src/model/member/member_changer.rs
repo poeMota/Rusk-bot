@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{model::member::ProjectMember, prelude::*};
 use serenity::{builder::CreateEmbed, model::Colour};
 
@@ -8,13 +6,10 @@ impl ProjectMember {
         CreateInteractionResponseMessage::new()
             .embed(
                 CreateEmbed::new()
-                    .title(get_string("member-changer-embed-title", None))
-                    .description(get_string(
+                    .title(loc!("member-changer-embed-title"))
+                    .description(loc!(
                         "member-changer-embed-description",
-                        Some(HashMap::from([(
-                            "member_id",
-                            self.id.get().to_string().as_str(),
-                        )])),
+                        "member_id" = self.id.get()
                     ))
                     .color(Colour::BLUE),
             )

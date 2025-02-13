@@ -29,7 +29,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("task-command-not-in-task", None))
+                            .content(loc!("task-command-not-in-task"))
                             .ephemeral(true),
                     ),
                 )
@@ -51,16 +51,12 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new().content(get_string(
+                        CreateInteractionResponseMessage::new().content(loc!(
                             "last-save-command-message",
-                            Some(HashMap::from([(
-                                "last_save",
-                                match task.last_save.get() {
-                                    Some(task_save) => task_save.clone(),
-                                    None => get_string("task-no-last-save", None),
-                                }
-                                .as_str(),
-                            )])),
+                            "last_save" = match task.last_save.get() {
+                                Some(task_save) => task_save.clone(),
+                                None => loc!("task-no-last-save"),
+                            }
                         )),
                     ),
                 )
@@ -72,7 +68,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("task-command-not-in-task", None))
+                            .content(loc!("task-command-not-in-task"))
                             .ephemeral(true),
                     ),
                 )
@@ -93,7 +89,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                             &ctx.http,
                             CreateInteractionResponse::Message(
                                 CreateInteractionResponseMessage::new()
-                                    .content(get_string("command-done-response", None))
+                                    .content(loc!("command-done-response"))
                                     .ephemeral(true),
                             ),
                         )
@@ -105,10 +101,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                             &ctx.http,
                             CreateInteractionResponse::Message(
                                 CreateInteractionResponseMessage::new()
-                                    .content(get_string(
-                                        "become-mentor-command-max-members-error",
-                                        None,
-                                    ))
+                                    .content(loc!("become-mentor-command-max-members-error"))
                                     .ephemeral(true),
                             ),
                         )
@@ -121,7 +114,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                         &ctx.http,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
-                                .content(get_string("become-mentor-command-mentor-exist", None))
+                                .content(loc!("become-mentor-command-mentor-exist"))
                                 .ephemeral(true),
                         ),
                     )
@@ -134,7 +127,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("task-command-not-in-task", None))
+                            .content(loc!("task-command-not-in-task"))
                             .ephemeral(true),
                     ),
                 )
@@ -159,10 +152,10 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     EditInteractionResponse::new()
                         .embed(
                             CreateEmbed::new()
-                                .title(get_string("task-changer-embed-title", None))
-                                .description(get_string(
+                                .title(loc!("task-changer-embed-title"))
+                                .description(loc!(
                                     "task-changer-embed-description",
-                                    Some(HashMap::from([("task", task.name.get().as_str())])),
+                                    "task" = task.name.get()
                                 ))
                                 .color(Colour::BLUE),
                         )
@@ -174,8 +167,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new()
-                        .content(get_string("task-command-not-in-task", None)),
+                    EditInteractionResponse::new().content(loc!("task-command-not-in-task")),
                 )
                 .await
                 .unwrap();
@@ -225,7 +217,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("command-done-response", None))
+                            .content(loc!("command-done-response"))
                             .ephemeral(true),
                     ),
                 )
@@ -237,7 +229,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("task-command-not-in-task", None))
+                            .content(loc!("task-command-not-in-task"))
                             .ephemeral(true),
                     ),
                 )
@@ -266,7 +258,7 @@ pub async fn task_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(get_string("task-command-not-in-task", None))
+                            .content(loc!("task-command-not-in-task"))
                             .ephemeral(true),
                     ),
                 )

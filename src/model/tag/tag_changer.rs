@@ -17,22 +17,16 @@ impl TaskTag {
                     "tag-changer:tag-type",
                     serenity::all::CreateSelectMenuKind::String {
                         options: Vec::from([
-                            CreateSelectMenuOption::new(get_string("tag-types-base", None), "base")
+                            CreateSelectMenuOption::new(loc!("tag-types-base"), "base")
                                 .default_selection(self.tag_type == Some(TageTypes::Base)),
-                            CreateSelectMenuOption::new(
-                                get_string("tag-types-closedtask", None),
-                                "closedtask",
-                            )
-                            .default_selection(self.tag_type == Some(TageTypes::ClosedTask)),
-                            CreateSelectMenuOption::new(
-                                get_string("tag-types-inwork", None),
-                                "inwork",
-                            )
-                            .default_selection(self.tag_type == Some(TageTypes::InWork)),
+                            CreateSelectMenuOption::new(loc!("tag-types-closedtask"), "closedtask")
+                                .default_selection(self.tag_type == Some(TageTypes::ClosedTask)),
+                            CreateSelectMenuOption::new(loc!("tag-types-inwork"), "inwork")
+                                .default_selection(self.tag_type == Some(TageTypes::InWork)),
                         ]),
                     },
                 )
-                .placeholder(get_string("tag-changer-tag-type-placeholder", None)),
+                .placeholder(loc!("tag-changer-tag-type-placeholder")),
             ),
         );
 

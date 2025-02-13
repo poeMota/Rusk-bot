@@ -7,7 +7,7 @@ use tokio;
 #[tokio::main]
 async fn main() {
     CONFIG.read().await;
-    localization::LOCALIZATION.read().unwrap();
+    localization::LOCALIZATION.try_read().unwrap();
     shop::SHOPMANAGER.write().await.init().await;
     member::MEMBERSMANAGER.write().await.init().await;
     task::TASKMANAGER.write().await.init().await;
