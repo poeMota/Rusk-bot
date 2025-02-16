@@ -227,9 +227,7 @@ impl Logger {
     }
 
     pub async fn medium(author: &str, content: &str) {
-        let log = LOGGER
-            .try_read()
-            .expect("Cannot lock LOGGER for medium log");
+        let log = LOGGER.read().await;
         log.log(LoggingLevels::Medium, author, content).await;
     }
 
