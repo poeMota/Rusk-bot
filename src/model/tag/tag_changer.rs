@@ -43,7 +43,8 @@ impl TaskTag {
                     },
                 )
                 .min_values(0)
-                .max_values(1),
+                .max_values(1)
+                .placeholder(loc!("tag-changer-ping-role-placeholder")),
             ),
         );
 
@@ -67,7 +68,8 @@ impl TaskTag {
                         serenity::all::CreateSelectMenuKind::String { options },
                     )
                     .min_values(0)
-                    .max_values(1),
+                    .max_values(1)
+                    .placeholder(loc!("tag-changer-task-project-placeholder")),
                 ),
             );
         }
