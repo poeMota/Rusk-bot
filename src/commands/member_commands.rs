@@ -8,7 +8,7 @@ use serenity;
 pub async fn member_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
     async fn my_statistics(ctx: &Context, inter: CommandInteraction) {
-        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let mut mem_man = MEMBERSMANAGER.write().await;
         let member = mem_man.get(inter.user.id).await.unwrap();
 
         inter.defer_ephemeral(&ctx.http).await.unwrap();
@@ -24,7 +24,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
 
     #[slash_command([])]
     async fn member_statistics(ctx: &Context, inter: CommandInteraction, dismember: User) {
-        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let mut mem_man = MEMBERSMANAGER.write().await;
         let member = mem_man.get(dismember.id).await.unwrap();
 
         inter.defer_ephemeral(&ctx.http).await.unwrap();
@@ -40,7 +40,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
 
     #[slash_command([])]
     async fn change_member(ctx: &Context, inter: CommandInteraction, member: User) {
-        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let mut mem_man = MEMBERSMANAGER.write().await;
         mem_man.get_mut(inter.user.id).await.unwrap().changed_member = Some(member.id.clone());
         let member = mem_man.get(member.id).await.unwrap();
 
