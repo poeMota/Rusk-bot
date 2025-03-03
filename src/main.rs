@@ -13,6 +13,7 @@ async fn main() {
     task::TASKMANAGER.write().await.init().await;
     tag::TAGSMANAGER.write().await.init().await;
     project::PROJECTMANAGER.write().await.init().await;
+    role::ROLEMANAGER.write().await;
     load_env();
 
     let token = env::var("TOKEN").unwrap();
@@ -23,6 +24,6 @@ async fn main() {
         .unwrap();
 
     if let Err(why) = client.start().await {
-        Logger::error("main", &format!("Bot start error: {:?}", why)).await;
+        Logger::error("main", &format!("bot start error: {:?}", why)).await;
     }
 }

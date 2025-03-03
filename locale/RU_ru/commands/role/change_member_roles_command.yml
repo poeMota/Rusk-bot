@@ -1,0 +1,8 @@
+change-member-roles-command-name: изменить-роли
+change-member-roles-command-description: Изменить роли пользователя.
+change-member-roles-command-param-user-name: пользователь
+change-member-roles-command-param-user-description: Пользователь, роли которого нужно изменить.
+change-member-roles-command-member-not-found: Пользователь не найден.
+roles-changer-title: "## Изменить роли пользователя <@{member_id}>"
+roles-changer-role-placeholder: Выберите роли
+

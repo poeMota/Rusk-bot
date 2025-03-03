@@ -190,6 +190,7 @@ impl Into<ProjectMember> for OldProjectMember {
             changed_project: None,
             changed_tag: None,
             changed_sub_post: None,
+            changed_role: None,
         }
     }
 }

@@ -305,3 +305,9 @@ async fn projects_manager_test() {
     fs::remove_file(DATA_PATH.join("databases/projects/test_project.yml"))
         .expect("Cannot delete test project file");
 }
+
+#[allow(unused_must_use)]
+#[tokio::test]
+async fn role_manager_test() {
+    role::ROLEMANAGER.read().await;
+}

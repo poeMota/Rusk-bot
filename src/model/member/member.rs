@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serenity::{
-    all::{ForumTagId, MessageId},
+    all::{ForumTagId, MessageId, RoleId},
     builder::CreateEmbed,
     client::Context,
     model::{colour::Colour, guild::Member, id::UserId, timestamp::Timestamp},
@@ -189,6 +189,8 @@ pub struct ProjectMember {
     pub changed_tag: Option<ForumTagId>,
     #[serde(default, skip_serializing)]
     pub changed_sub_post: Option<MessageId>,
+    #[serde(default, skip_serializing)]
+    pub changed_role: Option<RoleId>,
 }
 
 impl ProjectMember {
@@ -213,6 +215,7 @@ impl ProjectMember {
                 changed_project: None,
                 changed_tag: None,
                 changed_sub_post: None,
+                changed_role: None,
             },
             _ => serde_json::from_str(&content)?,
         })
