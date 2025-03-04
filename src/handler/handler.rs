@@ -34,6 +34,7 @@ impl EventHandler for Handler {
         save_commands(&ctx, guild_id).await;
         tag_commands(&ctx, guild_id).await;
         config_commands(&ctx, guild_id).await;
+        role_commands(&ctx, guild_id).await;
 
         sync_guild_commands(&ctx.http, &guild_id).await;
 
