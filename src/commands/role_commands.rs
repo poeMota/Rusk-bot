@@ -39,7 +39,8 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                                     default_roles: Some(dis_member.roles),
                                 },
                             )
-                            .placeholder(loc!("roles-changer-roles-placeholder")),
+                            .placeholder(loc!("roles-changer-roles-placeholder"))
+                            .max_values(25),
                         )]))
                         .ephemeral(true),
                 ),
@@ -97,7 +98,8 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                                     default_roles: Some(dis_member.roles),
                                 },
                             )
-                            .placeholder(loc!("roles-changer-roles-placeholder")),
+                            .placeholder(loc!("roles-changer-roles-placeholder"))
+                            .max_values(25),
                         ),
                     ])),
                 ),
@@ -128,7 +130,8 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                                     default_roles: role_man.get_permissons(role.id).cloned(),
                                 },
                             )
-                            .placeholder(loc!("roles-changer-permissions-placeholder")),
+                            .placeholder(loc!("roles-changer-permissions-placeholder"))
+                            .max_values(25),
                         )]))
                         .ephemeral(true),
                 ),
