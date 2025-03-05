@@ -1,7 +1,7 @@
 change-roles-permissions-command-name: изменить-права-роли
-change-roles-permissions-command-discription: Изменить права на выдачу ролей другой роли.
+change-roles-permissions-command-description: Изменить права на выдачу ролей другой роли.
 change-roles-permissions-command-param-role-name: роль
-change-roles-permissions-command-param-role-discription: Роль, права которой нужно изменить.
+change-roles-permissions-command-param-role-description: Роль, права которой нужно изменить.
 roles-changer-permissions-title: "Изменить права роли <@&{role_id}>"
 roles-changer-permissions-placeholder: "права роли на выдачу"
 

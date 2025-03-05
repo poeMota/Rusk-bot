@@ -31,7 +31,7 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(loc!("roles-changer-title", "member" = user.id.get()))
+                        .content(loc!("roles-changer-title", "member_id" = user.id.get()))
                         .components(Vec::from([CreateActionRow::SelectMenu(
                             CreateSelectMenu::new(
                                 "roles-changer:member-roles",
@@ -121,7 +121,7 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                     CreateInteractionResponseMessage::new()
                         .content(loc!(
                             "roles-changer-permissions-title",
-                            "role" = role.id.get()
+                            "role_id" = role.id.get()
                         ))
                         .components(Vec::from([CreateActionRow::SelectMenu(
                             CreateSelectMenu::new(
