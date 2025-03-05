@@ -36,6 +36,8 @@ impl EventHandler for Handler {
         config_commands(&ctx, guild_id).await;
         role_commands(&ctx, guild_id).await;
 
+        COMMANDMANAGER.read().await.debug_print().await;
+
         sync_guild_commands(&ctx.http, &guild_id).await;
 
         shop::shop_component_listeners().await;

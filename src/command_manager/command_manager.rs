@@ -305,4 +305,17 @@ impl CommandManager {
             .await;
         }
     }
+
+    pub async fn debug_print(&self) {
+        Logger::debug(
+            "com_man.debug_print",
+            &format!(
+                "commnds: {:?}\ncomponents: {:?}\nmodals: {:?}",
+                self.commands.keys().collect::<Vec<&String>>(),
+                self.components.keys().collect::<Vec<&String>>(),
+                self.modals.keys().collect::<Vec<&String>>()
+            ),
+        )
+        .await;
+    }
 }
