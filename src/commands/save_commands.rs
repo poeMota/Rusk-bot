@@ -101,7 +101,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                         .await
                         .unwrap();
                 } else {
-                    match unload_content(db.clone(), format!("{}/{}", folder, p)).await {
+                    match unload_content(format!("{}/{}", folder, p), db.clone()).await {
                         Ok(data) => {
                             inter
                                 .edit_response(
@@ -276,7 +276,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                     .await
                     .unwrap();
             } else {
-                match unload_content(db.clone(), p.clone()).await {
+                match unload_content(p.clone(), db.clone()).await {
                     Ok(data) => {
                         inter
                             .edit_response(
@@ -392,7 +392,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                     .await
                     .unwrap();
             } else {
-                match unload_content(db.clone(), path.clone()).await {
+                match unload_content(path.clone(), db.clone()).await {
                     Ok(data) => {
                         inter
                             .edit_response(
@@ -573,7 +573,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                         .edit_response(
                             &ctx.http,
                             EditInteractionResponse::new().new_attachment(CreateAttachment::bytes(
-                                unload_content(db.clone(), path.to_string()).await.unwrap(),
+                                unload_content(path.to_string(), db.clone()).await.unwrap(),
                                 path.split("/").last().unwrap(),
                             )),
                         )
