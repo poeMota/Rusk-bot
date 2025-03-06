@@ -184,8 +184,10 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
             inter
                 .edit_response(
                     &ctx.http,
-                    EditInteractionResponse::new()
-                        .content(loc!("link-folder-command-already-linked-response")),
+                    EditInteractionResponse::new().content(loc!(
+                        "link-folder-command-already-linked-response",
+                        "folder" = folder
+                    )),
                 )
                 .await
                 .unwrap();

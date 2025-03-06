@@ -1,4 +1,5 @@
 use crate::{
+    config::load_env,
     connect::*,
     model::{member::MEMBERSMANAGER, role::ROLEMANAGER},
     prelude::*,
@@ -630,9 +631,10 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                 db,
                 url,
                 match login == password && login == None {
-                    true => format!("NEEDAUTH = false"),
+                    true => format!("{}_NEEDAUTH = false", db),
                     false => format!(
-                        "NEEDAUTH = true\n{}_LOGIN = {}\n{}_PASSWORD = {}",
+                        "{}_NEEDAUTH = true\n{}_LOGIN = {}\n{}_PASSWORD = {}",
+                        db,
                         db,
                         login.unwrap(),
                         db,
@@ -643,6 +645,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
         );
 
         ROLEMANAGER.write().await.create_db(db.clone()).await;
+        load_env();
 
         inter
             .create_response(
@@ -756,7 +759,10 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
         }
 
         inter
-            .edit_response(&ctx.http, EditInteractionResponse::new())
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::UpdateMessage(CreateInteractionResponseMessage::new()),
+            )
             .await
             .unwrap();
     }
