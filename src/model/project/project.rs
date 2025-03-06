@@ -400,18 +400,6 @@ impl Project {
 
     async fn get_stat_embeds(&self, ctx: &Context) -> HashMap<RoleId, CreateEmbed> {
         let mut fields = HashMap::new();
-        let mut mem_man = match MEMBERSMANAGER.try_write() {
-            Ok(man) => man,
-            Err(_) => {
-                Logger::error(
-                    "project.get_stat_embeds",
-                    "error while try_write MEMBERSMANAGER, maybe deadlock, trying await...",
-                )
-                .await;
-                MEMBERSMANAGER.write().await
-            }
-        };
-
         let guild = get_guild();
         let roles = guild.roles(&ctx.http).await.unwrap();
 
@@ -419,7 +407,9 @@ impl Project {
             match get_highest_role_in(&ctx, member.user.id, &self.associated_roles).await {
                 Ok(highest) => {
                     if let Some(role) = highest {
-                        match mem_man
+                        match MEMBERSMANAGER
+                            .write()
+                            .await
                             .get(member.user.id)
                             .await
                             .unwrap()
