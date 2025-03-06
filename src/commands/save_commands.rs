@@ -642,7 +642,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
             ),
         );
 
-        ROLEMANAGER.write().await.create_db(db.clone());
+        ROLEMANAGER.write().await.create_db(db.clone()).await;
 
         inter
             .create_response(
@@ -714,24 +714,29 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                 Some(values.first().unwrap().clone());
 
             inter
-                .edit_response(
+                .create_response(
                     &ctx.http,
-                    EditInteractionResponse::new()
-                        .content(loc!(
-                            "change-db-permissions-command-roles-title",
-                            "db_name" = values.first().unwrap()
-                        ))
-                        .components(Vec::from([CreateActionRow::SelectMenu(
-                            CreateSelectMenu::new(
-                                "db-changer:roles",
-                                serenity::all::CreateSelectMenuKind::Role {
-                                    default_roles: role_man
-                                        .get_db_permissions(values.first().unwrap())
-                                        .cloned(),
-                                },
-                            )
-                            .placeholder(loc!("change-db-permissions-command-roles-placeholder")),
-                        )])),
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .content(loc!(
+                                "change-db-permissions-command-roles-title",
+                                "db_name" = values.first().unwrap()
+                            ))
+                            .components(Vec::from([CreateActionRow::SelectMenu(
+                                CreateSelectMenu::new(
+                                    "db-changer:roles",
+                                    serenity::all::CreateSelectMenuKind::Role {
+                                        default_roles: role_man
+                                            .get_db_permissions(values.first().unwrap())
+                                            .cloned(),
+                                    },
+                                )
+                                .max_values(25)
+                                .placeholder(loc!(
+                                    "change-db-permissions-command-roles-placeholder"
+                                )),
+                            )])),
+                    ),
                 )
                 .await
                 .unwrap();
