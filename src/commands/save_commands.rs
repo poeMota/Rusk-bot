@@ -642,6 +642,8 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
             ),
         );
 
+        ROLEMANAGER.write().await.create_db(db.clone());
+
         inter
             .create_response(
                 &ctx.http,

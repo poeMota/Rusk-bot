@@ -114,4 +114,8 @@ impl RoleManager {
     pub fn get_dbs(&self) -> Vec<&String> {
         self.save_db_permissions.keys().collect()
     }
+
+    pub fn create_db(&mut self, db: String) {
+        self.save_db_permissions.insert(db, Vec::new());
+    }
 }
