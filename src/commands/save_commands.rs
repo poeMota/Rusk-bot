@@ -613,7 +613,8 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(loc!("create-db-command-exist")),
+                            .content(loc!("create-db-command-exist"))
+                            .ephemeral(true),
                     ),
                 )
                 .await
@@ -645,7 +646,9 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
             .create_response(
                 &ctx.http,
                 CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new().content(loc!("done")),
+                    CreateInteractionResponseMessage::new()
+                        .content(loc!("done"))
+                        .ephemeral(true),
                 ),
             )
             .await
