@@ -23,7 +23,12 @@ pub async fn unload_content(url: String, db_name: String) -> Result<String, Conn
 
     let env_url = match env::var(&db_name) {
         Ok(value) => value,
-        Err(e) => return Err(ConnectionError::UnexpetedOtherError(e.to_string())),
+        Err(_) => {
+            return Err(ConnectionError::UnexpetedOtherError(format!(
+                "env \"{}\" not found",
+                db_name
+            )))
+        }
     };
     let valideted_url = format!("{}/{}", env_url, url)
         .replace("//", "/")
