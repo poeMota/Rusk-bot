@@ -39,6 +39,10 @@ pub async fn config_commands(ctx: &Context, guild: GuildId) {
             .await
             .unwrap();
 
+        if path.clone().unwrap_or(String::new()).contains("shop/") {
+            SHOPMANAGER.write().await.init().await;
+        }
+
         Logger::high(
             fetch_member(&inter.user.id).await.unwrap().display_name(),
             &format!(
