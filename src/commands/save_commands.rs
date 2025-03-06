@@ -474,7 +474,7 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
     async fn save_menu_component(db: String, path: String, root: String) -> CreateActionRow {
         let mut options = Vec::new();
         let mut index = 0;
-        for (filename, date) in file_dates(db.clone(), path.clone()).await.unwrap() {
+        for (filename, date) in file_dates(path.clone(), db.clone()).await.unwrap() {
             if options.len() == 25 {
                 break;
             }
