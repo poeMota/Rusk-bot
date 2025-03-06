@@ -607,13 +607,13 @@ pub async fn save_commands(ctx: &Context, guild: GuildId) {
         let db = db.trim().replace(" ", "-");
         let env_content = read_file(&DATA_PATH.join(".env"));
 
-        if env_content.contains(&db) {
+        if env_content.contains(&format!("{} = ", db)) {
             inter
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(loc!("created-db-command-exist")),
+                            .content(loc!("create-db-command-exist")),
                     ),
                 )
                 .await
