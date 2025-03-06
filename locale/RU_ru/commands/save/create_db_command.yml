@@ -1,0 +1,12 @@
+create-db-command-name: подключить-бд
+create-db-command-description: Подключить БД для скачивания сейвов
+create-db-command-param-db-name: название
+create-db-command-param-db-description: Человекочитаемое название БД.
+create-db-command-param-url-name: ссылка
+create-db-command-param-url-description: Ссылка на сайт БД.
+create-db-command-param-login-name: логин
+create-db-command-param-login-description: Логин для доступа к БД (если нужен).
+create-db-command-param-password-name: пароль
+create-db-command-param-password-description: Пароль для доступа к БД (если нужен).
+create-db-command-exist: БД с таким название уже существует.
+

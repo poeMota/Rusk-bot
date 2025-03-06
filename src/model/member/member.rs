@@ -5,7 +5,7 @@ use crate::{
     shop::ShopData,
 };
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json;
 use serenity::{
     all::{ForumTagId, MessageId, RoleId},
@@ -99,10 +99,12 @@ impl MembersManager {
         }))
     }
 
-    pub fn get_by_folder(&mut self, folder: &String) -> Option<&UserId> {
+    pub fn get_by_folder(&mut self, db: String, folder: &String) -> Option<&UserId> {
         for (id, member) in self.members.iter() {
-            if member.own_folder == Some(folder.clone()) {
-                return Some(id);
+            if let Some(f) = member.own_folder.get(&db) {
+                if f == &Some(folder.clone()) {
+                    return Some(id);
+                }
             }
         }
 
@@ -166,7 +168,8 @@ pub struct ProjectMember {
     pub done_tasks: HashMap<String, Vec<TaskHistory>>,
     #[serde(default)]
     pub mentor_tasks: HashMap<String, Vec<TaskHistory>>,
-    pub own_folder: Option<String>,
+    #[serde(deserialize_with = "deserialize_old_or_new_folder")]
+    pub own_folder: HashMap<String, Option<String>>,
     #[serde(default)]
     pub score: i64,
     #[serde(default)]
@@ -191,6 +194,8 @@ pub struct ProjectMember {
     pub changed_sub_post: Option<MessageId>,
     #[serde(default, skip_serializing)]
     pub changed_role: Option<RoleId>,
+    #[serde(default, skip_serializing)]
+    pub changed_db: Option<String>,
 }
 
 impl ProjectMember {
@@ -203,7 +208,7 @@ impl ProjectMember {
                 in_tasks: HashMap::new(),
                 done_tasks: HashMap::new(),
                 mentor_tasks: HashMap::new(),
-                own_folder: None,
+                own_folder: HashMap::new(),
                 score: 0,
                 all_time_score: 0,
                 last_activity: HashMap::new(),
@@ -216,6 +221,7 @@ impl ProjectMember {
                 changed_tag: None,
                 changed_sub_post: None,
                 changed_role: None,
+                changed_db: None,
             },
             _ => serde_json::from_str(&content)?,
         })
@@ -262,8 +268,12 @@ impl ProjectMember {
         }
     }
 
-    pub async fn change_folder(&mut self, folder: Option<String>) -> Result<(), ConnectionError> {
-        if folder == self.own_folder {
+    pub async fn change_folder(
+        &mut self,
+        db: String,
+        folder: Option<String>,
+    ) -> Result<(), ConnectionError> {
+        if Some(&folder) == self.own_folder.get(&db) {
             return Ok(());
         }
 
@@ -287,20 +297,21 @@ impl ProjectMember {
         };
 
         if let Some(ref string) = folder {
-            unload_content(format!("{}/", string)).await?;
+            unload_content(format!("{}/", string), db.clone()).await?;
         }
 
-        self.own_folder = folder;
+        self.own_folder.insert(db.clone(), folder);
         self.update().await;
 
         if let Ok(dis_member) = self.member().await {
             Logger::low(
                 "member.change_folder",
                 &format!(
-                    "own folder of member {} changed from {:?} to {:?}",
+                    "own folder of member {} for db {} changed from {:?} to {:?}",
                     dis_member.display_name(),
+                    db,
                     old_folder,
-                    self.own_folder
+                    self.own_folder.get(&db).unwrap()
                 ),
             )
             .await;
@@ -892,12 +903,16 @@ impl ProjectMember {
             );
         }
 
-        if let Some(ref folder) = self.own_folder {
-            embed = embed.field(
-                loc!("member-stat-embed-folder-name"),
-                format!("`{}`", folder),
-                false,
-            );
+        let mut folder_text = String::new();
+
+        for (db, folder) in self.own_folder.iter() {
+            if let Some(f) = folder {
+                folder_text = format!("{}**{}**: `{}`\n", folder_text, db, f);
+            }
+        }
+
+        if !folder_text.is_empty() {
+            embed = embed.field(loc!("member-stat-embed-folder-name"), folder_text, false);
         }
 
         embed = embed
@@ -1032,4 +1047,69 @@ impl ProjectMember {
 
         embed
     }
+}
+
+fn deserialize_old_or_new_folder<'de, D>(
+    deserializer: D,
+) -> Result<HashMap<String, Option<String>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::{MapAccess, Visitor};
+    use std::fmt;
+
+    struct FieldVisitor;
+
+    impl<'de> Visitor<'de> for FieldVisitor {
+        type Value = HashMap<String, Option<String>>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("either a string or a map")
+        }
+
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(HashMap::new())
+        }
+
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(HashMap::new())
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            let mut map = HashMap::new();
+            map.insert("Corvax".to_string(), Some(value.to_string()));
+            Ok(map)
+        }
+
+        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            let mut map = HashMap::new();
+            map.insert("Corvax".to_string(), Some(value));
+            Ok(map)
+        }
+
+        fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+        where
+            M: MapAccess<'de>,
+        {
+            let mut map = HashMap::new();
+            while let Some((key, value)) = access.next_entry()? {
+                map.insert(key, value);
+            }
+            Ok(map)
+        }
+    }
+
+    deserializer.deserialize_any(FieldVisitor)
 }

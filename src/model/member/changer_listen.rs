@@ -3,7 +3,7 @@ use serenity::all::{
     CreateInputText, CreateModal, CreateSelectMenu, CreateSelectMenuOption, InputTextStyle,
 };
 
-use crate::{connect::ConnectionError, prelude::*};
+use crate::{connect::ConnectionError, model::role::ROLEMANAGER, prelude::*};
 
 pub async fn member_changer_listener() {
     #[listen_component("member-changer")]
@@ -55,6 +55,7 @@ pub async fn member_changer_listener() {
     #[listen_component("member-changer:own-folder")]
     async fn folder_changer(ctx: &Context, inter: ComponentInteraction) {
         let mut mem_man = member::MEMBERSMANAGER.write().await;
+        let role_man = ROLEMANAGER.read().await;
 
         let author = mem_man.get(inter.user.id).await.unwrap().clone();
         let member = mem_man
@@ -70,15 +71,35 @@ pub async fn member_changer_listener() {
                         "member-changer:own-folder",
                         loc!("member-changer-modal-own-folder-title"),
                     )
-                    .components(Vec::from([CreateActionRow::InputText(
-                        CreateInputText::new(
-                            InputTextStyle::Short,
-                            loc!("member-changer-modal-own-folder-components-folder-title"),
-                            "member-changer:own-folder:folder",
-                        )
-                        .value(member.own_folder.clone().unwrap_or(String::new()))
-                        .min_length(0),
-                    )])),
+                    .components(
+                        role_man
+                            .get_dbs()
+                            .iter()
+                            .map(|x| {
+                                CreateActionRow::InputText(
+                                    CreateInputText::new(
+                                        InputTextStyle::Short,
+                                        loc!(
+                                    "member-changer-modal-own-folder-components-folder-title",
+                                    "db" = x
+                                ),
+                                        "member-changer:own-folder:folder",
+                                    )
+                                    .value(format!(
+                                        "{}:::{}",
+                                        x,
+                                        member
+                                            .own_folder
+                                            .get(x.as_str())
+                                            .cloned()
+                                            .unwrap_or(None)
+                                            .unwrap_or(String::new())
+                                    ))
+                                    .min_length(0),
+                                )
+                            })
+                            .collect(),
+                    ),
                 ),
             )
             .await
@@ -278,9 +299,17 @@ pub async fn member_changer_listener() {
                 match comp {
                     ActionRowComponent::InputText(text) => {
                         if text.custom_id == "member-changer:own-folder:folder" {
-                            let folder: Option<String> = text.value.clone();
+                            let parts = text
+                                .value
+                                .clone()
+                                .unwrap()
+                                .split(":::")
+                                .map(|x| x.to_string())
+                                .collect::<Vec<String>>();
+                            let db = parts.first().unwrap().clone();
+                            let folder = parts.get(1).cloned();
 
-                            match member.change_folder(folder).await {
+                            match member.change_folder(db, folder).await {
                                 Ok(_) => inter
                                     .edit_response(
                                         &ctx.http,

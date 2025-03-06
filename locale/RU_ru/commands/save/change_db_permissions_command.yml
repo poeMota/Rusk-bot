@@ -1,0 +1,8 @@
+change-db-permissions-command-name: изменить-бд-права
+change-db-permissions-command-description: Изменить роли, которые имеют доступ к определённой бд сейвов.
+change-db-permissions-command-no-dbs: Нет подключенных бд сейвов.
+change-db-permissions-command-response-title: "## Выберите БД, права для которой нужно изменить"
+change-db-permissions-command-roles-title: "## Выберите роли, которые будут иметь доступ к БД {db_name}"
+change-db-permissions-command-db-select-placeholder: Выберите БД
+change-db-permissions-command-roles-placeholder: Роли, с доступом к БД
+

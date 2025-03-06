@@ -12,7 +12,7 @@ pub enum ConnectionError {
     StatusCodeError(String, Error),
 }
 
-pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
+pub async fn unload_content(url: String, db_name: String) -> Result<String, ConnectionError> {
     let _config = CONFIG.read().await;
 
     if url.contains("..") {
@@ -21,7 +21,7 @@ pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
         ));
     }
 
-    let env_url = match env::var("URL") {
+    let env_url = match env::var(&db_name) {
         Ok(value) => value,
         Err(e) => return Err(ConnectionError::UnexpetedOtherError(e.to_string())),
     };
@@ -30,18 +30,18 @@ pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
         .replace(" ", "%C2%A0");
     let mut response = reqwest::Client::new().get(valideted_url);
 
-    let need_auth = match env::var("NEEDAUTH") {
+    let need_auth = match env::var(format!("{}_NEEDAUTH", db_name)) {
         Ok(need) => need == "true".to_string(),
         Err(_) => false,
     };
 
     if need_auth {
-        let username = match env::var("LOGIN") {
+        let username = match env::var(format!("{}_LOGIN", db_name)) {
             Ok(need) => need,
             Err(e) => return Err(ConnectionError::AuthError(e.to_string())),
         };
 
-        let password = match env::var("PASSWORD") {
+        let password = match env::var(format!("{}_PASSWORD", db_name)) {
             Ok(need) => Some(need),
             Err(e) => return Err(ConnectionError::AuthError(e.to_string())),
         };
@@ -61,8 +61,8 @@ pub async fn unload_content(url: String) -> Result<String, ConnectionError> {
     }
 }
 
-pub async fn unload_to_file(url: String) -> Result<PathBuf, ConnectionError> {
-    let content = unload_content(url.clone()).await?;
+pub async fn unload_to_file(url: String, db_name: String) -> Result<PathBuf, ConnectionError> {
+    let content = unload_content(url.clone(), db_name).await?;
     let path = DATA_PATH.join(format!("temp/{}", url.split("/").last().unwrap()));
 
     write_file(&path, content);
@@ -96,8 +96,11 @@ pub async fn get_user_id(name: String) -> String {
     not_found
 }
 
-pub async fn file_dates(url: String) -> Result<HashMap<String, String>, ConnectionError> {
-    let response = unload_content(url).await?;
+pub async fn file_dates(
+    url: String,
+    db_name: String,
+) -> Result<HashMap<String, String>, ConnectionError> {
+    let response = unload_content(url, db_name).await?;
 
     let document = Html::parse_document(&response);
     let link_selector = Selector::parse("a").unwrap();

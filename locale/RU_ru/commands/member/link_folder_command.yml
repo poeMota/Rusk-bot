@@ -8,4 +8,6 @@ link-folder-command-log-folder-linked: Привязана папка {folder}
 link-folder-command-already-linked-response: '**Вы уже имеете привязанную папку "{folder}". Если вам нужно изменить папку, обратитесь к ведущему мапперу.**'
 link-folder-command-stranger-folder-response: "Вы пытаетесь привязать чужую папку, так нельзя делать!"
 link-folder-command-stranger-folder-notify: '<@{member1}> пытался привязать папку "{folder}", которая принадлежит <@{member2}>'
+link-folder-command-no-dbs: У вас нет доступа ни к одной базе данных.
+link-folder-command-db-title: "## Выберите базу данных для привязки папки"
 

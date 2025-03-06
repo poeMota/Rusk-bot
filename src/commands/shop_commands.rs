@@ -8,8 +8,8 @@ use serenity::{builder::CreateButton, model::application::ButtonStyle};
 pub async fn shop_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
     async fn shop(ctx: &Context, inter: CommandInteraction) {
-        let shop_man = SHOPMANAGER.try_read().unwrap();
-        let mut mem_man = MEMBERSMANAGER.try_write().unwrap();
+        let shop_man = SHOPMANAGER.read().await;
+        let mut mem_man = MEMBERSMANAGER.write().await;
 
         let member = mem_man.get_mut(inter.user.id.clone()).await.unwrap();
         member.shop_data = ShopData {

@@ -163,19 +163,7 @@ impl Into<ProjectMember> for OldProjectMember {
             in_tasks: HashMap::new(),
             done_tasks,
             mentor_tasks,
-            own_folder: match self.own_folder {
-                Some(folder) => {
-                    if folder == String::new()
-                        || folder == String::from("\"\"")
-                        || folder == String::from("\'\'")
-                    {
-                        None
-                    } else {
-                        Some(folder)
-                    }
-                }
-                None => None,
-            },
+            own_folder: HashMap::new(),
             score: self.score.unwrap_or(0),
             all_time_score: self.all_time_score.unwrap_or(0),
             last_activity,
@@ -191,6 +179,7 @@ impl Into<ProjectMember> for OldProjectMember {
             changed_tag: None,
             changed_sub_post: None,
             changed_role: None,
+            changed_db: None,
         }
     }
 }

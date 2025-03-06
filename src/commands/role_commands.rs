@@ -73,14 +73,14 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
 
             for role in added
                 .iter()
-                .filter(|x| role_man.have_permission(&dis_member, ***x))
+                .filter(|x| role_man.have_role_permission(&dis_member, ***x))
             {
                 changer_member.add_role(&ctx.http, **role).await.unwrap();
             }
 
             for role in removed
                 .iter()
-                .filter(|x| role_man.have_permission(&dis_member, ***x))
+                .filter(|x| role_man.have_role_permission(&dis_member, ***x))
             {
                 changer_member.remove_role(&ctx.http, **role).await.unwrap();
             }
@@ -127,7 +127,7 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                             CreateSelectMenu::new(
                                 "roles-changer:role-permissions",
                                 serenity::all::CreateSelectMenuKind::Role {
-                                    default_roles: role_man.get_permissons(role.id).cloned(),
+                                    default_roles: role_man.get_role_permissons(role.id).cloned(),
                                 },
                             )
                             .placeholder(loc!("roles-changer-permissions-placeholder"))
@@ -149,7 +149,7 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
             role::ROLEMANAGER
                 .write()
                 .await
-                .set_permissions(member.changed_role.unwrap(), values.clone())
+                .set_role_permissions(member.changed_role.unwrap(), values.clone())
                 .await;
         }
 

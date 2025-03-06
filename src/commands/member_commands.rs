@@ -1,9 +1,14 @@
 use crate::{
     connect::{get_user_id, ConnectionError},
-    model::member::MEMBERSMANAGER,
+    model::{member::MEMBERSMANAGER, role::ROLEMANAGER},
     prelude::*,
 };
-use serenity;
+use serenity::{
+    self,
+    all::{
+        ComponentInteractionDataKind, CreateActionRow, CreateSelectMenu, CreateSelectMenuOption,
+    },
+};
 
 pub async fn member_commands(ctx: &Context, guild: GuildId) {
     #[slash_command([])]
@@ -57,11 +62,60 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
     async fn link_folder(ctx: &Context, inter: CommandInteraction, folder: String) {
         inter.defer_ephemeral(&ctx.http).await.unwrap();
 
+        let dis_member = fetch_member(&inter.user.id).await.unwrap();
+
+        let role_man = ROLEMANAGER.read().await;
         let mut mem_man = MEMBERSMANAGER.write().await;
-        let other_folder = mem_man.get_by_folder(&folder).cloned();
+
+        let dbs = role_man.member_db_permissons(&dis_member);
+
+        if dbs.is_empty() {
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new().content(loc!("link-folder-command-no-dbs")),
+                )
+                .await
+                .unwrap();
+
+            return;
+        }
+
+        if dbs.len() > 1 {
+            inter
+                .edit_response(
+                    &ctx.http,
+                    EditInteractionResponse::new()
+                        .content(loc!("link-folder-command-db-title"))
+                        .components(Vec::from([CreateActionRow::SelectMenu(
+                            CreateSelectMenu::new(
+                                "link-folder:db",
+                                serenity::all::CreateSelectMenuKind::String {
+                                    options: dbs
+                                        .iter()
+                                        .map(|x| {
+                                            CreateSelectMenuOption::new(
+                                                *x,
+                                                format!("{}:::{}", x, folder),
+                                            )
+                                        })
+                                        .collect(),
+                                },
+                            ),
+                        )])),
+                )
+                .await
+                .unwrap();
+
+            return;
+        }
+
+        let db = *dbs.get(0).unwrap();
+
+        let other_folder = mem_man.get_by_folder(db.clone(), &folder).cloned();
         let member = mem_man.get_mut(inter.user.id).await.unwrap();
 
-        if let None = member.own_folder {
+        if let None = member.own_folder.get(db.as_str()) {
             if let Some(id) = other_folder {
                 inter
                     .edit_response(
@@ -83,7 +137,7 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
                 )
                 .await;
             } else {
-                match member.change_folder(Some(folder)).await {
+                match member.change_folder(db.clone(), Some(folder)).await {
                     Ok(_) => inter
                         .edit_response(
                             &ctx.http,
@@ -190,5 +244,64 @@ pub async fn member_commands(ctx: &Context, guild: GuildId) {
             )
             .await
             .unwrap();
+    }
+
+    #[listen_component("link-folder:db")]
+    async fn link_folder_db(ctx: &Context, inter: ComponentInteraction) {
+        if let ComponentInteractionDataKind::StringSelect { values } = &inter.data.kind {
+            let parts = values.first().unwrap().split(":::").collect::<Vec<&str>>();
+            let db = parts.get(0).unwrap().to_string();
+            let folder = parts.get(1).unwrap().to_string();
+
+            let mut mem_man = MEMBERSMANAGER.write().await;
+            let member = mem_man.get_mut(inter.user.id).await.unwrap();
+
+            match member.change_folder(db, Some(folder)).await {
+                Ok(_) => inter
+                    .edit_response(
+                        &ctx.http,
+                        EditInteractionResponse::new()
+                            .content(loc!("command-done-response"))
+                            .components(vec![]),
+                    )
+                    .await
+                    .unwrap(),
+                Err(e) => match e {
+                    ConnectionError::StatusCodeError(url, _) => inter
+                        .edit_response(
+                            &ctx.http,
+                            EditInteractionResponse::new()
+                                .content(loc!("invalid-url", "path" = url))
+                                .components(vec![]),
+                        )
+                        .await
+                        .unwrap(),
+                    ConnectionError::NotAllowedUrl(_) => inter
+                        .edit_response(
+                            &ctx.http,
+                            EditInteractionResponse::new()
+                                .content(loc!("not-allowed-url"))
+                                .components(vec![]),
+                        )
+                        .await
+                        .unwrap(),
+                    _ => {
+                        Logger::error(
+                            "commands.link_folder",
+                            &format!("error while connecting: {:?}", e),
+                        )
+                        .await;
+
+                        inter
+                            .edit_response(
+                                &ctx.http,
+                                EditInteractionResponse::new().content(loc!("link-folder-error")),
+                            )
+                            .await
+                            .unwrap()
+                    }
+                },
+            };
+        }
     }
 }

@@ -10,7 +10,7 @@ member-changer-modal-score-components-score-title: очки
 member-changer-modal-score-components-all-score-title: очки за всё время
 member-changer-modal-score-parse-error: Количество очков должно быть числом
 member-changer-modal-own-folder-title: Изменить личную папку
-member-changer-modal-own-folder-components-folder-title: папка
+member-changer-modal-own-folder-components-folder-title: "Папка для БД {db}"
 member-changer-modal-tasks-title: Изменить заказы
 member-changer-modal-notes-title: Изменить заметки
 member-changer-modal-warns-title: Изменить предупреждения
