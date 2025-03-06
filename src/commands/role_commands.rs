@@ -95,7 +95,7 @@ pub async fn role_commands(ctx: &Context, guild: GuildId) {
                             CreateSelectMenu::new(
                                 "roles-changer:member-roles",
                                 serenity::all::CreateSelectMenuKind::Role {
-                                    default_roles: Some(dis_member.roles),
+                                    default_roles: Some(changer_member.roles),
                                 },
                             )
                             .placeholder(loc!("roles-changer-roles-placeholder"))
