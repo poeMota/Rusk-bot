@@ -28,7 +28,7 @@ impl Default for RoleManager {
 impl RoleManager {
     fn new() -> Self {
         let content = read_file(&DATA_PATH.join("role_manager_config.toml"));
-        toml::from_str(&content).unwrap_or(Self::default())
+        toml::from_str::<Self>(&content).unwrap_or(Self::default())
     }
 
     async fn write_data(&self) {
