@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use serde_json;
 use serenity::all::RoleId;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
@@ -10,9 +11,7 @@ pub static ROLEMANAGER: Lazy<Arc<RwLock<RoleManager>>> =
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RoleManager {
-    #[serde(rename = "ChangeRolePermissions")]
     change_role_permissions: HashMap<RoleId, Vec<RoleId>>,
-    #[serde(rename = "SaveDBPermissions")]
     save_db_permissions: HashMap<String, Vec<RoleId>>,
 }
 
@@ -27,22 +26,21 @@ impl Default for RoleManager {
 
 impl RoleManager {
     fn new() -> Self {
-        let content = read_file(&DATA_PATH.join("role_manager_config.toml"));
-        let instance: Self = match toml::from_str(&content) {
+        let content = read_file(&DATA_PATH.join("role_manager_config.json"));
+        let instance: Self = match serde_json::from_str(&content) {
             Ok(c) => c,
             Err(e) => {
-                eprint!("role manager Deserialize error: {}", e);
+                eprint!("role manager deserialize error: {}", e);
                 Self::default()
             }
         };
-        println!("{:?}", instance);
         instance
     }
 
     async fn write_data(&self) {
         write_file(
-            &DATA_PATH.join("role_manager_config.toml"),
-            match toml::to_string(&self) {
+            &DATA_PATH.join("role_manager_config.json"),
+            match serde_json::to_string(&self) {
                 Ok(c) => c,
                 Err(e) => {
                     Logger::error("role_man.serialize", e.to_string().as_str()).await;
