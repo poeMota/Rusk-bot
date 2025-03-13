@@ -28,13 +28,15 @@ impl Default for RoleManager {
 impl RoleManager {
     fn new() -> Self {
         let content = read_file(&DATA_PATH.join("role_manager_config.toml"));
-        match toml::from_str::<Self>(&content) {
+        let instance: Self = match toml::from_str(&content) {
             Ok(c) => c,
             Err(e) => {
                 eprint!("role manager Deserialize error: {}", e);
                 Self::default()
             }
-        }
+        };
+        println!("{:?}", instance);
+        instance
     }
 
     async fn write_data(&self) {
