@@ -21,6 +21,7 @@ pub enum ShopActions {
     RemoveRoles(RemoveRoles),
     SendMessage(SendMessage),
     Mute(Mute),
+    Cashback(Cashback),
 }
 
 pub trait Action {
@@ -238,6 +239,43 @@ impl Action for Mute {
             }
             Err(_) => Err("invalid duration given in mute action".to_string()),
         }
+    }
+
+    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
+        if let Replacement::Str(ref string) = self.member {
+            self.member = shop_man.convert_string(string.clone());
+        }
+
+        if let Replacement::Nothing = self.member {
+        } else {
+            self.member = Replacement::Member(get_member(&self.member).await?);
+        }
+
+        Ok(())
+    }
+}
+
+pub struct Cashback {
+    #[serde(default)]
+    member: Replacement,
+    score_value: i32,
+}
+
+impl Action for Cashback {
+    async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
+        member.change_score(score_value).await;
+        Logger::low(
+            "shop.page.buy",
+            &format!(
+                "user {} get *cashback* and score has been changed to {} and is now {}",
+                dis_member.display_name(),
+                score_value,
+                member.score
+            ),
+        )
+        .await;
+
+        Ok(())
     }
 
     async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
