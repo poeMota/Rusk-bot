@@ -1,4 +1,5 @@
 use crate::{
+    model::member::MEMBERSMANAGER,
     prelude::*,
     shop::{Replacement, ShopManager},
 };
@@ -21,7 +22,7 @@ pub enum ShopActions {
     RemoveRoles(RemoveRoles),
     SendMessage(SendMessage),
     Mute(Mute),
-    Cashback(Cashback),
+    ScoreChange(ScoreChange),
 }
 
 pub trait Action {
@@ -255,25 +256,32 @@ impl Action for Mute {
     }
 }
 
-pub struct Cashback {
+#[derive(Debug, Deserialize, Clone)]
+pub struct ScoreChange {
     #[serde(default)]
     member: Replacement,
-    score_value: i32,
+    score_value: i64,
 }
 
-impl Action for Cashback {
+impl Action for ScoreChange {
     async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
-        member.change_score(score_value).await;
-        Logger::low(
-            "shop.page.buy",
-            &format!(
-                "user {} get *cashback* and score has been changed to {} and is now {}",
-                dis_member.display_name(),
-                score_value,
-                member.score
-            ),
-        )
-        .await;
+        let dis_member = match self.member.clone() {
+            Replacement::Member(mem) => mem,
+            Replacement::Nothing => {
+                inter.member.ok_or_else(|| "member field if not specified if scoreChange action and cannot take member from interaction".to_string())?
+            },
+            _ => {
+                return Err("unexpected error".to_string());
+            }
+        };
+
+        let mut mem_man = MEMBERSMANAGER.write().await;
+        let member = mem_man
+            .get_mut(dis_member.user.id)
+            .await
+            .map_err(|x| x.to_string())?;
+
+        member.change_score(self.score_value).await;
 
         Ok(())
     }
