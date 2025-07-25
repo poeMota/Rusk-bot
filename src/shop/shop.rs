@@ -263,6 +263,7 @@ impl Page {
                 ShopActions::RemoveRoles(act) => act.convert(&shop_man).await?,
                 ShopActions::SendMessage(act) => act.convert(&shop_man).await?,
                 ShopActions::Mute(act) => act.convert(&shop_man).await?,
+                ShopActions::Cashback(act) => act.convert(&shop_man).await?,
             }
         }
 
@@ -333,6 +334,21 @@ impl Page {
                         .await;
                     }
                     _ => (),
+                }
+                ShopActions::Cashback(send_message) => {
+                    match send_message.call(inter.clone()).await {
+                        Err(e) => {
+                            Logger::error(
+                                "shop.page.buy",
+                                &format!(
+                                    "error while call sendMessage shop action in page \"{}\": {}",
+                                    &self.name, e
+                                ),
+                            )
+                            .await
+                        }
+                        _ => (),
+                    }
                 },
             }
         }
