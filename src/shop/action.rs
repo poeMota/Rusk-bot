@@ -1,5 +1,4 @@
 use crate::{
-    model::member::MEMBERSMANAGER,
     prelude::*,
     shop::{Replacement, ShopManager},
 };
@@ -22,7 +21,6 @@ pub enum ShopActions {
     RemoveRoles(RemoveRoles),
     SendMessage(SendMessage),
     Mute(Mute),
-    ScoreChange(ScoreChange),
 }
 
 pub trait Action {
@@ -240,52 +238,6 @@ impl Action for Mute {
             }
             Err(_) => Err("invalid duration given in mute action".to_string()),
         }
-    }
-
-    async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {
-        if let Replacement::Str(ref string) = self.member {
-            self.member = shop_man.convert_string(string.clone());
-        }
-
-        if let Replacement::Nothing = self.member {
-        } else {
-            self.member = Replacement::Member(get_member(&self.member).await?);
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ScoreChange {
-    #[serde(default)]
-    member: Replacement,
-    score: i64,
-}
-
-impl Action for ScoreChange {
-    async fn call(&self, inter: ComponentInteraction) -> Result<(), String> {
-        let dis_member = match self.member.clone() {
-            Replacement::Member(mem) => mem,
-            Replacement::Nothing => {
-                inter.member.ok_or_else(|| "member field if not specified if scoreChange action and cannot take member from interaction".to_string())?
-            },
-            _ => {
-                return Err("unexpected error".to_string());
-            }
-        };
-
-        let mut mem_man = MEMBERSMANAGER.write().await;
-        let member = mem_man
-            .get_mut(dis_member.user.id)
-            .await
-            .map_err(|x| x.to_string())?;
-
-        Logger::debug("shop.action.scoreChange.call", "test").await;
-
-        member.change_score(self.score).await;
-
-        Ok(())
     }
 
     async fn convert(&mut self, shop_man: &ShopManager) -> Result<(), String> {

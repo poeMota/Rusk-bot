@@ -244,6 +244,8 @@ pub struct Page {
     name: String,
     description: String,
     price: i64,
+    #[serde(rename = "cashBack", default)]
+    cash_back: i64,
     #[serde(default)]
     access: Vec<String>,
     #[serde(rename = "notAccess", default)]
@@ -263,7 +265,6 @@ impl Page {
                 ShopActions::RemoveRoles(act) => act.convert(&shop_man).await?,
                 ShopActions::SendMessage(act) => act.convert(&shop_man).await?,
                 ShopActions::Mute(act) => act.convert(&shop_man).await?,
-                ShopActions::ScoreChange(act) => act.convert(&shop_man).await?,
             }
         }
 
@@ -335,31 +336,17 @@ impl Page {
                     }
                     _ => (),
                 },
-                ShopActions::ScoreChange(score_change) => {
-                    match score_change.call(inter.clone()).await {
-                        Err(e) => {
-                            Logger::error(
-                                "shop.page.buy",
-                                &format!(
-                                    "error while call sendMessage shop action in page \"{}\": {}",
-                                    &self.name, e
-                                ),
-                            )
-                            .await
-                        }
-                        _ => (),
-                    }
-                }
             }
         }
 
-        member.change_score(-self.price).await;
+        member.change_score(-self.price + self.cash_back).await;
+
         Logger::low(
             "shop.page.buy",
             &format!(
                 "user {} score has been changed to {} and is now {}",
                 dis_member.display_name(),
-                -self.price,
+                -self.price + self.cash_back,
                 member.score
             ),
         )
