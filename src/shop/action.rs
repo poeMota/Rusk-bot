@@ -260,7 +260,7 @@ impl Action for Mute {
 pub struct ScoreChange {
     #[serde(default)]
     member: Replacement,
-    score_value: i64,
+    score: i64,
 }
 
 impl Action for ScoreChange {
@@ -281,7 +281,9 @@ impl Action for ScoreChange {
             .await
             .map_err(|x| x.to_string())?;
 
-        member.change_score(self.score_value).await;
+        Logger::debug("shop.action.scoreChange.call", "test").await;
+
+        member.change_score(self.score).await;
 
         Ok(())
     }

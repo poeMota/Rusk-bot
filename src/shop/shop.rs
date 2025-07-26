@@ -335,8 +335,8 @@ impl Page {
                     }
                     _ => (),
                 },
-                ShopActions::ScoreChange(send_message) => {
-                    match send_message.call(inter.clone()).await {
+                ShopActions::ScoreChange(score_change) => {
+                    match score_change.call(inter.clone()).await {
                         Err(e) => {
                             Logger::error(
                                 "shop.page.buy",
